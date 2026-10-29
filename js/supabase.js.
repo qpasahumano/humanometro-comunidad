@@ -1,1 +1,9 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const SUPABASE_URL = "https://xnsloxblgoraknxqkynn.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "PEGÁ_ACÁ_TU_CLAVE_sb_publishable_REAL";
+
+export const supabase = createClient(
+SUPABASE_URL,
+SUPABASE_PUBLISHABLE_KEY
+);
