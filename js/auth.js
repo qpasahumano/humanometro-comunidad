@@ -3,372 +3,487 @@ import { supabase } from "./supabase.js";
 let usuarioActual = null;
 let perfilActual = null;
 let escuchadorAutenticacion = null;
+let cargaPerfilEnCurso = false;
 
-function crearInterfazAcceso() {
-  if (document.getElementById("hm-auth-panel")) return;
+const $ = (id) => document.getElementById(id);
 
-  const panel = document.createElement("section");
-  panel.id = "hm-auth-panel";
-  panel.style.cssText = `
-    max-width: 440px;
-    margin: 20px auto;
-    padding: 20px;
-    border-radius: 16px;
-    background: #ffffff;
-    color: #222;
-    box-shadow: 0 4px 18px rgba(0,0,0,.12);
-    font-family: sans-serif;
-  `;
-
-  panel.innerHTML = `
-    <h2 style="margin-top:0">Tu cuenta comunitaria</h2>
-    <p>Ingresá o creá tu cuenta para participar en la comunidad.</p>
-
-    <label for="hm-auth-email">Correo electrónico</label>
-    <input id="hm-auth-email" type="email"
-      autocomplete="email" placeholder="tu@correo.com" required
-      style="display:block;box-sizing:border-box;width:100%;padding:12px;margin:8px 0 14px">
-
-    <label for="hm-auth-password">Contraseña</label>
-    <input id="hm-auth-password" type="password"
-      autocomplete="current-password" minlength="8"
-      placeholder="Mínimo 8 caracteres" required
-      style="display:block;box-sizing:border-box;width:100%;padding:12px;margin:8px 0 14px">
-
-    <button id="hm-auth-login" type="button"
-      style="padding:12px;margin:4px;border:0;border-radius:8px;cursor:pointer">
-      Iniciar sesión
-    </button>
-
-    <button id="hm-auth-register" type="button"
-      style="padding:12px;margin:4px;border:0;border-radius:8px;cursor:pointer">
-      Crear cuenta
-    </button>
-
-    <button id="hm-auth-logout" type="button" hidden
-      style="padding:12px;margin:4px;border:0;border-radius:8px;cursor:pointer">
-      Cerrar sesión
-    </button>
-
-    <p id="hm-auth-status" role="status" aria-live="polite"></p>
-  `;
-
-  const destino =
-    document.getElementById("pantalla-comunidad") ||
-    document.querySelector("main") ||
-    document.body;
-
-  destino.prepend(panel);
-
-  document.getElementById("hm-auth-login")
-    .addEventListener("click", iniciarSesion);
-
-  document.getElementById("hm-auth-register")
-    .addEventListener("click", crearCuenta);
-
-  document.getElementById("hm-auth-logout")
-    .addEventListener("click", cerrarSesion);
+function obtenerVistaPerfil() {
+return $("vista-perfil");
 }
 
-function crearInterfazPerfil() {
-  if (document.getElementById("hm-profile-panel")) return;
+function crearInterfazAcceso() {
+const vista = obtenerVistaPerfil();
+if (!vista || $("hm-auth-panel")) return;
 
-  const panel = document.createElement("section");
-  panel.id = "hm-profile-panel";
-  panel.style.cssText = `
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    border: 1px solid #29475c;
-    border-radius: 16px;
-    background: #091c30;
-    color: #f4f8ff;
-    font-family: sans-serif;
-  `;
+const panel = document.createElement("section");
+panel.id = "hm-auth-panel";
+panel.className = "tarjeta";
+panel.innerHTML = `
+<h3>Tu cuenta comunitaria</h3>
+<p id="hm-auth-intro">
+Ingresá o creá tu cuenta para participar y compartir publicaciones.
+</p>
 
-  panel.innerHTML = `
-    <h2 style="margin-top:0">Mi perfil comunitario</h2>
-    <p>Completá los datos que querés compartir con la comunidad.</p>
+<div id="hm-auth-credentials">
+  <label for="hm-auth-email">Correo electrónico</label>
+  <input
+    id="hm-auth-email"
+    type="email"
+    autocomplete="email"
+    maxlength="254"
+    placeholder="tu@correo.com"
+  >
 
-    <form id="hm-profile-form">
-      <label for="hm-profile-name">Nombre visible *</label>
-      <input id="hm-profile-name" type="text"
-        maxlength="80" required
-        placeholder="Cómo querés aparecer"
-        style="display:block;box-sizing:border-box;width:100%;padding:12px;margin:8px 0 14px">
+  <label for="hm-auth-password">Contraseña</label>
+  <input
+    id="hm-auth-password"
+    type="password"
+    autocomplete="current-password"
+    minlength="8"
+    placeholder="Mínimo 8 caracteres"
+  >
+</div>
 
-      <label for="hm-profile-presentation">Presentación</label>
-      <textarea id="hm-profile-presentation"
-        maxlength="600" rows="3"
-        placeholder="Contá algo sobre vos, tus intereses o lo que ofrecés."
-        style="display:block;box-sizing:border-box;width:100%;padding:12px;margin:8px 0 14px"></textarea>
+<div class="acciones-cuenta">
+  <button id="hm-auth-login" class="boton-accion" type="button">
+    INICIAR SESIÓN
+  </button>
 
-      <label for="hm-profile-locality">Localidad</label>
-      <input id="hm-profile-locality" type="text"
-        maxlength="100" placeholder="Ej.: San Vicente"
-        style="display:block;box-sizing:border-box;width:100%;padding:12px;margin:8px 0 14px">
+  <button id="hm-auth-register" class="boton-secundario" type="button">
+    CREAR CUENTA
+  </button>
 
-      <label for="hm-profile-zone">Zona aproximada</label>
-      <input id="hm-profile-zone" type="text"
-        maxlength="120" placeholder="Ej.: zona centro"
-        style="display:block;box-sizing:border-box;width:100%;padding:12px;margin:8px 0 14px">
+  <button id="hm-auth-logout" class="boton-secundario" type="button" hidden>
+    CERRAR SESIÓN
+  </button>
+</div>
 
-      <button id="hm-profile-save" type="submit"
-        style="padding:13px 18px;border:0;border-radius:9px;cursor:pointer;font-weight:bold">
-        GUARDAR PERFIL
-      </button>
-    </form>
+<p id="hm-auth-status" class="texto-ayuda" role="status" aria-live="polite">
+  Comprobando tu cuenta…
+</p>
 
-    <p id="hm-profile-status" role="status" aria-live="polite"></p>
-  `;
+`;
 
-  const destino =
-    document.getElementById("vista-perfil") ||
-    document.getElementById("pantalla-comunidad");
+const encabezado = vista.querySelector("h2");
+if (encabezado) {
+encabezado.insertAdjacentElement("afterend", panel);
+} else {
+vista.prepend(panel);
+}
 
-  if (destino) destino.prepend(panel);
+$("hm-auth-login").addEventListener("click", iniciarSesion);
+$("hm-auth-register").addEventListener("click", crearCuenta);
+$("hm-auth-logout").addEventListener("click", cerrarSesion);
 
-  document.getElementById("hm-profile-form")
-    .addEventListener("submit", guardarPerfil);
+prepararFormularioPerfil();
+}
+
+function prepararFormularioPerfil() {
+const formulario = $("form-perfil");
+if (!formulario || formulario.dataset.supabasePreparado === "true") {
+return;
+}
+
+formulario.dataset.supabasePreparado = "true";
+
+const avisoLocal = obtenerVistaPerfil()?.querySelector(".aviso-local");
+if (avisoLocal) {
+avisoLocal.textContent =
+"Tu perfil se guarda en tu cuenta comunitaria para utilizarlo en las funciones compartidas.";
+}
+
+const nombre = $("nombre-usuario");
+if (nombre) {
+nombre.maxLength = 80;
+nombre.placeholder = "Cómo querés aparecer";
+}
+
+const campos = [
+{
+id: "hm-profile-presentation",
+nombre: "Presentación",
+etiqueta: "Presentación",
+tipo: "textarea",
+max: 600,
+placeholder: "Contá algo sobre vos, tus intereses o lo que ofrecés."
+},
+{
+id: "hm-profile-locality",
+nombre: "Localidad",
+etiqueta: "Localidad",
+tipo: "input",
+max: 100,
+placeholder: "Ej.: San Vicente"
+},
+{
+id: "hm-profile-zone",
+nombre: "Zona aproximada",
+etiqueta: "Zona aproximada",
+tipo: "input",
+max: 120,
+placeholder: "Ej.: zona centro"
+}
+];
+
+const boton = $("btn-guardar-perfil");
+
+campos.forEach((campo) => {
+if ($(campo.id)) return;
+
+const etiqueta = document.createElement("label");
+etiqueta.htmlFor = campo.id;
+etiqueta.textContent = campo.etiqueta;
+
+let control;
+
+if (campo.tipo === "textarea") {
+  control = document.createElement("textarea");
+  control.rows = 3;
+} else {
+  control = document.createElement("input");
+  control.type = "text";
+}
+
+control.id = campo.id;
+control.maxLength = campo.max;
+control.placeholder = campo.placeholder;
+
+if (boton) {
+  formulario.insertBefore(etiqueta, boton);
+  formulario.insertBefore(control, boton);
+} else {
+  formulario.append(etiqueta, control);
+}
+
+});
+
+formulario.addEventListener("submit", guardarPerfil, true);
 }
 
 function mostrarEstado(mensaje) {
-  const estado = document.getElementById("hm-auth-status");
-  if (estado) estado.textContent = mensaje;
+const estado = $("hm-auth-status");
+if (estado) estado.textContent = mensaje;
 }
 
 function mostrarEstadoPerfil(mensaje) {
-  const estado = document.getElementById("hm-profile-status");
-  if (estado) estado.textContent = mensaje;
+const estado = $("estado-perfil");
+if (estado) estado.textContent = mensaje;
 }
 
 function obtenerCredenciales() {
-  const email = document.getElementById("hm-auth-email")?.value.trim();
-  const password = document.getElementById("hm-auth-password")?.value;
+const email = $("hm-auth-email")?.value.trim().toLowerCase();
+const password = $("hm-auth-password")?.value || "";
 
-  if (!email || !password) {
-    mostrarEstado("Ingresá tu correo y contraseña.");
-    return null;
-  }
+if (!email || !password) {
+mostrarEstado("Ingresá tu correo electrónico y contraseña.");
+return null;
+}
 
-  if (password.length < 8) {
-    mostrarEstado("La contraseña debe tener al menos 8 caracteres.");
-    return null;
-  }
+if (password.length < 8) {
+mostrarEstado("La contraseña debe tener al menos 8 caracteres.");
+return null;
+}
 
-  return { email, password };
+return { email, password };
 }
 
 async function iniciarSesion() {
-  const datos = obtenerCredenciales();
-  if (!datos) return;
+const credenciales = obtenerCredenciales();
+if (!credenciales) return;
 
-  mostrarEstado("Iniciando sesión…");
+const boton = $("hm-auth-login");
+if (boton) boton.disabled = true;
 
-  const { error } = await supabase.auth.signInWithPassword(datos);
+mostrarEstado("Iniciando sesión…");
 
-  if (error) {
-    mostrarEstado("No se pudo iniciar sesión: " + error.message);
-    return;
-  }
+try {
+const { error } = await supabase.auth.signInWithPassword(credenciales);
 
-  mostrarEstado("Sesión iniciada. Consultando tu perfil…");
+if (error) {
+  mostrarEstado("No se pudo iniciar sesión: " + error.message);
+  return;
+}
+
+mostrarEstado("Sesión iniciada. Cargando tu perfil…");
+
+} catch (error) {
+console.error("Error al iniciar sesión:", error);
+mostrarEstado("No se pudo completar el inicio de sesión. Probá nuevamente.");
+} finally {
+if (boton) boton.disabled = false;
+}
 }
 
 async function crearCuenta() {
-  const datos = obtenerCredenciales();
-  if (!datos) return;
+const credenciales = obtenerCredenciales();
+if (!credenciales) return;
 
-  mostrarEstado("Creando cuenta…");
+const boton = $("hm-auth-register");
+if (boton) boton.disabled = true;
 
-  const { data, error } = await supabase.auth.signUp({
-    email: datos.email,
-    password: datos.password
-  });
+mostrarEstado("Creando tu cuenta…");
 
-  if (error) {
-    mostrarEstado("No se pudo crear la cuenta: " + error.message);
-    return;
-  }
+try {
+const { data, error } = await supabase.auth.signUp(credenciales);
 
-  if (!data.session) {
-    mostrarEstado(
-      "Cuenta creada. Revisá tu correo para confirmar el registro antes de ingresar."
-    );
-  } else {
-    mostrarEstado("Cuenta creada. Preparando tu perfil…");
-  }
+if (error) {
+  mostrarEstado("No se pudo crear la cuenta: " + error.message);
+  return;
+}
+
+if (!data.session) {
+  mostrarEstado(
+    "Cuenta creada. Revisá tu correo y confirmá el registro antes de iniciar sesión."
+  );
+} else {
+  mostrarEstado("Cuenta creada. Preparando tu perfil…");
+}
+
+} catch (error) {
+console.error("Error al crear la cuenta:", error);
+mostrarEstado("No se pudo completar el registro. Probá nuevamente.");
+} finally {
+if (boton) boton.disabled = false;
+}
 }
 
 async function cerrarSesion() {
-  const { error } = await supabase.auth.signOut();
+const boton = $("hm-auth-logout");
+if (boton) boton.disabled = true;
 
-  if (error) {
-    mostrarEstado("No se pudo cerrar sesión: " + error.message);
-    return;
-  }
+mostrarEstado("Cerrando sesión…");
 
-  perfilActual = null;
-  mostrarEstado("Sesión cerrada.");
+try {
+const { error } = await supabase.auth.signOut();
+
+if (error) {
+  mostrarEstado("No se pudo cerrar sesión: " + error.message);
+  return;
 }
 
-function actualizarUsuario(usuario) {
-  usuarioActual = usuario || null;
+usuarioActual = null;
+perfilActual = null;
+limpiarFormularioPerfil();
+mostrarEstado("Sesión cerrada.");
 
-  const botonEntrar = document.getElementById("hm-auth-login");
-  const botonCrear = document.getElementById("hm-auth-register");
-  const botonSalir = document.getElementById("hm-auth-logout");
-  const panelPerfil = document.getElementById("hm-profile-panel");
+} catch (error) {
+console.error("Error al cerrar sesión:", error);
+mostrarEstado("No se pudo cerrar la sesión. Probá nuevamente.");
+} finally {
+if (boton) boton.disabled = false;
+}
+}
 
-  if (botonEntrar) botonEntrar.hidden = Boolean(usuarioActual);
-  if (botonCrear) botonCrear.hidden = Boolean(usuarioActual);
-  if (botonSalir) botonSalir.hidden = !usuarioActual;
+function actualizarInterfazUsuario() {
+const credenciales = $("hm-auth-credentials");
+const botonEntrar = $("hm-auth-login");
+const botonCrear = $("hm-auth-register");
+const botonSalir = $("hm-auth-logout");
+const formulario = $("form-perfil");
+const botonGuardar = $("btn-guardar-perfil");
 
-  if (panelPerfil) {
-    panelPerfil.hidden = !usuarioActual;
-  }
+const autenticado = Boolean(usuarioActual);
 
-  if (!usuarioActual) {
-    perfilActual = null;
-    mostrarEstado("Ingresá o creá tu cuenta para participar.");
-    return;
-  }
+if (credenciales) credenciales.hidden = autenticado;
+if (botonEntrar) botonEntrar.hidden = autenticado;
+if (botonCrear) botonCrear.hidden = autenticado;
+if (botonSalir) botonSalir.hidden = !autenticado;
 
-  mostrarEstado("Sesión activa: " + usuarioActual.email);
+if (formulario) {
+formulario.hidden = !autenticado;
+}
 
-  if (panelPerfil) {
-    cargarPerfil();
-  }
+if (botonGuardar) {
+botonGuardar.hidden = !autenticado;
+}
+
+if (!autenticado) {
+perfilActual = null;
+limpiarFormularioPerfil();
+mostrarEstado("Ingresá o creá tu cuenta para participar.");
+mostrarEstadoPerfil("");
+return;
+}
+
+mostrarEstado("Sesión activa: " + usuarioActual.email);
+}
+
+function limpiarFormularioPerfil() {
+const nombre = $("nombre-usuario");
+const presentacion = $("hm-profile-presentation");
+const localidad = $("hm-profile-locality");
+const zona = $("hm-profile-zone");
+
+if (nombre) nombre.value = "";
+if (presentacion) presentacion.value = "";
+if (localidad) localidad.value = "";
+if (zona) zona.value = "";
 }
 
 async function cargarPerfil() {
-  if (!usuarioActual) return;
+if (!usuarioActual || cargaPerfilEnCurso) return;
 
-  crearInterfazPerfil();
+cargaPerfilEnCurso = true;
 
-  const panel = document.getElementById("hm-profile-panel");
-  if (panel) panel.hidden = false;
+try {
+prepararFormularioPerfil();
+mostrarEstadoPerfil("Buscando tu perfil…");
 
-  mostrarEstadoPerfil("Buscando tu perfil…");
+const { data, error } = await supabase
+  .from("perfiles")
+  .select(
+    "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url"
+  )
+  .eq("id", usuarioActual.id)
+  .maybeSingle();
 
-  const { data, error } = await supabase
-    .from("perfiles")
-    .select("id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url")
-    .eq("id", usuarioActual.id)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Error al consultar el perfil:", error);
-    mostrarEstadoPerfil(
-      "No pudimos consultar el perfil. Revisaremos las políticas de seguridad y los permisos."
-    );
-    return;
-  }
-
-  perfilActual = data || null;
-
-  document.getElementById("hm-profile-name").value =
-    data?.nombre_visible || "";
-
-  document.getElementById("hm-profile-presentation").value =
-    data?.presentacion || "";
-
-  document.getElementById("hm-profile-locality").value =
-    data?.localidad || "";
-
-  document.getElementById("hm-profile-zone").value =
-    data?.zona_aproximada || "";
-
+if (error) {
+  console.error("Error al consultar el perfil:", error);
   mostrarEstadoPerfil(
-    data
-      ? "Perfil cargado. Podés revisar los datos y guardarlos."
-      : "Todavía no tenés perfil. Completá los datos y pulsá GUARDAR PERFIL."
+    "No se pudo consultar tu perfil. Detalle: " + error.message
   );
+  return;
+}
+
+perfilActual = data || null;
+
+if ($("nombre-usuario")) {
+  $("nombre-usuario").value = data?.nombre_visible || "";
+}
+
+if ($("hm-profile-presentation")) {
+  $("hm-profile-presentation").value = data?.presentacion || "";
+}
+
+if ($("hm-profile-locality")) {
+  $("hm-profile-locality").value = data?.localidad || "";
+}
+
+if ($("hm-profile-zone")) {
+  $("hm-profile-zone").value = data?.zona_aproximada || "";
+}
+
+mostrarEstadoPerfil(
+  data
+    ? "Perfil cargado. Podés revisar tus datos y guardarlos."
+    : "Todavía no tenés perfil. Completá tus datos y guardalos."
+);
+
+} catch (error) {
+console.error("Error inesperado al cargar el perfil:", error);
+mostrarEstadoPerfil("Ocurrió un error al cargar el perfil. Probá nuevamente.");
+} finally {
+cargaPerfilEnCurso = false;
+}
 }
 
 async function guardarPerfil(evento) {
-  evento.preventDefault();
+evento.preventDefault();
+evento.stopImmediatePropagation();
 
-  if (!usuarioActual) {
-    mostrarEstadoPerfil("Primero tenés que iniciar sesión.");
-    return;
-  }
+if (!usuarioActual) {
+mostrarEstadoPerfil("Primero tenés que iniciar sesión.");
+return;
+}
 
-  const nombre = document.getElementById("hm-profile-name").value.trim();
-  const presentacion =
-    document.getElementById("hm-profile-presentation").value.trim();
-  const localidad =
-    document.getElementById("hm-profile-locality").value.trim();
-  const zona =
-    document.getElementById("hm-profile-zone").value.trim();
+const nombre = $("nombre-usuario")?.value.trim() || "";
+const presentacion = $("hm-profile-presentation")?.value.trim() || "";
+const localidad = $("hm-profile-locality")?.value.trim() || "";
+const zona = $("hm-profile-zone")?.value.trim() || "";
 
-  if (!nombre) {
-    mostrarEstadoPerfil("Escribí el nombre visible.");
-    return;
-  }
+if (!nombre) {
+mostrarEstadoPerfil("Escribí el nombre visible.");
+$("nombre-usuario")?.focus();
+return;
+}
 
-  const registro = {
-    id: usuarioActual.id,
-    nombre_visible: nombre,
-    presentacion: presentacion || null,
-    localidad: localidad || null,
-    zona_aproximada: zona || null,
-    actualizado_en: new Date().toISOString()
-  };
+const boton = $("btn-guardar-perfil");
+if (boton) {
+boton.disabled = true;
+boton.textContent = "GUARDANDO…";
+}
 
-  mostrarEstadoPerfil("Guardando perfil…");
+mostrarEstadoPerfil("Guardando perfil en tu cuenta…");
 
-  const { data, error } = await supabase
-    .from("perfiles")
-    .upsert(registro, { onConflict: "id" })
-    .select("id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url")
-    .single();
+try {
+const registro = {
+id: usuarioActual.id,
+nombre_visible: nombre,
+presentacion: presentacion || null,
+localidad: localidad || null,
+zona_aproximada: zona || null,
+actualizado_en: new Date().toISOString()
+};
 
-  if (error) {
-    console.error("Error al guardar el perfil:", error);
-    mostrarEstadoPerfil(
-      "No se pudo guardar el perfil. Verificá las políticas RLS y los permisos de la tabla. Detalle: " +
-      error.message
-    );
-    return;
-  }
+const { data, error } = await supabase
+  .from("perfiles")
+  .upsert(registro, { onConflict: "id" })
+  .select(
+    "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url"
+  )
+  .single();
 
-  perfilActual = data;
+if (error) {
+  console.error("Error al guardar el perfil:", error);
+  mostrarEstadoPerfil("No se pudo guardar el perfil: " + error.message);
+  return;
+}
 
-  mostrarEstadoPerfil("¡Perfil guardado en Supabase correctamente!");
-  mostrarEstado("Sesión activa: " + usuarioActual.email);
+perfilActual = data;
+
+mostrarEstadoPerfil("¡Perfil guardado correctamente en Supabase!");
+mostrarEstado("Sesión activa: " + usuarioActual.email);
+
+} catch (error) {
+console.error("Error inesperado al guardar el perfil:", error);
+mostrarEstadoPerfil("Ocurrió un error al guardar el perfil. Probá nuevamente.");
+} finally {
+if (boton) {
+boton.disabled = false;
+boton.textContent = "GUARDAR PERFIL";
+}
+}
 }
 
 export function obtenerUsuarioActual() {
-  return usuarioActual;
+return usuarioActual;
 }
 
 export function obtenerPerfilActual() {
-  return perfilActual;
+return perfilActual;
 }
 
 export async function iniciarAutenticacion() {
-  crearInterfazAcceso();
+crearInterfazAcceso();
+prepararFormularioPerfil();
 
-  const { data, error } = await supabase.auth.getSession();
+const { data, error } = await supabase.auth.getSession();
 
-  if (error) {
-    mostrarEstado("No se pudo consultar la sesión: " + error.message);
-    return;
+if (error) {
+mostrarEstado("No se pudo consultar la sesión: " + error.message);
+return;
+}
+
+usuarioActual = data.session?.user || null;
+actualizarInterfazUsuario();
+
+if (usuarioActual) {
+await cargarPerfil();
+}
+
+if (!escuchadorAutenticacion) {
+const resultado = supabase.auth.onAuthStateChange((_evento, sesion) => {
+usuarioActual = sesion?.user || null;
+actualizarInterfazUsuario();
+
+  if (usuarioActual) {
+    window.setTimeout(() => {
+      cargarPerfil();
+    }, 0);
   }
+});
 
-  actualizarUsuario(data.session?.user || null);
+escuchadorAutenticacion = resultado.data.subscription;
 
-  if (!escuchadorAutenticacion) {
-    const resultado = supabase.auth.onAuthStateChange((_evento, session) => {
-      actualizarUsuario(session?.user || null);
-    });
-
-    escuchadorAutenticacion = resultado.data.subscription;
-  }
-
-  if (data.session?.user) {
-    crearInterfazPerfil();
-    await cargarPerfil();
-  }
+}
 }
