@@ -1,1 +1,18 @@
-
+{
+  "id": "./",
+  "name": "HUMANÓMETRO COMUNIDAD",
+  "short_name": "Humanómetro",
+  "description": "Una red humana de ayuda mutua, solidaridad y colaboración entre vecinos.",
+  "lang": "es-AR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "categories": [
+    "social",
+    "lifestyle",
+    "communication"
+  ]
+}
