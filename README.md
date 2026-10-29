@@ -65,3 +65,13 @@ Principios del proyecto
 
 HUMANÓMETRO COMUNIDAD
 Una comunidad más humana empieza con una acción concreta.
+
+Ajustes de perfil, conectividad y mensajería
+
+Esta versión añade búsqueda explícita de publicaciones, foto de perfil, preferencias voluntarias de Conectividad Solidaria, listado de publicaciones propias y envío de mensajes entre cuentas.
+
+Antes de probar las funciones nuevas, revisar y ejecutar el archivo "supabase-ajustes.sql" en el SQL Editor del proyecto Supabase. El SQL debe revisarse contra las políticas RLS ya existentes; no reemplaza una auditoría de permisos.
+
+La mensajería requiere que el destinatario exista en "perfiles" y que "perfiles.id" coincida con el ID de su usuario autenticado. El campo destinatario utiliza el nombre visible exacto; nombres duplicados no se aceptan para evitar enviar mensajes a la persona equivocada.
+
+La foto usa el bucket público "fotos-perfil" y límite de 5 MB. El usuario solo puede subir archivos dentro de su propia carpeta de almacenamiento.
