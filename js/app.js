@@ -10,6 +10,11 @@ let navegacionConfigurada = false;
 let barrioConfigurado = false;
 let ayudaConfigurada = false;
 let evaluacionesConfiguradas = false;
+let conectividadSolidariaConfigurada = false;
+
+/* =========================
+   NOTIFICACIONES
+========================= */
 
 function mostrarNotificacion(mensaje) {
   const elemento = $("notificacion");
@@ -540,6 +545,229 @@ function configurarEvaluaciones() {
 }
 
 /* =========================
+   CONECTIVIDAD SOLIDARIA
+   CONFIGURACIÓN DEL PERFIL
+   Y LISTADO LOCAL
+========================= */
+
+function configurarConectividadSolidaria() {
+  if (conectividadSolidariaConfigurada) return;
+  conectividadSolidariaConfigurada = true;
+
+  const formulario = $("form-conectividad");
+  const ofrece = $("conectividad-ofrece");
+  const opciones = $("opciones-conectividad");
+  const modalidad = $("conectividad-modalidad");
+  const zona = $("conectividad-zona");
+  const emergencias = $("conectividad-emergencias");
+  const disponibilidad = $("conectividad-disponibilidad");
+  const estadoPerfil = $("conectividad-estado");
+  const mensajeEstado = $("estado-perfil-conectividad");
+
+  const lista = $("lista-conectividad");
+  const estadoLista = $("estado-lista-conectividad");
+
+  const clave = "hm_conectividad_solidaria";
+
+  function obtenerPerfil() {
+    const perfil = getItem(clave, null);
+
+    if (!perfil || typeof perfil !== "object" || Array.isArray(perfil)) {
+      return {
+        ofrece: false,
+        modalidad: "gratuita",
+        zona: "",
+        emergencias: false,
+        disponibilidad: "",
+        estado: "activa",
+        fechaActualizacion: null
+      };
+    }
+
+    return {
+      ofrece: Boolean(perfil.ofrece),
+      modalidad: ["gratuita", "intercambio", "ambas"].includes(
+        perfil.modalidad
+      )
+        ? perfil.modalidad
+        : "gratuita",
+      zona: String(perfil.zona || ""),
+      emergencias: Boolean(perfil.emergencias),
+      disponibilidad: String(perfil.disponibilidad || ""),
+      estado: perfil.estado === "pausada" ? "pausada" : "activa",
+      fechaActualizacion: perfil.fechaActualizacion || null
+    };
+  }
+
+  function actualizarVisibilidadOpciones() {
+    if (!opciones || !ofrece) return;
+
+    opciones.hidden = !ofrece.checked;
+
+    opciones.querySelectorAll("input, select, textarea").forEach((campo) => {
+      campo.disabled = !ofrece.checked;
+    });
+  }
+
+  function cargarFormulario() {
+    const perfil = obtenerPerfil();
+
+    if (ofrece) ofrece.checked = perfil.ofrece;
+    if (modalidad) modalidad.value = perfil.modalidad;
+    if (zona) zona.value = perfil.zona;
+    if (emergencias) emergencias.checked = perfil.emergencias;
+    if (disponibilidad) disponibilidad.value = perfil.disponibilidad;
+    if (estadoPerfil) estadoPerfil.value = perfil.estado;
+
+    actualizarVisibilidadOpciones();
+
+    if (mensajeEstado) {
+      mensajeEstado.textContent = perfil.ofrece
+        ? perfil.estado === "activa"
+          ? "Tu ofrecimiento está guardado en este dispositivo y figura como activo localmente."
+          : "Tu ofrecimiento está pausado en este dispositivo."
+        : "Todavía no estás ofreciendo conectividad solidaria.";
+    }
+  }
+
+  function textoModalidad(valor) {
+    const modalidades = {
+      gratuita: "Gratuita",
+      intercambio: "Por intercambio solidario",
+      ambas: "Gratuita o por intercambio solidario"
+    };
+
+    return modalidades[valor] || "Sin especificar";
+  }
+
+  function renderizarLista() {
+    if (!lista) return;
+
+    lista.replaceChildren();
+
+    const perfil = obtenerPerfil();
+
+    /*
+      Esta primera versión muestra únicamente el ofrecimiento
+      del perfil guardado en el dispositivo actual.
+      No presenta registros ficticios ni afirma que sean
+      publicaciones de otros integrantes de la comunidad.
+    */
+
+    if (!perfil.ofrece || perfil.estado !== "activa") {
+      if (estadoLista) {
+        estadoLista.textContent =
+          "Todavía no hay ofrecimientos activos guardados en este dispositivo.";
+      }
+      return;
+    }
+
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "tarjeta-conectividad";
+
+    const titulo = document.createElement("h3");
+    titulo.textContent = "Ofrecimiento de conectividad solidaria";
+    tarjeta.appendChild(titulo);
+
+    const distintivo = document.createElement("span");
+    distintivo.className = "distintivo-conectividad";
+    distintivo.textContent = "ACTIVO EN ESTE DISPOSITIVO";
+    tarjeta.appendChild(distintivo);
+
+    const textoZona = document.createElement("p");
+    textoZona.textContent = `Zona o localidad: ${perfil.zona || getItem("hm_barrio", "") || "No especificada"}`;
+    tarjeta.appendChild(textoZona);
+
+    const textoModalidad = document.createElement("p");
+    textoModalidad.textContent = `Modalidad: ${textoModalidadValor(perfil.modalidad)}`;
+    tarjeta.appendChild(textoModalidad);
+
+    const textoDisponibilidad = document.createElement("p");
+    textoDisponibilidad.textContent =
+      `Disponibilidad: ${perfil.disponibilidad || "A coordinar"}`;
+    tarjeta.appendChild(textoDisponibilidad);
+
+    if (perfil.emergencias) {
+      const textoEmergencias = document.createElement("p");
+      textoEmergencias.textContent =
+        "Indica disponibilidad para situaciones de emergencia.";
+      tarjeta.appendChild(textoEmergencias);
+    }
+
+    const nota = document.createElement("p");
+    nota.textContent =
+      "Este ofrecimiento está guardado localmente. Todavía no es visible para otros dispositivos.";
+    tarjeta.appendChild(nota);
+
+    lista.appendChild(tarjeta);
+
+    if (estadoLista) {
+      estadoLista.textContent =
+        "Se muestra el ofrecimiento guardado en este dispositivo.";
+    }
+  }
+
+  function textoModalidadValor(valor) {
+    return textoModalidad(valor);
+  }
+
+  ofrece?.addEventListener("change", actualizarVisibilidadOpciones);
+
+  formulario?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+
+    const perfilOfrece = Boolean(ofrece?.checked);
+
+    const nuevoPerfil = {
+      ofrece: perfilOfrece,
+      modalidad: modalidad?.value || "gratuita",
+      zona: zona?.value.trim() || "",
+      emergencias: Boolean(emergencias?.checked),
+      disponibilidad: disponibilidad?.value.trim() || "",
+      estado: estadoPerfil?.value === "pausada" ? "pausada" : "activa",
+      fechaActualizacion: new Date().toISOString()
+    };
+
+    if (
+      perfilOfrece &&
+      !nuevoPerfil.zona &&
+      !getItem("hm_barrio", "")
+    ) {
+      mostrarNotificacion(
+        "Indicá una zona o guardá primero tu barrio o localidad."
+      );
+      zona?.focus();
+      return;
+    }
+
+    if (!setItem(clave, nuevoPerfil)) {
+      mostrarNotificacion(
+        "No se pudo guardar la configuración de Conectividad Solidaria."
+      );
+      return;
+    }
+
+    actualizarVisibilidadOpciones();
+    renderizarLista();
+
+    if (mensajeEstado) {
+      mensajeEstado.textContent = !nuevoPerfil.ofrece
+        ? "Tu perfil dejó de ofrecer conectividad solidaria en este dispositivo."
+        : nuevoPerfil.estado === "activa"
+          ? "Tu ofrecimiento se guardó en este dispositivo."
+          : "Tu ofrecimiento quedó pausado en este dispositivo.";
+    }
+
+    mostrarNotificacion(
+      "Configuración de Conectividad Solidaria guardada localmente."
+    );
+  });
+
+  cargarFormulario();
+  renderizarLista();
+}
+
+/* =========================
    IDENTIFICADOR
 ========================= */
 
@@ -563,6 +791,7 @@ async function iniciarAplicacion() {
   configurarBarrio();
   configurarAyuda();
   configurarEvaluaciones();
+  configurarConectividadSolidaria();
 
   try {
     await iniciarAutenticacion();
