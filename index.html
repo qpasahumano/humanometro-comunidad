@@ -315,13 +315,22 @@
           <option value="oferta">Solo lo que se ofrece</option>
         </select>
 
-        <button
-          id="btn-limpiar-filtros"
-          class="boton-secundario boton-ancho"
-          type="button"
-        >
-          LIMPIAR BÚSQUEDA
-        </button>
+        <div class="acciones-busqueda">
+          <button
+            id="btn-buscar-publicaciones"
+            class="boton-accion boton-ancho"
+            type="button"
+          >
+            BUSCAR PUBLICACIONES
+          </button>
+          <button
+            id="btn-limpiar-filtros"
+            class="boton-secundario boton-ancho"
+            type="button"
+          >
+            LIMPIAR BÚSQUEDA
+          </button>
+        </div>
       </div>
 
       <h3>Publicaciones</h3>
@@ -363,8 +372,9 @@
         </p>
 
         <p class="aviso-local">
-          Guardar un mensaje no lo envía. La mensajería entre usuarios
-          requiere conexión y un servicio compatible.
+          Para enviar mensajes necesitás iniciar sesión y completar tu perfil.
+          Escribí el nombre visible exacto de la otra persona. Si no hay conexión,
+          el mensaje puede quedar guardado localmente, pero no se envía.
         </p>
       </div>
 
@@ -373,14 +383,14 @@
         <h3>Preparar mensaje</h3>
 
         <label for="destinatario-mensaje">
-          ¿Para quién es? (opcional)
+          Nombre visible exacto del destinatario
         </label>
 
         <input
           id="destinatario-mensaje"
           type="text"
           maxlength="100"
-          placeholder="Nombre o referencia"
+          placeholder="Nombre visible exacto de la persona"
         >
 
         <label for="texto-mensaje">Mensaje</label>
@@ -394,7 +404,7 @@
         ></textarea>
 
         <button class="boton-accion" type="submit">
-          GUARDAR MENSAJE PENDIENTE
+          ENVIAR MENSAJE
         </button>
 
         <p
@@ -629,6 +639,18 @@
 
       <form id="form-perfil" class="tarjeta">
 
+        <div class="perfil-foto-bloque">
+          <div class="perfil-foto-marco">
+            <img id="foto-perfil-vista" alt="Foto de perfil" hidden>
+            <span id="foto-perfil-inicial" aria-hidden="true">H</span>
+          </div>
+          <div class="perfil-foto-controles">
+            <label for="foto-perfil-archivo">Foto de perfil</label>
+            <input id="foto-perfil-archivo" type="file" accept="image/jpeg,image/png,image/webp">
+            <small>JPG, PNG o WebP. La foto se compartirá según la configuración del perfil.</small>
+          </div>
+        </div>
+
         <label for="nombre-usuario">Nombre visible</label>
 
         <input
@@ -655,6 +677,14 @@
 
       </form>
 
+      <section class="tarjeta" aria-labelledby="titulo-mis-publicaciones">
+        <h3 id="titulo-mis-publicaciones">Mis publicaciones</h3>
+        <p class="texto-ayuda">Acá vas a encontrar los productos y servicios publicados desde tu cuenta.</p>
+        <div id="lista-mis-publicaciones" class="lista-publicaciones" aria-live="polite">
+          Iniciá sesión para consultar tus publicaciones.
+        </div>
+      </section>
+
       <p class="aviso-local">
         Completá tu perfil para identificarte dentro de la comunidad.
         El estado de guardado se informa desde la aplicación.
@@ -680,12 +710,6 @@
   <script type="module" src="./js/app.js"></script>
 
   <script>
-    // Entrada a la comunidad
-    document.getElementById("btn-entrar")?.addEventListener("click", () => {
-      document.getElementById("pantalla-inicial").hidden = true;
-      document.getElementById("pantalla-comunidad").hidden = false;
-    });
-
     // Categoría personalizada
     const categoriaPublicacion = document.getElementById(
       "categoria-publicacion"
@@ -714,16 +738,6 @@
 
     actualizarCategoriaPersonalizada();
 
-    // Filtros compatibles con los valores del formulario
-    const filtroTipo = document.getElementById("filtro-tipo");
-
-    if (filtroTipo) {
-      filtroTipo.innerHTML = `
-        <option value="todas">Todas las publicaciones</option>
-        <option value="necesidad">Solo lo que se busca</option>
-        <option value="oferta">Solo lo que se ofrece</option>
-      `;
-    }
   </script>
 
 </body>
