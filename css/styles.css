@@ -1,4 +1,3 @@
-
 :root {
   --fondo: #071426;
   --panel: rgba(10, 28, 49, 0.88);
@@ -85,35 +84,40 @@ select:focus-visible {
   text-align: center;
 }
 
+/* EL CÍRCULO COMPLETO FUNCIONA COMO BOTÓN */
+
+.boton-circular {
+  display: block;
+  width: min(88vw, 430px);
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  line-height: 0;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 .boton-grafico {
   display: block;
-  width: min(78vw, 340px);
-  max-height: 55vh;
+  width: 100%;
   height: auto;
+  max-height: 65vh;
   object-fit: contain;
   filter: drop-shadow(0 0 18px rgba(83, 197, 235, 0.13));
+  pointer-events: none;
 }
 
-.boton-entrada {
-  width: min(100%, 340px);
-  margin-top: 26px;
-  padding: 16px 20px;
-  border: 1px solid rgba(151, 226, 245, 0.5);
-  border-radius: 999px;
-  background: rgba(8, 29, 49, 0.82);
-  color: var(--blanco);
-  font-weight: 750;
-  letter-spacing: 0.07em;
-  box-shadow: 0 0 22px var(--brillo);
-  transition: transform 0.2s ease, background 0.2s ease;
+.boton-circular:active {
+  transform: scale(0.985);
 }
 
-.boton-entrada:hover {
-  background: rgba(19, 57, 79, 0.94);
-}
-
-.boton-entrada:active {
-  transform: scale(0.98);
+.boton-circular:focus-visible {
+  outline: 2px solid var(--celeste);
+  outline-offset: 5px;
 }
 
 .texto-inicial {
@@ -436,24 +440,31 @@ select option {
   gap: 12px;
 }
 
-.publicacion {
+.publicacion,
+.tarjeta-publicacion {
   padding: 15px;
   border: 1px solid var(--borde);
   border-radius: 13px;
   background: var(--panel);
+  overflow-wrap: anywhere;
 }
 
-.publicacion h4 {
+.publicacion h4,
+.tarjeta-publicacion h3 {
   margin: 0 0 8px;
 }
 
-.publicacion p {
+.publicacion p,
+.tarjeta-publicacion p {
   color: var(--texto-suave);
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
 
-.publicacion small {
+.publicacion small,
+.tarjeta-publicacion small {
+  display: block;
+  margin-top: 7px;
   color: var(--celeste);
 }
 
@@ -499,12 +510,31 @@ select option {
     padding: 28px 28px 40px;
   }
 
+  .boton-circular {
+    width: min(72vw, 430px);
+  }
+
   .acciones-principales {
     gap: 16px;
   }
 
   .boton-modulo {
     min-height: 100px;
+  }
+}
+
+@media (max-height: 650px) {
+  .pantalla-inicial {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .boton-circular {
+    width: min(76vw, 340px);
+  }
+
+  .texto-inicial {
+    margin-top: 12px;
   }
 }
 
