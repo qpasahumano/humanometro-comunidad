@@ -1,690 +1,787 @@
-<!DOCTYPE html><html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#071426">
-  <meta name="description" content="HUMANÓMETRO COMUNIDAD: una red vecinal de comunicación, recursos y ayuda mutua.">
-  <title>HUMANÓMETRO COMUNIDAD</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./css/styles.css">
-</head>
-<body>  <!-- PANTALLA INICIAL -->  <main id="pantalla-inicial" class="pantalla pantalla-inicial">
-    <div class="entrada-contenido">
-      <button
-        id="btn-entrar"
-        class="boton-circular"
-        type="button"
-        aria-label="Ingresar a HUMANÓMETRO COMUNIDAD"
-        onclick="document.getElementById('pantalla-inicial').hidden=true;document.getElementById('pantalla-comunidad').hidden=false;"
-      >
-        <img
-          src="./assets/boton-principal.png"
-          alt="HUMANÓMETRO COMUNIDAD"
-          class="boton-grafico"
-        >
-      </button>
-      <p class="texto-inicial">
-        Conectando humanidad, barrio y ayuda mutua.
-      </p>
-    </div>
-  </main>  <!-- CENTRO DE LA COMUNIDAD -->  <main id="pantalla-comunidad" class="pantalla pantalla-comunidad" hidden><header class="encabezado">
-  <div class="marca">
-    <span class="marca-titulo">HUMANÓMETRO</span>
-    <span class="marca-subtitulo">COMUNIDAD</span>
-  </div>
-
-  <button id="btn-perfil" class="boton-perfil" type="button">
-    MI PERFIL
-  </button>
-</header>
-
-<!-- BIENVENIDA -->
-<section class="bienvenida">
-  <p class="etiqueta">RED HUMANA LOCAL</p>
-  <h1>Tu comunidad, más cerca.</h1>
-  <p>
-    Recursos, comunicación y ayuda mutua para las personas de tu barrio.
-  </p>
-</section>
-
-<!-- COMUNIDAD Y UBICACIÓN APROXIMADA -->
-<section class="selector-barrio tarjeta">
-  <h2>Tu comunidad</h2>
-
-  <label for="barrio">Barrio o localidad</label>
-
-  <div class="fila-barrio">
-    <input
-      id="barrio"
-      type="text"
-      maxlength="100"
-      placeholder="Escribí el nombre de tu barrio"
-      autocomplete="address-level3"
-    >
-
-    <button
-      id="btn-guardar-barrio"
-      class="boton-secundario"
-      type="button"
-    >
-      GUARDAR
-    </button>
-  </div>
-
-  <button
-    id="btn-ubicacion"
-    class="boton-secundario boton-ancho"
-    type="button"
-  >
-    USAR MI UBICACIÓN APROXIMADA
-  </button>
-
-  <p class="texto-ayuda">
-    La ubicación es opcional. Podés escribir tu barrio manualmente.
-    No publicamos tus coordenadas exactas.
-  </p>
-
-  <p class="texto-ayuda">
-    Identificación geográfica: datos de OpenStreetMap contributors.
-  </p>
-
-  <p
-    id="estado-barrio"
-    class="texto-ayuda"
-    aria-live="polite"
-  >
-    Elegí tu barrio para organizar la actividad local.
-  </p>
-</section>
-
-<!-- ACCESOS PRINCIPALES -->
-<section class="acciones-principales">
-
-  <button
-    id="btn-gondola"
-    class="boton-modulo boton-gondola"
-    type="button"
-  >
-    <span class="icono-modulo" aria-hidden="true">◇</span>
-
-    <span class="contenido-modulo">
-      <strong>GÓNDOLA COMUNITARIA</strong>
-      <small>Productos, alimentos, servicios y recursos.</small>
-    </span>
-
-    <span class="flecha" aria-hidden="true">›</span>
-  </button>
-
-  <button
-    id="btn-comunicacion"
-    class="boton-modulo"
-    type="button"
-  >
-    <span class="icono-modulo" aria-hidden="true">↔</span>
-
-    <span class="contenido-modulo">
-      <strong>NO PIERDAS LA COMUNICACIÓN</strong>
-      <small>Prepará mensajes y consultá la conexión.</small>
-    </span>
-
-    <span class="flecha" aria-hidden="true">›</span>
-  </button>
-
-  <button
-    id="btn-ayuda"
-    class="boton-modulo"
-    type="button"
-  >
-    <span class="icono-modulo" aria-hidden="true">♡</span>
-
-    <span class="contenido-modulo">
-      <strong>RED HUMANA</strong>
-      <small>Pedí ayuda u ofrecé lo que esté a tu alcance.</small>
-    </span>
-
-    <span class="flecha" aria-hidden="true">›</span>
-  </button>
-
-  <button
-    id="btn-humanometro"
-    class="boton-modulo"
-    type="button"
-  >
-    <span class="icono-modulo" aria-hidden="true">H</span>
-
-    <span class="contenido-modulo">
-      <strong>HUMANÓMETRO DE HUMANIDAD</strong>
-      <small>Registrá cómo se desarrollan los intercambios.</small>
-    </span>
-
-    <span class="flecha" aria-hidden="true">›</span>
-  </button>
-
-</section>
-
-<!-- PRESENTACIÓN DEL PROYECTO -->
-<section class="humanometro tarjeta">
-  <div class="humanometro-icono" aria-hidden="true">H</div>
-
-  <div>
-    <h2>Una red de personas para las personas</h2>
-    <p>
-      La cooperación, la responsabilidad y el respeto son el centro
-      de esta comunidad.
-    </p>
-  </div>
-</section>
-
-<!-- =====================================================
-     GÓNDOLA COMUNITARIA
-     ===================================================== -->
-<section id="vista-gondola" class="vista-interna" hidden>
-
-  <button class="boton-volver" data-volver type="button">
-    ← Volver a la comunidad
-  </button>
-
-  <h2>Góndola comunitaria</h2>
-
-  <p>
-    Publicá lo que necesitás o lo que podés ofrecer. Cuando corresponda,
-    indicá su condición y qué necesitás a cambio.
-  </p>
-
-  <form id="form-publicacion" class="tarjeta">
-
-    <label for="tipo-publicacion">¿Qué querés publicar?</label>
-
-    <select id="tipo-publicacion" required>
-      <option value="necesidad">BUSCO: necesito algo</option>
-      <option value="oferta">OFREZCO: tengo algo para compartir</option>
-    </select>
-
-    <label for="categoria-publicacion">Categoría</label>
-
-    <select id="categoria-publicacion" required>
-      <option value="productos">Productos y objetos</option>
-      <option value="alimentos">Alimentos</option>
-      <option value="ropa">Ropa y calzado</option>
-      <option value="herramientas">Herramientas</option>
-      <option value="servicios">Servicios y oficios</option>
-      <option value="transporte">Traslados y transporte</option>
-      <option value="energia">Energía y carga de dispositivos</option>
-      <option value="recursos">Recursos comunitarios</option>
-      <option value="ayuda">Ayuda mutua</option>
-      <option value="otros">Otros</option>
-    </select>
-
-    <div id="contenedor-otra-categoria" hidden>
-      <label for="otra-categoria">Especificá la categoría</label>
-
-      <input
-        id="otra-categoria"
-        type="text"
-        maxlength="80"
-        placeholder="¿Qué categoría necesitás?"
-      >
-    </div>
-
-    <label for="titulo-publicacion">Título</label>
-
-    <input
-      id="titulo-publicacion"
-      type="text"
-      maxlength="100"
-      placeholder="¿Qué necesitás u ofrecés?"
-      required
-    >
-
-    <label for="detalle-publicacion">Descripción</label>
-
-    <textarea
-      id="detalle-publicacion"
-      rows="4"
-      maxlength="1000"
-      placeholder="Describí el producto, servicio o necesidad."
-      required
-    ></textarea>
-
-    <label for="condicion-publicacion">
-      Condición del producto (si corresponde)
-    </label>
-
-    <select id="condicion-publicacion">
-      <option value="">No corresponde / no especificada</option>
-      <option value="nuevo">Nuevo</option>
-      <option value="usado-buen-estado">Usado en buen estado</option>
-      <option value="usado-con-detalles">Usado con detalles informados</option>
-    </select>
-
-    <label for="modalidad-intercambio">
-      Modalidad de intercambio
-    </label>
-
-    <select id="modalidad-intercambio">
-      <option value="">A definir</option>
-      <option value="gratuito">Gratuito / solidario</option>
-      <option value="trueque">Trueque</option>
-      <option value="dinero">Intercambio por dinero</option>
-      <option value="mixto">Trueque o dinero, a convenir</option>
-      <option value="colaboracion">Colaboración comunitaria</option>
-      <option value="otro">Otra modalidad</option>
-    </select>
-
-    <label for="que-necesita-a-cambio">
-      ¿Qué necesitás a cambio?
-    </label>
-
-    <textarea
-      id="que-necesita-a-cambio"
-      rows="3"
-      maxlength="500"
-      placeholder="Ej.: otro producto, un servicio, alimentos, colaboración o nada."
-    ></textarea>
-
-    <button class="boton-accion" type="submit">
-      GUARDAR PUBLICACIÓN
-    </button>
-
-    <p
-      id="estado-publicacion"
-      class="texto-ayuda"
-      aria-live="polite"
-    ></p>
-
-  </form>
-
-  <!-- BÚSQUEDA Y FILTROS -->
-  <div class="tarjeta filtros">
-    <h3>Buscar publicaciones</h3>
-
-    <label for="buscar-publicaciones">Palabra clave</label>
-
-    <input
-      id="buscar-publicaciones"
-      type="search"
-      placeholder="Buscar por título, detalle o categoría"
-    >
-
-    <label for="filtro-tipo">Mostrar</label>
-
-    <select id="filtro-tipo">
-      <option value="todas">Todas las publicaciones</option>
-      <option value="necesidad">Solo lo que se busca</option>
-      <option value="oferta">Solo lo que se ofrece</option>
-    </select>
-
-    <button
-      id="btn-limpiar-filtros"
-      class="boton-secundario boton-ancho"
-      type="button"
-    >
-      LIMPIAR BÚSQUEDA
-    </button>
-  </div>
-
-  <h3>Publicaciones</h3>
-
-  <div
-    id="lista-publicaciones"
-    class="lista-publicaciones"
-    aria-live="polite"
-  ></div>
-
-  <p class="aviso-local">
-    La disponibilidad de las publicaciones compartidas depende de la
-    conexión, la autenticación y el funcionamiento del servicio.
-    Si una operación no puede completarse, la aplicación debe informar
-    claramente su estado.
-  </p>
-
-</section>
-
-<!-- =====================================================
-     COMUNICACIÓN
-     ===================================================== -->
-<section id="vista-comunicacion" class="vista-interna" hidden>
-
-  <button class="boton-volver" data-volver type="button">
-    ← Volver a la comunidad
-  </button>
-
-  <h2>No pierdas la comunicación</h2>
-
-  <div class="tarjeta">
-    <h3>Estado de conexión</h3>
-
-    <p id="estado-conexion" aria-live="polite">
-      Comprobando conexión...
-    </p>
-
-    <p>
-      Si estás sin internet, podés preparar un mensaje y guardarlo
-      en este dispositivo para consultarlo después.
-    </p>
-
-    <p class="aviso-local">
-      Guardar un mensaje no lo envía. La mensajería entre usuarios
-      requiere conexión y un servicio compatible. Una PWA por sí sola
-      no garantiza la comunicación entre teléfonos sin internet.
-    </p>
-  </div>
-
-  <form id="form-mensaje" class="tarjeta">
-
-    <h3>Preparar mensaje</h3>
-
-    <label for="destinatario-mensaje">
-      ¿Para quién es? (opcional)
-    </label>
-
-    <input
-      id="destinatario-mensaje"
-      type="text"
-      maxlength="100"
-      placeholder="Nombre o referencia"
-    >
-
-    <label for="texto-mensaje">Mensaje</label>
-
-    <textarea
-      id="texto-mensaje"
-      rows="4"
-      maxlength="2000"
-      placeholder="Escribí lo que necesitás comunicar..."
-      required
-    ></textarea>
-
-    <button class="boton-accion" type="submit">
-      GUARDAR MENSAJE PENDIENTE
-    </button>
-
-    <p
-      id="estado-mensaje"
-      class="texto-ayuda"
-      aria-live="polite"
-    ></p>
-
-  </form>
-
-  <h3>Mensajes guardados en este dispositivo</h3>
-
-  <div
-    id="lista-mensajes"
-    class="lista-publicaciones"
-    aria-live="polite"
-  ></div>
-
-</section>
-
-<!-- =====================================================
-     RED HUMANA
-     ===================================================== -->
-<section id="vista-ayuda" class="vista-interna" hidden>
-
-  <button class="boton-volver" data-volver type="button">
-    ← Volver a la comunidad
-  </button>
-
-  <h2>Red Humana</h2>
-
-  <p>
-    Pedí ayuda para vos o para otra persona, u ofrecé lo que esté
-    a tu alcance.
-  </p>
-
-  <div class="tarjeta">
-    <h3>Una iniciativa para mantenernos conectados</h3>
-
-    <p>
-      Si contás con energía renovable y podés ofrecer un punto de carga
-      para celulares, podés ayudar a personas que no tienen electricidad
-      y corren el riesgo de quedarse sin batería y sin comunicación.
-    </p>
-
-    <p>
-      La colaboración debe ser voluntaria y realizarse en un lugar seguro.
-      No publiques direcciones particulares ni datos sensibles.
-    </p>
-  </div>
-
-  <form id="form-ayuda" class="tarjeta">
-
-    <label for="tipo-ayuda">Quiero...</label>
-
-    <select id="tipo-ayuda" required>
-      <option value="solicitud">Solicitar ayuda</option>
-      <option value="oferta">Ofrecer ayuda</option>
-      <option value="carga">
-        Ofrecer o solicitar un punto de carga para celulares
-      </option>
-    </select>
-
-    <label for="categoria-ayuda">Tipo de ayuda</label>
-
-    <select id="categoria-ayuda" required>
-      <option value="alimentos">Alimentos</option>
-      <option value="ropa">Ropa y calzado</option>
-      <option value="transporte">Traslado</option>
-      <option value="energia">Electricidad o carga de celular</option>
-      <option value="herramientas">Herramientas o materiales</option>
-      <option value="acompanamiento">Acompañamiento o colaboración</option>
-      <option value="otra">Otra necesidad u oferta</option>
-    </select>
-
-    <label for="detalle-ayuda">
-      Contanos qué necesitás u ofrecés
-    </label>
-
-    <textarea
-      id="detalle-ayuda"
-      rows="4"
-      maxlength="1200"
-      placeholder="Describí la situación sin incluir datos privados."
-      required
-    ></textarea>
-
-    <label for="disponibilidad-ayuda">
-      Disponibilidad (opcional)
-    </label>
-
-    <input
-      id="disponibilidad-ayuda"
-      type="text"
-      maxlength="120"
-      placeholder="Ej.: tardes, fines de semana"
-    >
-
-    <button class="boton-accion" type="submit">
-      GUARDAR EN RED HUMANA
-    </button>
-
-    <p
-      id="estado-ayuda"
-      class="texto-ayuda"
-      aria-live="polite"
-    ></p>
-
-  </form>
-
-  <h3>Solicitudes y ofrecimientos</h3>
-
-  <div
-    id="lista-ayuda"
-    class="lista-publicaciones"
-    aria-live="polite"
-  ></div>
-
-  <p class="aviso-local">
-    El estado de cada registro debe indicarse según dónde se haya guardado.
-    Guardar información en este dispositivo no significa que otros vecinos
-    puedan verla.
-  </p>
-
-</section>
-
-<!-- =====================================================
-     HUMANÓMETRO DE HUMANIDAD
-     ===================================================== -->
-<section id="vista-humanometro" class="vista-interna" hidden>
-
-  <button class="boton-volver" data-volver type="button">
-    ← Volver a la comunidad
-  </button>
-
-  <h2>Humanómetro de Humanidad</h2>
-
-  <p>
-    Registrá cómo se desarrolló un intercambio concreto. La valoración
-    describe una experiencia; no determina cuánto vale una persona.
-  </p>
-
-  <div class="tarjeta">
-    <h3>Principios de evaluación</h3>
-
-    <ul>
-      <li>Honestidad: ¿la información brindada fue sincera?</li>
-      <li>Respeto: ¿hubo un trato respetuoso?</li>
-      <li>Responsabilidad: ¿se cumplió lo acordado?</li>
-      <li>Comunicación: ¿se avisaron cambios o dificultades?</li>
-      <li>
-        Producto o servicio: ¿coincidió con lo informado y acordado?
-      </li>
-    </ul>
-
-    <p class="aviso-local">
-      No llegar a un acuerdo no es una conducta negativa. Si ambas partes
-      cancelan de común acuerdo, no corresponde convertirlo
-      automáticamente en una mala valoración.
-    </p>
-  </div>
-
-  <form id="form-evaluacion" class="tarjeta">
-
-    <label for="referencia-evaluacion">
-      Referencia del intercambio
-    </label>
-
-    <input
-      id="referencia-evaluacion"
-      type="text"
-      maxlength="120"
-      placeholder="Ej.: intercambio de herramientas"
-      required
-    >
-
-    <label for="resultado-evaluacion">Resultado general</label>
-
-    <select id="resultado-evaluacion" required>
-      <option value="buena">BUENA: se respetó lo acordado</option>
-      <option value="intermedia">
-        INTERMEDIA: hubo dificultades o cumplimiento parcial
-      </option>
-      <option value="mala">
-        MALA: hubo incumplimientos o faltas de respeto concretas
-      </option>
-      <option value="sin-acuerdo">No llegamos a un acuerdo</option>
-      <option value="cancelacion-mutua">
-        Cancelamos de común acuerdo
-      </option>
-    </select>
-
-    <label for="detalle-evaluacion">
-      Explicación de la experiencia
-    </label>
-
-    <textarea
-      id="detalle-evaluacion"
-      rows="4"
-      maxlength="1200"
-      placeholder="Describí hechos concretos, sin insultos ni datos privados."
-      required
-    ></textarea>
-
-    <button class="boton-accion" type="submit">
-      GUARDAR EVALUACIÓN LOCAL
-    </button>
-
-    <p
-      id="estado-evaluacion"
-      class="texto-ayuda"
-      aria-live="polite"
-    ></p>
-
-  </form>
-
-  <h3>Historial de este dispositivo</h3>
-
-  <div
-    id="lista-evaluaciones"
-    class="lista-publicaciones"
-    aria-live="polite"
-  ></div>
-
-  <p class="aviso-local">
-    Este historial es privado de este dispositivo en la versión actual.
-    No es una reputación pública ni una verificación de identidad.
-  </p>
-
-</section>
-
-<!-- =====================================================
-     PERFIL ÚNICO
-     auth.js incorpora aquí los campos de perfil y autenticación.
-     No se crea un segundo formulario de perfil.
-     ===================================================== -->
-<section id="vista-perfil" class="vista-interna" hidden>
-
-  <button class="boton-volver" data-volver type="button">
-    ← Volver a la comunidad
-  </button>
-
-  <h2>Mi perfil comunitario</h2>
-
-  <form id="form-perfil" class="tarjeta">
-
-    <label for="nombre-usuario">Nombre visible</label>
-
-    <input
-      id="nombre-usuario"
-      type="text"
-      maxlength="60"
-      placeholder="Cómo querés aparecer en la comunidad"
-      required
-    >
-
-    <button
-      id="btn-guardar-perfil"
-      class="boton-accion"
-      type="submit"
-    >
-      GUARDAR PERFIL
-    </button>
-
-    <p
-      id="estado-perfil"
-      class="texto-ayuda"
-      aria-live="polite"
-    ></p>
-
-  </form>
-
-  <p class="aviso-local">
-    Completá tu perfil para identificarte dentro de la comunidad.
-    El estado de guardado se informa desde la aplicación.
-  </p>
-
-</section>
-
-<footer class="pie">
-  HUMANÓMETRO COMUNIDAD · Ayuda mutua y responsabilidad.
-</footer>
-
-  </main>  <!-- NOTIFICACIONES -->  <div
-    id="notificacion"
-    class="notificacion"
-    role="status"
-    aria-live="polite"
-    hidden
-  ></div>  <script type="module" src="./js/app.js"></script></body>
-</html>
+import { supabase } from "./supabase.js";
+import {
+  obtenerUsuarioActual,
+  obtenerPerfilActual
+} from "./auth.js";
+
+const STORAGE_KEY = "hm_publicaciones";
+
+export function initCommunity({
+  getItem,
+  setItem,
+  mostrarNotificacion
+}) {
+  const form = document.getElementById("form-publicacion");
+  const lista = document.getElementById("lista-publicaciones");
+  const tipoInput = document.getElementById("tipo-publicacion");
+  const categoriaInput = document.getElementById("categoria-publicacion");
+  const otraCategoriaInput = document.getElementById("otra-categoria");
+  const contenedorOtraCategoria = document.getElementById(
+    "contenedor-otra-categoria"
+  );
+  const tituloInput = document.getElementById("titulo-publicacion");
+  const detalleInput = document.getElementById("detalle-publicacion");
+  const condicionInput = document.getElementById("condicion-publicacion");
+  const modalidadInput = document.getElementById("modalidad-intercambio");
+  const necesitaInput = document.getElementById(
+    "que-necesita-a-cambio"
+  );
+  const busquedaInput = document.getElementById("buscar-publicaciones");
+  const filtroTipoInput = document.getElementById("filtro-tipo");
+  const limpiarFiltrosBtn = document.getElementById(
+    "btn-limpiar-filtros"
+  );
+  const estadoPublicacion = document.getElementById("estado-publicacion");
+
+  let publicaciones = [];
+  let cargando = false;
+  let destruido = false;
+  let suscripcionAuth = null;
+  let ultimaCarga = 0;
+
+  const notificar = (mensaje, tipo = "info") => {
+    if (typeof mostrarNotificacion === "function") {
+      mostrarNotificacion(mensaje, tipo);
+    } else {
+      console.info(mensaje);
+    }
+  };
+
+  function obtenerLocales() {
+    try {
+      const resultado = getItem(STORAGE_KEY, []);
+      return Array.isArray(resultado) ? resultado : [];
+    } catch (error) {
+      console.error("Error leyendo publicaciones locales:", error);
+      return [];
+    }
+  }
+
+  function guardarLocales(datos) {
+    try {
+      const resultado = setItem(STORAGE_KEY, datos);
+      return resultado !== false;
+    } catch (error) {
+      console.error("Error guardando publicaciones locales:", error);
+      return false;
+    }
+  }
+
+  function normalizarTexto(valor) {
+    return String(valor ?? "").trim();
+  }
+
+  function escaparHTML(valor) {
+    return String(valor ?? "").replace(/[&<>"']/g, caracter => {
+      const entidades = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      };
+
+      return entidades[caracter];
+    });
+  }
+
+  function fechaLegible(fecha) {
+    if (!fecha) return "Fecha no disponible";
+
+    const fechaObjeto = new Date(fecha);
+
+    if (Number.isNaN(fechaObjeto.getTime())) {
+      return "Fecha no disponible";
+    }
+
+    return fechaObjeto.toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+  }
+
+  function obtenerZona() {
+    try {
+      return normalizarTexto(getItem("hm_barrio", ""));
+    } catch {
+      return "";
+    }
+  }
+
+  function obtenerCategoria() {
+    const categoriaSeleccionada = normalizarTexto(
+      categoriaInput?.value
+    );
+
+    if (
+      categoriaSeleccionada.toLowerCase() === "otra" ||
+      categoriaSeleccionada.toLowerCase() === "otro"
+    ) {
+      return normalizarTexto(otraCategoriaInput?.value);
+    }
+
+    return categoriaSeleccionada;
+  }
+
+  function actualizarCampoOtraCategoria() {
+    if (!categoriaInput || !contenedorOtraCategoria) return;
+
+    const valor = normalizarTexto(categoriaInput.value).toLowerCase();
+    const mostrar = valor === "otra" || valor === "otro";
+
+    contenedorOtraCategoria.hidden = !mostrar;
+
+    if (otraCategoriaInput) {
+      otraCategoriaInput.required = mostrar;
+    }
+  }
+
+  function obtenerCondicion(descripcion) {
+    const texto = normalizarTexto(descripcion);
+
+    const coincidencia = texto.match(
+      /(?:^|\n)\[Condición informada:\s*([^\]]*)\]\s*$/
+    );
+
+    if (!coincidencia) {
+      return {
+        descripcion: texto,
+        condicion: ""
+      };
+    }
+
+    return {
+      descripcion: texto
+        .replace(coincidencia[0], "")
+        .trim(),
+      condicion: normalizarTexto(coincidencia[1])
+    };
+  }
+
+  function convertirRegistroRemoto(registro) {
+    const datosDescripcion = obtenerCondicion(
+      registro.descripcion
+    );
+
+    return {
+      id: String(registro.id),
+      perfil_id: registro.perfil_id ?? null,
+      tipo: registro.tipo ?? "",
+      categoria: registro.categoria ?? "",
+      titulo: registro.titulo ?? "",
+      descripcion: datosDescripcion.descripcion,
+      condicion: datosDescripcion.condicion,
+      modalidad: registro.modalidad ?? null,
+      modalidad_intercambio:
+        registro.modalidad_intercambio ?? "",
+      que_necesita_a_cambio:
+        registro.que_necesita_a_cambio ?? "",
+      zona_aproximada: registro.zona_aproximada ?? "",
+      fotos: Array.isArray(registro.fotos)
+        ? registro.fotos
+        : [],
+      estado: registro.estado ?? "activa",
+      creado_en: registro.creado_en ?? null,
+      actualizado_en: registro.actualizado_en ?? null,
+      origen: "remoto"
+    };
+  }
+
+  function combinarPublicaciones(locales, remotas) {
+    const mapa = new Map();
+
+    for (const publicacion of remotas) {
+      mapa.set(String(publicacion.id), {
+        ...publicacion,
+        origen: "remoto"
+      });
+    }
+
+    for (const publicacion of locales) {
+      const id = String(publicacion.id);
+
+      if (!mapa.has(id)) {
+        mapa.set(id, {
+          ...publicacion,
+          origen: publicacion.origen ?? "local"
+        });
+      }
+    }
+
+    return [...mapa.values()].sort((a, b) => {
+      const fechaA = new Date(
+        a.creado_en ?? 0
+      ).getTime();
+
+      const fechaB = new Date(
+        b.creado_en ?? 0
+      ).getTime();
+
+      return fechaB - fechaA;
+    });
+  }
+
+  async function cargarPublicacionesRemotas() {
+    if (destruido || cargando) return;
+
+    cargando = true;
+    const identificadorCarga = ++ultimaCarga;
+
+    try {
+      const { data, error } = await supabase
+        .from("publicaciones")
+        .select(
+          [
+            "id",
+            "perfil_id",
+            "tipo",
+            "categoria",
+            "titulo",
+            "descripcion",
+            "modalidad",
+            "modalidad_intercambio",
+            "que_necesita_a_cambio",
+            "zona_aproximada",
+            "fotos",
+            "estado",
+            "creado_en",
+            "actualizado_en"
+          ].join(",")
+        )
+        .eq("estado", "activa")
+        .order("creado_en", {
+          ascending: false
+        });
+
+      if (destruido || identificadorCarga !== ultimaCarga) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "No se pudieron cargar las publicaciones remotas:",
+          error
+        );
+
+        publicaciones = combinarPublicaciones(
+          obtenerLocales(),
+          []
+        );
+
+        renderizarPublicaciones();
+        return;
+      }
+
+      const remotas = (data ?? []).map(
+        convertirRegistroRemoto
+      );
+
+      publicaciones = combinarPublicaciones(
+        obtenerLocales(),
+        remotas
+      );
+
+      renderizarPublicaciones();
+    } catch (error) {
+      console.error(
+        "Error cargando publicaciones:",
+        error
+      );
+
+      publicaciones = combinarPublicaciones(
+        obtenerLocales(),
+        []
+      );
+
+      renderizarPublicaciones();
+    } finally {
+      cargando = false;
+    }
+  }
+
+  function crearTarjeta(publicacion) {
+    const tarjeta = document.createElement("article");
+
+    tarjeta.className = "tarjeta-publicacion";
+
+    const tipo = escaparHTML(publicacion.tipo);
+    const categoria = escaparHTML(publicacion.categoria);
+    const titulo = escaparHTML(publicacion.titulo);
+    const descripcion = escaparHTML(publicacion.descripcion);
+    const condicion = escaparHTML(publicacion.condicion);
+    const zona = escaparHTML(publicacion.zona_aproximada);
+    const modalidad = escaparHTML(
+      publicacion.modalidad_intercambio
+    );
+    const necesita = escaparHTML(
+      publicacion.que_necesita_a_cambio
+    );
+    const fecha = escaparHTML(
+      fechaLegible(publicacion.creado_en)
+    );
+
+    const esIntercambio =
+      String(publicacion.tipo).toLowerCase().includes("intercambio");
+
+    tarjeta.innerHTML = `
+      <div class="publicacion-cabecera">
+        <span class="publicacion-tipo">${tipo}</span>
+        <span class="publicacion-categoria">${categoria}</span>
+      </div>
+
+      <h3 class="publicacion-titulo">${titulo}</h3>
+
+      <p class="publicacion-descripcion">${descripcion}</p>
+
+      ${
+        condicion
+          ? `<p class="publicacion-condicion">
+               <strong>Condición:</strong> ${condicion}
+             </p>`
+          : ""
+      }
+
+      ${
+        esIntercambio && modalidad
+          ? `<p class="publicacion-modalidad">
+               <strong>Modalidad:</strong> ${modalidad}
+             </p>`
+          : ""
+      }
+
+      ${
+        esIntercambio && necesita
+          ? `<p class="publicacion-necesita">
+               <strong>Busca a cambio:</strong> ${necesita}
+             </p>`
+          : ""
+      }
+
+      ${
+        zona
+          ? `<p class="publicacion-zona">
+               <strong>Zona:</strong> ${zona}
+             </p>`
+          : ""
+      }
+
+      <small class="publicacion-fecha">${fecha}</small>
+    `;
+
+    return tarjeta;
+  }
+
+  function renderizarPublicaciones() {
+    if (!lista) return;
+
+    const textoBusqueda = normalizarTexto(
+      busquedaInput?.value
+    ).toLocaleLowerCase("es-AR");
+
+    const tipoFiltro = normalizarTexto(
+      filtroTipoInput?.value
+    ).toLocaleLowerCase("es-AR");
+
+    const filtradas = publicaciones.filter(publicacion => {
+      const coincideTipo =
+        !tipoFiltro ||
+        tipoFiltro === "todos" ||
+        String(publicacion.tipo)
+          .toLocaleLowerCase("es-AR") === tipoFiltro;
+
+      const contenido = [
+        publicacion.titulo,
+        publicacion.descripcion,
+        publicacion.categoria,
+        publicacion.tipo,
+        publicacion.zona_aproximada,
+        publicacion.modalidad_intercambio,
+        publicacion.que_necesita_a_cambio
+      ]
+        .join(" ")
+        .toLocaleLowerCase("es-AR");
+
+      return coincideTipo && contenido.includes(textoBusqueda);
+    });
+
+    lista.replaceChildren();
+
+    if (filtradas.length === 0) {
+      const mensaje = document.createElement("p");
+
+      mensaje.className = "sin-publicaciones";
+      mensaje.textContent =
+        "Todavía no hay publicaciones que coincidan con tu búsqueda.";
+
+      lista.appendChild(mensaje);
+      return;
+    }
+
+    const fragmento = document.createDocumentFragment();
+
+    for (const publicacion of filtradas) {
+      fragmento.appendChild(
+        crearTarjeta(publicacion)
+      );
+    }
+
+    lista.appendChild(fragmento);
+  }
+
+  function validarFormulario() {
+    const tipo = normalizarTexto(tipoInput?.value);
+    const categoria = obtenerCategoria();
+    const titulo = normalizarTexto(tituloInput?.value);
+    const descripcion = normalizarTexto(detalleInput?.value);
+
+    if (!tipo || !categoria || !titulo || !descripcion) {
+      notificar(
+        "Completá el tipo, la categoría, el título y la descripción.",
+        "error"
+      );
+
+      return null;
+    }
+
+    const esIntercambio = tipo
+      .toLocaleLowerCase("es-AR")
+      .includes("intercambio");
+
+    const modalidad = normalizarTexto(
+      modalidadInput?.value
+    );
+
+    const necesita = normalizarTexto(
+      necesitaInput?.value
+    );
+
+    if (esIntercambio && !modalidad) {
+      notificar(
+        "Indicá la modalidad del intercambio.",
+        "error"
+      );
+
+      modalidadInput?.focus();
+      return null;
+    }
+
+    if (esIntercambio && !necesita) {
+      notificar(
+        "Indicá qué necesitás a cambio.",
+        "error"
+      );
+
+      necesitaInput?.focus();
+      return null;
+    }
+
+    return {
+      tipo,
+      categoria,
+      titulo,
+      descripcion,
+      condicion: normalizarTexto(condicionInput?.value),
+      modalidad_intercambio: esIntercambio
+        ? modalidad
+        : "",
+      que_necesita_a_cambio: esIntercambio
+        ? necesita
+        : "",
+      zona_aproximada: obtenerZona()
+    };
+  }
+
+  function generarIdLocal() {
+    if (
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+    ) {
+      return `local-${crypto.randomUUID()}`;
+    }
+
+    return `local-${Date.now()}-${Math.random()
+      .toString(16)
+      .slice(2)}`;
+  }
+
+  async function publicar(evento) {
+    evento.preventDefault();
+
+    const datos = validarFormulario();
+
+    if (!datos) return;
+
+    const usuario = await obtenerUsuarioActual();
+    const perfil = await obtenerPerfilActual();
+
+    if (!usuario || !perfil) {
+      notificar(
+        "Iniciá sesión y completá tu perfil para publicar en la comunidad.",
+        "error"
+      );
+
+      return;
+    }
+
+    const ahora = new Date().toISOString();
+
+    let descripcionRemota = datos.descripcion;
+
+    if (datos.condicion) {
+      descripcionRemota +=
+        `\n[Condición informada: ${datos.condicion}]`;
+    }
+
+    const registro = {
+      perfil_id: perfil.id,
+      tipo: datos.tipo,
+      categoria: datos.categoria,
+      titulo: datos.titulo,
+      descripcion: descripcionRemota,
+      modalidad: null,
+      modalidad_intercambio:
+        datos.modalidad_intercambio,
+      que_necesita_a_cambio:
+        datos.que_necesita_a_cambio,
+      zona_aproximada: datos.zona_aproximada,
+      fotos: [],
+      estado: "activa",
+      actualizado_en: ahora
+    };
+
+    if (estadoPublicacion) {
+      estadoPublicacion.textContent =
+        "Publicando...";
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("publicaciones")
+        .insert(registro)
+        .select(
+          [
+            "id",
+            "perfil_id",
+            "tipo",
+            "categoria",
+            "titulo",
+            "descripcion",
+            "modalidad",
+            "modalidad_intercambio",
+            "que_necesita_a_cambio",
+            "zona_aproximada",
+            "fotos",
+            "estado",
+            "creado_en",
+            "actualizado_en"
+          ].join(",")
+        )
+        .single();
+
+      if (error) {
+        console.error(
+          "Error publicando en Supabase:",
+          error
+        );
+
+        const publicacionLocal = {
+          ...registro,
+          ...datos,
+          id: generarIdLocal(),
+          creado_en: ahora,
+          origen: "local"
+        };
+
+        const locales = obtenerLocales();
+        locales.unshift(publicacionLocal);
+
+        if (!guardarLocales(locales)) {
+          notificar(
+            "No se pudo publicar ni guardar localmente. Revisá la conexión e intentá nuevamente.",
+            "error"
+          );
+
+          if (estadoPublicacion) {
+            estadoPublicacion.textContent = "";
+          }
+
+          return;
+        }
+
+        publicaciones = combinarPublicaciones(
+          locales,
+          publicaciones.filter(p => p.origen === "remoto")
+        );
+
+        renderizarPublicaciones();
+
+        notificar(
+          "No se pudo publicar en la comunidad compartida. La publicación quedó guardada en este dispositivo.",
+          "warning"
+        );
+
+        form.reset();
+        actualizarCampoOtraCategoria();
+
+        if (estadoPublicacion) {
+          estadoPublicacion.textContent =
+            "Guardada localmente";
+        }
+
+        return;
+      }
+
+      const publicacionRemota =
+        convertirRegistroRemoto(data);
+
+      publicaciones = combinarPublicaciones(
+        obtenerLocales(),
+        [
+          publicacionRemota,
+          ...publicaciones.filter(
+            p => p.origen === "remoto"
+          )
+        ]
+      );
+
+      renderizarPublicaciones();
+      form.reset();
+      actualizarCampoOtraCategoria();
+
+      notificar(
+        "¡Publicación compartida con la comunidad!",
+        "success"
+      );
+
+      if (estadoPublicacion) {
+        estadoPublicacion.textContent =
+          "Publicación compartida";
+      }
+    } catch (error) {
+      console.error(
+        "Error inesperado al publicar:",
+        error
+      );
+
+      notificar(
+        "Ocurrió un error al publicar. Intentá nuevamente.",
+        "error"
+      );
+
+      if (estadoPublicacion) {
+        estadoPublicacion.textContent =
+          "No se pudo publicar";
+      }
+    }
+  }
+
+  function limpiarFiltros() {
+    if (busquedaInput) {
+      busquedaInput.value = "";
+    }
+
+    if (filtroTipoInput) {
+      filtroTipoInput.value = "";
+    }
+
+    renderizarPublicaciones();
+  }
+
+  const manejarCategoria = () => {
+    actualizarCampoOtraCategoria();
+  };
+
+  const manejarBusqueda = () => {
+    renderizarPublicaciones();
+  };
+
+  const manejarSubmit = evento => {
+    publicar(evento);
+  };
+
+  categoriaInput?.addEventListener(
+    "change",
+    manejarCategoria
+  );
+
+  busquedaInput?.addEventListener(
+    "input",
+    manejarBusqueda
+  );
+
+  filtroTipoInput?.addEventListener(
+    "change",
+    manejarBusqueda
+  );
+
+  limpiarFiltrosBtn?.addEventListener(
+    "click",
+    limpiarFiltros
+  );
+
+  form?.addEventListener(
+    "submit",
+    manejarSubmit
+  );
+
+  actualizarCampoOtraCategoria();
+
+  publicaciones = combinarPublicaciones(
+    obtenerLocales(),
+    []
+  );
+
+  renderizarPublicaciones();
+  cargarPublicacionesRemotas();
+
+  try {
+    const resultado = supabase.auth.onAuthStateChange(() => {
+      cargarPublicacionesRemotas();
+    });
+
+    suscripcionAuth =
+      resultado?.data?.subscription ?? null;
+  } catch (error) {
+    console.error(
+      "No se pudo registrar el cambio de sesión:",
+      error
+    );
+  }
+
+  return {
+    recargar: cargarPublicacionesRemotas,
+
+    destruir() {
+      destruido = true;
+      ultimaCarga++;
+
+      categoriaInput?.removeEventListener(
+        "change",
+        manejarCategoria
+      );
+
+      busquedaInput?.removeEventListener(
+        "input",
+        manejarBusqueda
+      );
+
+      filtroTipoInput?.removeEventListener(
+        "change",
+        manejarBusqueda
+      );
+
+      limpiarFiltrosBtn?.removeEventListener(
+        "click",
+        limpiarFiltros
+      );
+
+      form?.removeEventListener(
+        "submit",
+        manejarSubmit
+      );
+
+      suscripcionAuth?.unsubscribe();
+    }
+  };
+}
