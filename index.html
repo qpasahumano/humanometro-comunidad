@@ -16,23 +16,23 @@
 
 <body>
 
-  <!-- PRIMERA INTERFAZ: PANTALLA DE ENTRADA -->
+  <!-- PRIMERA INTERFAZ: EL CÍRCULO ES EL BOTÓN DE ENTRADA -->
   <main id="pantalla-inicial" class="pantalla pantalla-inicial">
 
     <div class="entrada-contenido">
 
-      <img
-        src="./assets/boton-principal.png"
-        alt="HUMANÓMETRO COMUNIDAD"
-        class="boton-grafico"
-      >
-
       <button
         id="btn-entrar"
-        class="boton-entrada"
+        class="boton-circular"
         type="button"
+        aria-label="Ingresar a HUMANÓMETRO COMUNIDAD"
+        onclick="document.getElementById('pantalla-inicial').hidden = true; document.getElementById('pantalla-comunidad').hidden = false;"
       >
-        INGRESÁ A LA COMUNIDAD
+        <img
+          src="./assets/boton-principal.png"
+          alt="HUMANÓMETRO COMUNIDAD"
+          class="boton-grafico"
+        >
       </button>
 
       <p class="texto-inicial">
