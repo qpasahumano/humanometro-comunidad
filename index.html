@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,310 +8,683 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="stylesheet" href="./css/styles.css">
 </head>
-<body>
-  <!-- PANTALLA INICIAL: SE CONSERVA EL CÍRCULO COMO ENTRADA -->
-  <main id="pantalla-inicial" class="pantalla pantalla-inicial">
+<body>  <!-- PANTALLA INICIAL -->  <main id="pantalla-inicial" class="pantalla pantalla-inicial">
     <div class="entrada-contenido">
-      <button id="btn-entrar" class="boton-circular" type="button"
+      <button
+        id="btn-entrar"
+        class="boton-circular"
+        type="button"
         aria-label="Ingresar a HUMANÓMETRO COMUNIDAD"
-        onclick="document.getElementById('pantalla-inicial').hidden=true;document.getElementById('pantalla-comunidad').hidden=false;">
-        <img src="./assets/boton-principal.png"
-          alt="HUMANÓMETRO COMUNIDAD" class="boton-grafico">
+        onclick="document.getElementById('pantalla-inicial').hidden=true;document.getElementById('pantalla-comunidad').hidden=false;"
+      >
+        <img
+          src="./assets/boton-principal.png"
+          alt="HUMANÓMETRO COMUNIDAD"
+          class="boton-grafico"
+        >
       </button>
-      <p class="texto-inicial">Conectando humanidad, barrio y ayuda mutua.</p>
+      <p class="texto-inicial">
+        Conectando humanidad, barrio y ayuda mutua.
+      </p>
     </div>
-  </main>
+  </main>  <!-- CENTRO DE LA COMUNIDAD -->  <main id="pantalla-comunidad" class="pantalla pantalla-comunidad" hidden><header class="encabezado">
+  <div class="marca">
+    <span class="marca-titulo">HUMANÓMETRO</span>
+    <span class="marca-subtitulo">COMUNIDAD</span>
+  </div>
 
-  <!-- CENTRO DE LA COMUNIDAD -->
-  <main id="pantalla-comunidad" class="pantalla pantalla-comunidad" hidden>
-    <header class="encabezado">
-      <div class="marca">
-        <span class="marca-titulo">HUMANÓMETRO</span>
-        <span class="marca-subtitulo">COMUNIDAD</span>
-      </div>
-      <button id="btn-perfil" class="boton-perfil" type="button">MI PERFIL</button>
-    </header>
+  <button id="btn-perfil" class="boton-perfil" type="button">
+    MI PERFIL
+  </button>
+</header>
 
-    <section class="bienvenida">
-      <p class="etiqueta">RED HUMANA LOCAL</p>
-      <h1>Tu comunidad, más cerca.</h1>
-      <p>Recursos, comunicación y ayuda mutua para las personas de tu barrio.</p>
-    </section>
+<!-- BIENVENIDA -->
+<section class="bienvenida">
+  <p class="etiqueta">RED HUMANA LOCAL</p>
+  <h1>Tu comunidad, más cerca.</h1>
+  <p>
+    Recursos, comunicación y ayuda mutua para las personas de tu barrio.
+  </p>
+</section>
 
-    <!-- TU COMUNIDAD -->
-    <section class="selector-barrio tarjeta">
-      <h2>Tu comunidad</h2>
-      <label for="barrio">Barrio o localidad</label>
-      <div class="fila-barrio">
-        <input id="barrio" type="text" maxlength="100"
-          placeholder="Escribí el nombre de tu barrio"
-          autocomplete="address-level3">
-        <button id="btn-guardar-barrio" class="boton-secundario" type="button">GUARDAR</button>
-      </div>
-      <button id="btn-ubicacion" class="boton-secundario boton-ancho" type="button">
-        USAR MI UBICACIÓN APROXIMADA
-      </button>
-      <p class="texto-ayuda">La ubicación es opcional. Podés escribir tu barrio manualmente. No publicamos tus coordenadas exactas.</p>
-      <p class="texto-ayuda">Identificación geográfica: datos de OpenStreetMap contributors.</p>
-      <p id="estado-barrio" class="texto-ayuda" aria-live="polite">Elegí tu barrio para organizar la actividad local.</p>
-    </section>
+<!-- COMUNIDAD Y UBICACIÓN APROXIMADA -->
+<section class="selector-barrio tarjeta">
+  <h2>Tu comunidad</h2>
 
-    <section class="acciones-principales">
-      <button id="btn-gondola" class="boton-modulo boton-gondola" type="button">
-        <span class="icono-modulo" aria-hidden="true">◇</span>
-        <span class="contenido-modulo">
-          <strong>GÓNDOLA COMUNITARIA</strong>
-          <small>Productos, alimentos, servicios y recursos.</small>
-        </span>
-        <span class="flecha" aria-hidden="true">›</span>
-      </button>
+  <label for="barrio">Barrio o localidad</label>
 
-      <button id="btn-comunicacion" class="boton-modulo" type="button">
-        <span class="icono-modulo" aria-hidden="true">↔</span>
-        <span class="contenido-modulo">
-          <strong>NO PIERDAS LA COMUNICACIÓN</strong>
-          <small>Prepará mensajes y consultá la conexión.</small>
-        </span>
-        <span class="flecha" aria-hidden="true">›</span>
-      </button>
+  <div class="fila-barrio">
+    <input
+      id="barrio"
+      type="text"
+      maxlength="100"
+      placeholder="Escribí el nombre de tu barrio"
+      autocomplete="address-level3"
+    >
 
-      <button id="btn-ayuda" class="boton-modulo" type="button">
-        <span class="icono-modulo" aria-hidden="true">♡</span>
-        <span class="contenido-modulo">
-          <strong>RED HUMANA</strong>
-          <small>Pedí ayuda u ofrecé lo que esté a tu alcance.</small>
-        </span>
-        <span class="flecha" aria-hidden="true">›</span>
-      </button>
+    <button
+      id="btn-guardar-barrio"
+      class="boton-secundario"
+      type="button"
+    >
+      GUARDAR
+    </button>
+  </div>
 
-      <button id="btn-humanometro" class="boton-modulo" type="button">
-        <span class="icono-modulo" aria-hidden="true">H</span>
-        <span class="contenido-modulo">
-          <strong>HUMANÓMETRO DE HUMANIDAD</strong>
-          <small>Registrá cómo se desarrollan los intercambios.</small>
-        </span>
-        <span class="flecha" aria-hidden="true">›</span>
-      </button>
-    </section>
+  <button
+    id="btn-ubicacion"
+    class="boton-secundario boton-ancho"
+    type="button"
+  >
+    USAR MI UBICACIÓN APROXIMADA
+  </button>
 
-    <section class="humanometro tarjeta">
-      <div class="humanometro-icono" aria-hidden="true">H</div>
-      <div>
-        <h2>Una red de personas para las personas</h2>
-        <p>La cooperación, la responsabilidad y el respeto son el centro de esta comunidad.</p>
-      </div>
-    </section>
+  <p class="texto-ayuda">
+    La ubicación es opcional. Podés escribir tu barrio manualmente.
+    No publicamos tus coordenadas exactas.
+  </p>
 
-    <!-- GÓNDOLA COMUNITARIA -->
-    <section id="vista-gondola" class="vista-interna" hidden>
-      <button class="boton-volver" data-volver type="button">← Volver a la comunidad</button>
-      <h2>Góndola comunitaria</h2>
-      <p>Publicá lo que necesitás o lo que podés ofrecer. Las publicaciones se guardan localmente en esta etapa.</p>
+  <p class="texto-ayuda">
+    Identificación geográfica: datos de OpenStreetMap contributors.
+  </p>
 
-      <form id="form-publicacion" class="tarjeta">
-        <label for="tipo-publicacion">¿Qué querés publicar?</label>
-        <select id="tipo-publicacion" required>
-          <option value="necesidad">BUSCO: necesito algo</option>
-          <option value="oferta">OFREZCO: tengo algo para compartir</option>
-        </select>
+  <p
+    id="estado-barrio"
+    class="texto-ayuda"
+    aria-live="polite"
+  >
+    Elegí tu barrio para organizar la actividad local.
+  </p>
+</section>
 
-        <label for="categoria-publicacion">Categoría</label>
-        <select id="categoria-publicacion" required>
-          <option value="productos">Productos y objetos</option>
-          <option value="alimentos">Alimentos</option>
-          <option value="ropa">Ropa y calzado</option>
-          <option value="herramientas">Herramientas</option>
-          <option value="servicios">Servicios y oficios</option>
-          <option value="transporte">Traslados y transporte</option>
-          <option value="energia">Energía y carga de dispositivos</option>
-          <option value="recursos">Recursos comunitarios</option>
-          <option value="ayuda">Ayuda mutua</option>
-          <option value="otros">Otros</option>
-        </select>
+<!-- ACCESOS PRINCIPALES -->
+<section class="acciones-principales">
 
-        <div id="contenedor-otra-categoria" hidden>
-          <label for="otra-categoria">Especificá la categoría</label>
-          <input id="otra-categoria" type="text" maxlength="80"
-            placeholder="¿Qué categoría necesitás?">
-        </div>
+  <button
+    id="btn-gondola"
+    class="boton-modulo boton-gondola"
+    type="button"
+  >
+    <span class="icono-modulo" aria-hidden="true">◇</span>
 
-        <label for="titulo-publicacion">Título</label>
-        <input id="titulo-publicacion" type="text" maxlength="100"
-          placeholder="¿Qué necesitás u ofrecés?" required>
+    <span class="contenido-modulo">
+      <strong>GÓNDOLA COMUNITARIA</strong>
+      <small>Productos, alimentos, servicios y recursos.</small>
+    </span>
 
-        <label for="detalle-publicacion">Detalles</label>
-        <textarea id="detalle-publicacion" rows="4" maxlength="1000"
-          placeholder="Describí el producto, servicio o necesidad. Indicá el estado real si corresponde." required></textarea>
+    <span class="flecha" aria-hidden="true">›</span>
+  </button>
 
-        <label for="condicion-publicacion">Condición (si corresponde)</label>
-        <select id="condicion-publicacion">
-          <option value="">No corresponde / no especificada</option>
-          <option value="nuevo">Nuevo</option>
-          <option value="usado-buen-estado">Usado en buen estado</option>
-          <option value="usado-con-detalles">Usado con detalles informados</option>
-        </select>
+  <button
+    id="btn-comunicacion"
+    class="boton-modulo"
+    type="button"
+  >
+    <span class="icono-modulo" aria-hidden="true">↔</span>
 
-        <button class="boton-accion" type="submit">GUARDAR PUBLICACIÓN</button>
-        <p id="estado-publicacion" class="texto-ayuda" aria-live="polite"></p>
-      </form>
+    <span class="contenido-modulo">
+      <strong>NO PIERDAS LA COMUNICACIÓN</strong>
+      <small>Prepará mensajes y consultá la conexión.</small>
+    </span>
 
-      <div class="tarjeta filtros">
-        <h3>Buscar en este dispositivo</h3>
-        <label for="buscar-publicaciones">Palabra clave</label>
-        <input id="buscar-publicaciones" type="search"
-          placeholder="Buscar por título, detalle o categoría">
-        <label for="filtro-tipo">Mostrar</label>
-        <select id="filtro-tipo">
-          <option value="todas">Todas las publicaciones</option>
-          <option value="necesidad">Solo lo que se busca</option>
-          <option value="oferta">Solo lo que se ofrece</option>
-        </select>
-        <button id="btn-limpiar-filtros" class="boton-secundario boton-ancho" type="button">LIMPIAR BÚSQUEDA</button>
-      </div>
+    <span class="flecha" aria-hidden="true">›</span>
+  </button>
 
-      <h3>Publicaciones guardadas</h3>
-      <div id="lista-publicaciones" class="lista-publicaciones" aria-live="polite"></div>
-      <p class="aviso-local">Importante: estas publicaciones solo están disponibles en este dispositivo. Todavía no se comparten con otros vecinos.</p>
-    </section>
+  <button
+    id="btn-ayuda"
+    class="boton-modulo"
+    type="button"
+  >
+    <span class="icono-modulo" aria-hidden="true">♡</span>
 
-    <!-- COMUNICACIÓN -->
-    <section id="vista-comunicacion" class="vista-interna" hidden>
-      <button class="boton-volver" data-volver type="button">← Volver a la comunidad</button>
-      <h2>No pierdas la comunicación</h2>
+    <span class="contenido-modulo">
+      <strong>RED HUMANA</strong>
+      <small>Pedí ayuda u ofrecé lo que esté a tu alcance.</small>
+    </span>
 
-      <div class="tarjeta">
-        <h3>Estado de conexión</h3>
-        <p id="estado-conexion" aria-live="polite">Comprobando conexión...</p>
-        <p>Si estás sin internet, podés preparar un mensaje y guardarlo en este dispositivo para consultarlo después.</p>
-        <p class="aviso-local">Guardar un mensaje no lo envía. El chat entre teléfonos necesita una conexión compartida y un servidor. Una PWA por sí sola no puede garantizar mensajería sin internet.</p>
-      </div>
+    <span class="flecha" aria-hidden="true">›</span>
+  </button>
 
-      <form id="form-mensaje" class="tarjeta">
-        <h3>Preparar mensaje</h3>
-        <label for="destinatario-mensaje">¿Para quién es? (opcional)</label>
-        <input id="destinatario-mensaje" maxlength="100" placeholder="Nombre o referencia">
-        <label for="texto-mensaje">Mensaje</label>
-        <textarea id="texto-mensaje" rows="4" maxlength="2000"
-          placeholder="Escribí lo que necesitás comunicar..." required></textarea>
-        <button class="boton-accion" type="submit">GUARDAR MENSAJE PENDIENTE</button>
-        <p id="estado-mensaje" class="texto-ayuda" aria-live="polite"></p>
-      </form>
+  <button
+    id="btn-humanometro"
+    class="boton-modulo"
+    type="button"
+  >
+    <span class="icono-modulo" aria-hidden="true">H</span>
 
-      <h3>Mensajes guardados en este dispositivo</h3>
-      <div id="lista-mensajes" class="lista-publicaciones"></div>
-    </section>
+    <span class="contenido-modulo">
+      <strong>HUMANÓMETRO DE HUMANIDAD</strong>
+      <small>Registrá cómo se desarrollan los intercambios.</small>
+    </span>
 
-    <!-- RED HUMANA -->
-    <section id="vista-ayuda" class="vista-interna" hidden>
-      <button class="boton-volver" data-volver type="button">← Volver a la comunidad</button>
-      <h2>Red Humana</h2>
-      <p>Pedí ayuda para vos o para otra persona, u ofrecé lo que esté a tu alcance.</p>
+    <span class="flecha" aria-hidden="true">›</span>
+  </button>
 
-      <div class="tarjeta">
-        <h3>Una iniciativa para mantenernos conectados</h3>
-        <p>Si contás con energía renovable y podés ofrecer un punto de carga para celulares, podés ayudar a personas que no tienen electricidad y corren el riesgo de quedarse sin batería y sin comunicación.</p>
-        <p>La colaboración debe ser voluntaria y realizarse en un lugar seguro. No publiques direcciones particulares ni datos sensibles.</p>
-      </div>
+</section>
 
-      <form id="form-ayuda" class="tarjeta">
-        <label for="tipo-ayuda">Quiero...</label>
-        <select id="tipo-ayuda" required>
-          <option value="solicitud">Solicitar ayuda</option>
-          <option value="oferta">Ofrecer ayuda</option>
-          <option value="carga">Ofrecer o solicitar un punto de carga para celulares</option>
-        </select>
+<!-- PRESENTACIÓN DEL PROYECTO -->
+<section class="humanometro tarjeta">
+  <div class="humanometro-icono" aria-hidden="true">H</div>
 
-        <label for="categoria-ayuda">Tipo de ayuda</label>
-        <select id="categoria-ayuda" required>
-          <option value="alimentos">Alimentos</option>
-          <option value="ropa">Ropa y calzado</option>
-          <option value="transporte">Traslado</option>
-          <option value="energia">Electricidad o carga de celular</option>
-          <option value="herramientas">Herramientas o materiales</option>
-          <option value="acompanamiento">Acompañamiento o colaboración</option>
-          <option value="otra">Otra necesidad u oferta</option>
-        </select>
+  <div>
+    <h2>Una red de personas para las personas</h2>
+    <p>
+      La cooperación, la responsabilidad y el respeto son el centro
+      de esta comunidad.
+    </p>
+  </div>
+</section>
 
-        <label for="detalle-ayuda">Contanos qué necesitás u ofrecés</label>
-        <textarea id="detalle-ayuda" rows="4" maxlength="1200"
-          placeholder="Describí la situación sin incluir datos privados." required></textarea>
+<!-- =====================================================
+     GÓNDOLA COMUNITARIA
+     ===================================================== -->
+<section id="vista-gondola" class="vista-interna" hidden>
 
-        <label for="disponibilidad-ayuda">Disponibilidad (opcional)</label>
-        <input id="disponibilidad-ayuda" maxlength="120"
-          placeholder="Ej.: tardes, fines de semana">
+  <button class="boton-volver" data-volver type="button">
+    ← Volver a la comunidad
+  </button>
 
-        <button class="boton-accion" type="submit">GUARDAR EN RED HUMANA</button>
-        <p id="estado-ayuda" class="texto-ayuda" aria-live="polite"></p>
-      </form>
+  <h2>Góndola comunitaria</h2>
 
-      <h3>Solicitudes y ofrecimientos de este dispositivo</h3>
-      <div id="lista-ayuda" class="lista-publicaciones"></div>
-      <p class="aviso-local">Los registros todavía no se transmiten a otros teléfonos ni a organizaciones externas.</p>
-    </section>
+  <p>
+    Publicá lo que necesitás o lo que podés ofrecer. Cuando corresponda,
+    indicá su condición y qué necesitás a cambio.
+  </p>
 
-    <!-- HUMANÓMETRO DE HUMANIDAD -->
-    <section id="vista-humanometro" class="vista-interna" hidden>
-      <button class="boton-volver" data-volver type="button">← Volver a la comunidad</button>
-      <h2>Humanómetro de Humanidad</h2>
-      <p>Registrá cómo se desarrolló un intercambio concreto. La valoración describe una experiencia; no determina cuánto vale una persona.</p>
+  <form id="form-publicacion" class="tarjeta">
 
-      <div class="tarjeta">
-        <h3>Principios de evaluación</h3>
-        <ul>
-          <li>Honestidad: ¿la información brindada fue sincera?</li>
-          <li>Respeto: ¿hubo un trato respetuoso?</li>
-          <li>Responsabilidad: ¿se cumplió lo acordado?</li>
-          <li>Comunicación: ¿se avisaron cambios o dificultades?</li>
-          <li>Producto o servicio: ¿coincidió con lo informado y acordado?</li>
-        </ul>
-        <p class="aviso-local">No llegar a un acuerdo no es una conducta negativa. Si ambas partes cancelan de común acuerdo, no corresponde convertirlo automáticamente en una mala valoración.</p>
-      </div>
+    <label for="tipo-publicacion">¿Qué querés publicar?</label>
 
-      <form id="form-evaluacion" class="tarjeta">
-        <label for="referencia-evaluacion">Referencia del intercambio</label>
-        <input id="referencia-evaluacion" maxlength="120"
-          placeholder="Ej.: intercambio de herramientas" required>
+    <select id="tipo-publicacion" required>
+      <option value="necesidad">BUSCO: necesito algo</option>
+      <option value="oferta">OFREZCO: tengo algo para compartir</option>
+    </select>
 
-        <label for="resultado-evaluacion">Resultado general</label>
-        <select id="resultado-evaluacion" required>
-          <option value="buena">BUENA: se respetó lo acordado</option>
-          <option value="intermedia">INTERMEDIA: hubo dificultades o cumplimiento parcial</option>
-          <option value="mala">MALA: hubo incumplimientos o faltas de respeto concretas</option>
-          <option value="sin-acuerdo">No llegamos a un acuerdo</option>
-          <option value="cancelacion-mutua">Cancelamos de común acuerdo</option>
-        </select>
+    <label for="categoria-publicacion">Categoría</label>
 
-        <label for="detalle-evaluacion">Explicación de la experiencia</label>
-        <textarea id="detalle-evaluacion" rows="4" maxlength="1200"
-          placeholder="Describí hechos concretos, sin insultos ni datos privados." required></textarea>
+    <select id="categoria-publicacion" required>
+      <option value="productos">Productos y objetos</option>
+      <option value="alimentos">Alimentos</option>
+      <option value="ropa">Ropa y calzado</option>
+      <option value="herramientas">Herramientas</option>
+      <option value="servicios">Servicios y oficios</option>
+      <option value="transporte">Traslados y transporte</option>
+      <option value="energia">Energía y carga de dispositivos</option>
+      <option value="recursos">Recursos comunitarios</option>
+      <option value="ayuda">Ayuda mutua</option>
+      <option value="otros">Otros</option>
+    </select>
 
-        <button class="boton-accion" type="submit">GUARDAR EVALUACIÓN LOCAL</button>
-        <p id="estado-evaluacion" class="texto-ayuda" aria-live="polite"></p>
-      </form>
+    <div id="contenedor-otra-categoria" hidden>
+      <label for="otra-categoria">Especificá la categoría</label>
 
-      <h3>Historial de este dispositivo</h3>
-      <div id="lista-evaluaciones" class="lista-publicaciones"></div>
-      <p class="aviso-local">Este historial es privado de este dispositivo en la versión actual. No es una reputación pública ni una verificación de identidad.</p>
-    </section>
+      <input
+        id="otra-categoria"
+        type="text"
+        maxlength="80"
+        placeholder="¿Qué categoría necesitás?"
+      >
+    </div>
 
-    <!-- PERFIL -->
-    <section id="vista-perfil" class="vista-interna" hidden>
-      <button class="boton-volver" data-volver type="button">← Volver a la comunidad</button>
-      <h2>Mi perfil</h2>
-      <form id="form-perfil" class="tarjeta">
-        <label for="nombre-usuario">Nombre visible</label>
-        <input id="nombre-usuario" type="text" maxlength="60"
-          placeholder="Cómo querés aparecer" required>
-        <button id="btn-guardar-perfil" class="boton-accion" type="submit">GUARDAR PERFIL</button>
-        <p id="estado-perfil" class="texto-ayuda" aria-live="polite"></p>
-      </form>
-      <p class="aviso-local">El perfil se guarda localmente. Todavía no existe una cuenta compartida ni autenticación de usuarios.</p>
-    </section>
+    <label for="titulo-publicacion">Título</label>
 
-    <footer class="pie">HUMANÓMETRO COMUNIDAD · Ayuda mutua y responsabilidad.</footer>
-  </main>
+    <input
+      id="titulo-publicacion"
+      type="text"
+      maxlength="100"
+      placeholder="¿Qué necesitás u ofrecés?"
+      required
+    >
 
-  <div id="notificacion" class="notificacion" role="status" aria-live="polite" hidden></div>
-  <script type="module" src="./js/app.js"></script>
-</body>
+    <label for="detalle-publicacion">Descripción</label>
+
+    <textarea
+      id="detalle-publicacion"
+      rows="4"
+      maxlength="1000"
+      placeholder="Describí el producto, servicio o necesidad."
+      required
+    ></textarea>
+
+    <label for="condicion-publicacion">
+      Condición del producto (si corresponde)
+    </label>
+
+    <select id="condicion-publicacion">
+      <option value="">No corresponde / no especificada</option>
+      <option value="nuevo">Nuevo</option>
+      <option value="usado-buen-estado">Usado en buen estado</option>
+      <option value="usado-con-detalles">Usado con detalles informados</option>
+    </select>
+
+    <label for="modalidad-intercambio">
+      Modalidad de intercambio
+    </label>
+
+    <select id="modalidad-intercambio">
+      <option value="">A definir</option>
+      <option value="gratuito">Gratuito / solidario</option>
+      <option value="trueque">Trueque</option>
+      <option value="dinero">Intercambio por dinero</option>
+      <option value="mixto">Trueque o dinero, a convenir</option>
+      <option value="colaboracion">Colaboración comunitaria</option>
+      <option value="otro">Otra modalidad</option>
+    </select>
+
+    <label for="que-necesita-a-cambio">
+      ¿Qué necesitás a cambio?
+    </label>
+
+    <textarea
+      id="que-necesita-a-cambio"
+      rows="3"
+      maxlength="500"
+      placeholder="Ej.: otro producto, un servicio, alimentos, colaboración o nada."
+    ></textarea>
+
+    <button class="boton-accion" type="submit">
+      GUARDAR PUBLICACIÓN
+    </button>
+
+    <p
+      id="estado-publicacion"
+      class="texto-ayuda"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+  <!-- BÚSQUEDA Y FILTROS -->
+  <div class="tarjeta filtros">
+    <h3>Buscar publicaciones</h3>
+
+    <label for="buscar-publicaciones">Palabra clave</label>
+
+    <input
+      id="buscar-publicaciones"
+      type="search"
+      placeholder="Buscar por título, detalle o categoría"
+    >
+
+    <label for="filtro-tipo">Mostrar</label>
+
+    <select id="filtro-tipo">
+      <option value="todas">Todas las publicaciones</option>
+      <option value="necesidad">Solo lo que se busca</option>
+      <option value="oferta">Solo lo que se ofrece</option>
+    </select>
+
+    <button
+      id="btn-limpiar-filtros"
+      class="boton-secundario boton-ancho"
+      type="button"
+    >
+      LIMPIAR BÚSQUEDA
+    </button>
+  </div>
+
+  <h3>Publicaciones</h3>
+
+  <div
+    id="lista-publicaciones"
+    class="lista-publicaciones"
+    aria-live="polite"
+  ></div>
+
+  <p class="aviso-local">
+    La disponibilidad de las publicaciones compartidas depende de la
+    conexión, la autenticación y el funcionamiento del servicio.
+    Si una operación no puede completarse, la aplicación debe informar
+    claramente su estado.
+  </p>
+
+</section>
+
+<!-- =====================================================
+     COMUNICACIÓN
+     ===================================================== -->
+<section id="vista-comunicacion" class="vista-interna" hidden>
+
+  <button class="boton-volver" data-volver type="button">
+    ← Volver a la comunidad
+  </button>
+
+  <h2>No pierdas la comunicación</h2>
+
+  <div class="tarjeta">
+    <h3>Estado de conexión</h3>
+
+    <p id="estado-conexion" aria-live="polite">
+      Comprobando conexión...
+    </p>
+
+    <p>
+      Si estás sin internet, podés preparar un mensaje y guardarlo
+      en este dispositivo para consultarlo después.
+    </p>
+
+    <p class="aviso-local">
+      Guardar un mensaje no lo envía. La mensajería entre usuarios
+      requiere conexión y un servicio compatible. Una PWA por sí sola
+      no garantiza la comunicación entre teléfonos sin internet.
+    </p>
+  </div>
+
+  <form id="form-mensaje" class="tarjeta">
+
+    <h3>Preparar mensaje</h3>
+
+    <label for="destinatario-mensaje">
+      ¿Para quién es? (opcional)
+    </label>
+
+    <input
+      id="destinatario-mensaje"
+      type="text"
+      maxlength="100"
+      placeholder="Nombre o referencia"
+    >
+
+    <label for="texto-mensaje">Mensaje</label>
+
+    <textarea
+      id="texto-mensaje"
+      rows="4"
+      maxlength="2000"
+      placeholder="Escribí lo que necesitás comunicar..."
+      required
+    ></textarea>
+
+    <button class="boton-accion" type="submit">
+      GUARDAR MENSAJE PENDIENTE
+    </button>
+
+    <p
+      id="estado-mensaje"
+      class="texto-ayuda"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+  <h3>Mensajes guardados en este dispositivo</h3>
+
+  <div
+    id="lista-mensajes"
+    class="lista-publicaciones"
+    aria-live="polite"
+  ></div>
+
+</section>
+
+<!-- =====================================================
+     RED HUMANA
+     ===================================================== -->
+<section id="vista-ayuda" class="vista-interna" hidden>
+
+  <button class="boton-volver" data-volver type="button">
+    ← Volver a la comunidad
+  </button>
+
+  <h2>Red Humana</h2>
+
+  <p>
+    Pedí ayuda para vos o para otra persona, u ofrecé lo que esté
+    a tu alcance.
+  </p>
+
+  <div class="tarjeta">
+    <h3>Una iniciativa para mantenernos conectados</h3>
+
+    <p>
+      Si contás con energía renovable y podés ofrecer un punto de carga
+      para celulares, podés ayudar a personas que no tienen electricidad
+      y corren el riesgo de quedarse sin batería y sin comunicación.
+    </p>
+
+    <p>
+      La colaboración debe ser voluntaria y realizarse en un lugar seguro.
+      No publiques direcciones particulares ni datos sensibles.
+    </p>
+  </div>
+
+  <form id="form-ayuda" class="tarjeta">
+
+    <label for="tipo-ayuda">Quiero...</label>
+
+    <select id="tipo-ayuda" required>
+      <option value="solicitud">Solicitar ayuda</option>
+      <option value="oferta">Ofrecer ayuda</option>
+      <option value="carga">
+        Ofrecer o solicitar un punto de carga para celulares
+      </option>
+    </select>
+
+    <label for="categoria-ayuda">Tipo de ayuda</label>
+
+    <select id="categoria-ayuda" required>
+      <option value="alimentos">Alimentos</option>
+      <option value="ropa">Ropa y calzado</option>
+      <option value="transporte">Traslado</option>
+      <option value="energia">Electricidad o carga de celular</option>
+      <option value="herramientas">Herramientas o materiales</option>
+      <option value="acompanamiento">Acompañamiento o colaboración</option>
+      <option value="otra">Otra necesidad u oferta</option>
+    </select>
+
+    <label for="detalle-ayuda">
+      Contanos qué necesitás u ofrecés
+    </label>
+
+    <textarea
+      id="detalle-ayuda"
+      rows="4"
+      maxlength="1200"
+      placeholder="Describí la situación sin incluir datos privados."
+      required
+    ></textarea>
+
+    <label for="disponibilidad-ayuda">
+      Disponibilidad (opcional)
+    </label>
+
+    <input
+      id="disponibilidad-ayuda"
+      type="text"
+      maxlength="120"
+      placeholder="Ej.: tardes, fines de semana"
+    >
+
+    <button class="boton-accion" type="submit">
+      GUARDAR EN RED HUMANA
+    </button>
+
+    <p
+      id="estado-ayuda"
+      class="texto-ayuda"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+  <h3>Solicitudes y ofrecimientos</h3>
+
+  <div
+    id="lista-ayuda"
+    class="lista-publicaciones"
+    aria-live="polite"
+  ></div>
+
+  <p class="aviso-local">
+    El estado de cada registro debe indicarse según dónde se haya guardado.
+    Guardar información en este dispositivo no significa que otros vecinos
+    puedan verla.
+  </p>
+
+</section>
+
+<!-- =====================================================
+     HUMANÓMETRO DE HUMANIDAD
+     ===================================================== -->
+<section id="vista-humanometro" class="vista-interna" hidden>
+
+  <button class="boton-volver" data-volver type="button">
+    ← Volver a la comunidad
+  </button>
+
+  <h2>Humanómetro de Humanidad</h2>
+
+  <p>
+    Registrá cómo se desarrolló un intercambio concreto. La valoración
+    describe una experiencia; no determina cuánto vale una persona.
+  </p>
+
+  <div class="tarjeta">
+    <h3>Principios de evaluación</h3>
+
+    <ul>
+      <li>Honestidad: ¿la información brindada fue sincera?</li>
+      <li>Respeto: ¿hubo un trato respetuoso?</li>
+      <li>Responsabilidad: ¿se cumplió lo acordado?</li>
+      <li>Comunicación: ¿se avisaron cambios o dificultades?</li>
+      <li>
+        Producto o servicio: ¿coincidió con lo informado y acordado?
+      </li>
+    </ul>
+
+    <p class="aviso-local">
+      No llegar a un acuerdo no es una conducta negativa. Si ambas partes
+      cancelan de común acuerdo, no corresponde convertirlo
+      automáticamente en una mala valoración.
+    </p>
+  </div>
+
+  <form id="form-evaluacion" class="tarjeta">
+
+    <label for="referencia-evaluacion">
+      Referencia del intercambio
+    </label>
+
+    <input
+      id="referencia-evaluacion"
+      type="text"
+      maxlength="120"
+      placeholder="Ej.: intercambio de herramientas"
+      required
+    >
+
+    <label for="resultado-evaluacion">Resultado general</label>
+
+    <select id="resultado-evaluacion" required>
+      <option value="buena">BUENA: se respetó lo acordado</option>
+      <option value="intermedia">
+        INTERMEDIA: hubo dificultades o cumplimiento parcial
+      </option>
+      <option value="mala">
+        MALA: hubo incumplimientos o faltas de respeto concretas
+      </option>
+      <option value="sin-acuerdo">No llegamos a un acuerdo</option>
+      <option value="cancelacion-mutua">
+        Cancelamos de común acuerdo
+      </option>
+    </select>
+
+    <label for="detalle-evaluacion">
+      Explicación de la experiencia
+    </label>
+
+    <textarea
+      id="detalle-evaluacion"
+      rows="4"
+      maxlength="1200"
+      placeholder="Describí hechos concretos, sin insultos ni datos privados."
+      required
+    ></textarea>
+
+    <button class="boton-accion" type="submit">
+      GUARDAR EVALUACIÓN LOCAL
+    </button>
+
+    <p
+      id="estado-evaluacion"
+      class="texto-ayuda"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+  <h3>Historial de este dispositivo</h3>
+
+  <div
+    id="lista-evaluaciones"
+    class="lista-publicaciones"
+    aria-live="polite"
+  ></div>
+
+  <p class="aviso-local">
+    Este historial es privado de este dispositivo en la versión actual.
+    No es una reputación pública ni una verificación de identidad.
+  </p>
+
+</section>
+
+<!-- =====================================================
+     PERFIL ÚNICO
+     auth.js incorpora aquí los campos de perfil y autenticación.
+     No se crea un segundo formulario de perfil.
+     ===================================================== -->
+<section id="vista-perfil" class="vista-interna" hidden>
+
+  <button class="boton-volver" data-volver type="button">
+    ← Volver a la comunidad
+  </button>
+
+  <h2>Mi perfil comunitario</h2>
+
+  <form id="form-perfil" class="tarjeta">
+
+    <label for="nombre-usuario">Nombre visible</label>
+
+    <input
+      id="nombre-usuario"
+      type="text"
+      maxlength="60"
+      placeholder="Cómo querés aparecer en la comunidad"
+      required
+    >
+
+    <button
+      id="btn-guardar-perfil"
+      class="boton-accion"
+      type="submit"
+    >
+      GUARDAR PERFIL
+    </button>
+
+    <p
+      id="estado-perfil"
+      class="texto-ayuda"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+  <p class="aviso-local">
+    Completá tu perfil para identificarte dentro de la comunidad.
+    El estado de guardado se informa desde la aplicación.
+  </p>
+
+</section>
+
+<footer class="pie">
+  HUMANÓMETRO COMUNIDAD · Ayuda mutua y responsabilidad.
+</footer>
+
+  </main>  <!-- NOTIFICACIONES -->  <div
+    id="notificacion"
+    class="notificacion"
+    role="status"
+    aria-live="polite"
+    hidden
+  ></div>  <script type="module" src="./js/app.js"></script></body>
 </html>
