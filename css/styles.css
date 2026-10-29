@@ -1,6 +1,6 @@
 :root {
   --fondo: #071426;
-  --panel: rgba(10, 28, 49, 0.88);
+  --panel: rgba(10, 28, 49, 0.92);
   --borde: rgba(129, 207, 231, 0.25);
   --celeste: #8bd9ee;
   --blanco: #f3f8ff;
@@ -16,6 +16,7 @@
 html {
   min-height: 100%;
   background: var(--fondo);
+  scroll-behavior: smooth;
 }
 
 body {
@@ -36,6 +37,11 @@ select {
 
 button {
   cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 button:focus-visible,
@@ -66,7 +72,7 @@ select:focus-visible {
   background-repeat: no-repeat;
 }
 
-/* PRIMERA INTERFAZ */
+/* PRIMERA INTERFAZ: CONSERVADA */
 
 .pantalla-inicial {
   display: flex;
@@ -83,8 +89,6 @@ select:focus-visible {
   align-items: center;
   text-align: center;
 }
-
-/* EL CÍRCULO COMPLETO FUNCIONA COMO BOTÓN */
 
 .boton-circular {
   display: block;
@@ -222,6 +226,11 @@ select:focus-visible {
   backdrop-filter: blur(8px);
 }
 
+.tarjeta h2:first-child,
+.tarjeta h3:first-child {
+  margin-top: 0;
+}
+
 .selector-barrio {
   margin-bottom: 20px;
 }
@@ -250,11 +259,16 @@ input,
 textarea,
 select {
   width: 100%;
+  min-width: 0;
   padding: 12px 13px;
   border: 1px solid rgba(151, 194, 220, 0.3);
   border-radius: 10px;
   color: var(--blanco);
-  background: rgba(3, 15, 30, 0.82);
+  background: rgba(3, 15, 30, 0.92);
+}
+
+textarea {
+  resize: vertical;
 }
 
 input::placeholder,
@@ -292,7 +306,7 @@ select option {
   border-radius: var(--radio);
   color: var(--blanco);
   text-align: left;
-  background: rgba(8, 28, 49, 0.88);
+  background: rgba(8, 28, 49, 0.92);
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
@@ -326,6 +340,7 @@ select option {
   flex: 1;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .contenido-modulo strong {
@@ -387,13 +402,15 @@ select option {
 .vista-interna h2 {
   margin: 20px 0 10px;
   font-size: 1.5rem;
+  line-height: 1.3;
 }
 
 .vista-interna h3 {
   margin-top: 25px;
 }
 
-.vista-interna > p {
+.vista-interna > p,
+.vista-interna .tarjeta > p {
   color: var(--texto-suave);
   line-height: 1.6;
 }
@@ -402,6 +419,16 @@ select option {
   display: grid;
   gap: 12px;
   margin-top: 20px;
+}
+
+.vista-interna form h3 {
+  margin-bottom: 6px;
+}
+
+.vista-interna ul {
+  padding-left: 22px;
+  color: var(--texto-suave);
+  line-height: 1.7;
 }
 
 .boton-volver {
@@ -435,6 +462,18 @@ select option {
   margin-top: 10px;
 }
 
+.filtros {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.filtros h3 {
+  margin: 0;
+}
+
+/* PUBLICACIONES, MENSAJES, AYUDA E HISTORIAL */
+
 .lista-publicaciones {
   display: grid;
   gap: 12px;
@@ -442,6 +481,7 @@ select option {
 
 .publicacion,
 .tarjeta-publicacion {
+  min-width: 0;
   padding: 15px;
   border: 1px solid var(--borde);
   border-radius: 13px;
@@ -452,6 +492,7 @@ select option {
 .publicacion h4,
 .tarjeta-publicacion h3 {
   margin: 0 0 8px;
+  line-height: 1.4;
 }
 
 .publicacion p,
@@ -459,6 +500,7 @@ select option {
   color: var(--texto-suave);
   line-height: 1.55;
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .publicacion small,
@@ -466,6 +508,7 @@ select option {
   display: block;
   margin-top: 7px;
   color: var(--celeste);
+  line-height: 1.5;
 }
 
 .aviso-local {
@@ -477,6 +520,8 @@ select option {
   line-height: 1.55;
 }
 
+/* PIE Y NOTIFICACIONES */
+
 .pie {
   margin-top: 35px;
   padding: 20px 0 0;
@@ -486,8 +531,6 @@ select option {
   line-height: 1.6;
   text-align: center;
 }
-
-/* NOTIFICACIONES */
 
 .notificacion {
   position: fixed;
@@ -503,6 +546,34 @@ select option {
   color: var(--blanco);
   background: #102b43;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+
+/* PANTALLAS PEQUEÑAS */
+
+@media (max-width: 380px) {
+  .pantalla-comunidad {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .tarjeta {
+    padding: 14px;
+  }
+
+  .boton-modulo {
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .icono-modulo {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .contenido-modulo strong {
+    font-size: 0.8rem;
+  }
 }
 
 @media (min-width: 700px) {
