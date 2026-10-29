@@ -820,3 +820,90 @@ select option {
     padding: 14px;
   }
 }
+/* =====================================================
+   AJUSTE VISUAL DE ICONOS — HUMANÓMETRO COMUNIDAD
+   SVG CELESTE LUMINOSO SOBRE FONDO OSCURO
+   ===================================================== */
+
+/* Círculos de los cuatro accesos principales */
+.icono-modulo {
+  color: #8bd9ee;
+  border-color: rgba(139, 217, 238, 0.65);
+  background: rgba(83, 197, 235, 0.08);
+  box-shadow:
+    inset 0 0 10px rgba(83, 197, 235, 0.08),
+    0 0 12px rgba(83, 197, 235, 0.10);
+}
+
+/* Trazos de los dibujos SVG */
+.icono-modulo svg,
+.humanometro-icono svg {
+  display: block;
+  width: 30px;
+  height: 30px;
+  overflow: visible;
+  fill: none;
+  stroke: #8bd9ee;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px rgba(83, 197, 235, 0.55));
+}
+
+/* Ícono de la Góndola Comunitaria */
+.icono-gondola svg {
+  stroke: #8bd9ee;
+}
+
+/* Ícono de Comunicación */
+.icono-comunicacion svg {
+  stroke: #8bd9ee;
+}
+
+/* Ícono de Red Humana */
+.icono-red-humana svg {
+  stroke: #8bd9ee;
+}
+
+/* Ícono del Humanómetro de Humanidad */
+.icono-humanometro svg {
+  stroke: #8bd9ee;
+}
+
+/* Resplandor al tocar o seleccionar un acceso */
+.boton-modulo:hover .icono-modulo,
+.boton-modulo:focus-visible .icono-modulo,
+.boton-modulo:active .icono-modulo {
+  border-color: #8bd9ee;
+  background: rgba(83, 197, 235, 0.15);
+  box-shadow:
+    inset 0 0 12px rgba(83, 197, 235, 0.12),
+    0 0 18px rgba(83, 197, 235, 0.2);
+}
+
+/* Ícono de la tarjeta de presentación */
+.humanometro-icono {
+  color: #8bd9ee;
+  border-color: rgba(139, 217, 238, 0.65);
+  background: rgba(83, 197, 235, 0.08);
+  box-shadow: 0 0 14px rgba(83, 197, 235, 0.1);
+}
+
+.humanometro-icono svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 2.5;
+}
+
+/* Mantener proporciones en celulares pequeños */
+@media (max-width: 380px) {
+  .icono-modulo svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .humanometro-icono svg {
+    width: 29px;
+    height: 29px;
+  }
+}
