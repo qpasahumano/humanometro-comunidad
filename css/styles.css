@@ -1,1 +1,518 @@
 
+:root {
+  --fondo: #071426;
+  --panel: rgba(10, 28, 49, 0.88);
+  --borde: rgba(129, 207, 231, 0.25);
+  --celeste: #8bd9ee;
+  --blanco: #f3f8ff;
+  --texto-suave: #b8c9da;
+  --brillo: rgba(83, 197, 235, 0.12);
+  --radio: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--fondo);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--blanco);
+  background: var(--fondo);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--celeste);
+  outline-offset: 3px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.pantalla {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  background-color: var(--fondo);
+  background-image:
+    linear-gradient(
+      rgba(4, 15, 31, 0.16),
+      rgba(4, 15, 31, 0.5)
+    ),
+    url("../assets/fondo-comunidad.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* PRIMERA INTERFAZ */
+
+.pantalla-inicial {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 28px 20px;
+}
+
+.entrada-contenido {
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.boton-grafico {
+  display: block;
+  width: min(78vw, 340px);
+  max-height: 55vh;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(83, 197, 235, 0.13));
+}
+
+.boton-entrada {
+  width: min(100%, 340px);
+  margin-top: 26px;
+  padding: 16px 20px;
+  border: 1px solid rgba(151, 226, 245, 0.5);
+  border-radius: 999px;
+  background: rgba(8, 29, 49, 0.82);
+  color: var(--blanco);
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  box-shadow: 0 0 22px var(--brillo);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.boton-entrada:hover {
+  background: rgba(19, 57, 79, 0.94);
+}
+
+.boton-entrada:active {
+  transform: scale(0.98);
+}
+
+.texto-inicial {
+  max-width: 320px;
+  margin: 20px 0 0;
+  color: #e0eaf6;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* SEGUNDA INTERFAZ */
+
+.pantalla-comunidad {
+  padding: 20px 16px 30px;
+  background-attachment: scroll;
+}
+
+.encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 10px 0 20px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.marca {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.marca-titulo {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.marca-subtitulo {
+  color: var(--celeste);
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.2em;
+}
+
+.boton-perfil {
+  padding: 10px 13px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  color: var(--blanco);
+  background: rgba(7, 25, 44, 0.8);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.bienvenida,
+.selector-barrio,
+.acciones-principales,
+.humanometro,
+.vista-interna,
+.pie {
+  width: 100%;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bienvenida {
+  padding: 28px 4px 18px;
+}
+
+.etiqueta {
+  color: var(--celeste);
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.bienvenida h1 {
+  margin: 10px 0;
+  font-size: clamp(1.7rem, 6vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.bienvenida > p:last-child {
+  max-width: 520px;
+  color: var(--texto-suave);
+  line-height: 1.65;
+}
+
+/* TARJETAS Y CAMPOS */
+
+.tarjeta {
+  padding: 18px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--panel);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.selector-barrio {
+  margin-bottom: 20px;
+}
+
+.selector-barrio label,
+.vista-interna label {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--celeste);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.fila-barrio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.fila-barrio input {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid rgba(151, 194, 220, 0.3);
+  border-radius: 10px;
+  color: var(--blanco);
+  background: rgba(3, 15, 30, 0.82);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8fa4b9;
+}
+
+select option {
+  color: var(--blanco);
+  background: var(--fondo);
+}
+
+.texto-ayuda {
+  margin-bottom: 0;
+  color: var(--texto-suave);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+/* BOTONES PRINCIPALES */
+
+.acciones-principales {
+  display: grid;
+  gap: 13px;
+}
+
+.boton-modulo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 94px;
+  padding: 17px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  color: var(--blanco);
+  text-align: left;
+  background: rgba(8, 28, 49, 0.88);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.boton-modulo:hover {
+  background: rgba(17, 49, 73, 0.96);
+}
+
+.boton-modulo:active {
+  transform: scale(0.99);
+}
+
+.boton-gondola {
+  border-color: rgba(139, 217, 238, 0.5);
+  box-shadow: 0 0 24px var(--brillo);
+}
+
+.icono-modulo {
+  display: grid;
+  place-items: center;
+  flex: 0 0 43px;
+  width: 43px;
+  height: 43px;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  color: var(--celeste);
+  font-size: 1.6rem;
+}
+
+.contenido-modulo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contenido-modulo strong {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.contenido-modulo small {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.flecha {
+  color: var(--celeste);
+  font-size: 1.8rem;
+}
+
+/* HUMANÓMETRO DE HUMANIDAD */
+
+.humanometro {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 22px;
+}
+
+.humanometro-icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  color: var(--celeste);
+  font-weight: 900;
+  font-size: 1.3rem;
+}
+
+.humanometro h2 {
+  margin: 0 0 7px;
+  font-size: 1rem;
+}
+
+.humanometro p {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+
+/* VISTAS INTERNAS */
+
+.vista-interna {
+  margin-top: 24px;
+}
+
+.vista-interna h2 {
+  margin: 20px 0 10px;
+  font-size: 1.5rem;
+}
+
+.vista-interna h3 {
+  margin-top: 25px;
+}
+
+.vista-interna > p {
+  color: var(--texto-suave);
+  line-height: 1.6;
+}
+
+.vista-interna form {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.boton-volver {
+  padding: 10px 0;
+  border: 0;
+  color: var(--celeste);
+  background: transparent;
+  font-weight: 700;
+}
+
+.boton-accion,
+.boton-secundario {
+  min-height: 44px;
+  padding: 11px 15px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  color: var(--blanco);
+  font-weight: 750;
+}
+
+.boton-accion {
+  background: rgba(31, 100, 127, 0.8);
+}
+
+.boton-secundario {
+  background: rgba(7, 25, 44, 0.8);
+}
+
+.boton-ancho {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.lista-publicaciones {
+  display: grid;
+  gap: 12px;
+}
+
+.publicacion {
+  padding: 15px;
+  border: 1px solid var(--borde);
+  border-radius: 13px;
+  background: var(--panel);
+}
+
+.publicacion h4 {
+  margin: 0 0 8px;
+}
+
+.publicacion p {
+  color: var(--texto-suave);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.publicacion small {
+  color: var(--celeste);
+}
+
+.aviso-local {
+  padding: 12px;
+  border-left: 3px solid var(--celeste);
+  color: var(--texto-suave);
+  background: rgba(5, 20, 37, 0.8);
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+
+.pie {
+  margin-top: 35px;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--borde);
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* NOTIFICACIONES */
+
+.notificacion {
+  position: fixed;
+  z-index: 1000;
+  right: 16px;
+  bottom: 18px;
+  left: 16px;
+  max-width: 480px;
+  margin: auto;
+  padding: 14px 17px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  color: var(--blanco);
+  background: #102b43;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+
+@media (min-width: 700px) {
+  .pantalla-comunidad {
+    padding: 28px 28px 40px;
+  }
+
+  .acciones-principales {
+    gap: 16px;
+  }
+
+  .boton-modulo {
+    min-height: 100px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
