@@ -46,6 +46,69 @@ function mostrarVista(nombre) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+/*
+ * GELOCALIZACIÓN INVERSA
+ * Convierte las coordenadas obtenidas con permiso del usuario
+ * en un nombre de barrio o localidad.
+ *
+ * Las coordenadas se usan para realizar la consulta, pero
+ * no se guardan en el almacenamiento local.
+ */
+async function buscarBarrioPorCoordenadas(latitud, longitud) {
+  const parametros = new URLSearchParams({
+    format: "jsonv2",
+    lat: String(latitud),
+    lon: String(longitud),
+    zoom: "14",
+    addressdetails: "1",
+    "accept-language": "es"
+  });
+
+  const respuesta = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      cache: "no-store"
+    }
+  );
+
+  if (!respuesta.ok) {
+    throw new Error("No se pudo consultar el servicio geográfico.");
+  }
+
+  const datos = await respuesta.json();
+  const direccion = datos.address;
+
+  if (!direccion) {
+    throw new Error("No se encontró un nombre de barrio.");
+  }
+
+  /*
+   * Priorizamos barrio y subdivisiones locales.
+   * Si no están disponibles, utilizamos una localidad.
+   */
+  const barrio =
+    direccion.neighbourhood ||
+    direccion.suburb ||
+    direccion.quarter ||
+    direccion.city_district ||
+    direccion.borough ||
+    direccion.village ||
+    direccion.town ||
+    direccion.city ||
+    direccion.municipality ||
+    direccion.county;
+
+  if (!barrio) {
+    throw new Error("El servicio no identificó el barrio.");
+  }
+
+  return String(barrio).trim();
+}
+
 function configurarBarrio() {
   const input = $("barrio");
   const boton = $("btn-guardar-barrio");
@@ -70,7 +133,9 @@ function configurarBarrio() {
     }
 
     if (!setItem("hm_barrio", barrio)) {
-      mostrarNotificacion("No se pudo guardar el barrio en este dispositivo.");
+      mostrarNotificacion(
+        "No se pudo guardar el barrio en este dispositivo."
+      );
       return;
     }
 
@@ -83,45 +148,102 @@ function configurarBarrio() {
 
   ubicacion?.addEventListener("click", () => {
     if (!navigator.geolocation) {
-      mostrarNotificacion("Este navegador no ofrece geolocalización.");
+      mostrarNotificacion(
+        "Este navegador no ofrece geolocalización."
+      );
+      return;
+    }
+
+    if (!navigator.onLine) {
+      mostrarNotificacion(
+        "Necesitás internet para identificar el barrio automáticamente."
+      );
       return;
     }
 
     ubicacion.disabled = true;
-    ubicacion.textContent = "CONSULTANDO UBICACIÓN...";
+    ubicacion.textContent = "BUSCANDO TU BARRIO...";
 
     navigator.geolocation.getCurrentPosition(
-      (posicion) => {
-        const lat = posicion.coords.latitude;
-        const lon = posicion.coords.longitude;
+      async (posicion) => {
+        try {
+          const latitud = posicion.coords.latitude;
+          const longitud = posicion.coords.longitude;
 
-        setItem("hm_ubicacion_aproximada", {
-          lat,
-          lon,
-          fecha: new Date().toISOString()
-        });
+          /*
+           * Las coordenadas solo se utilizan en esta consulta.
+           * No se guardan en el almacenamiento local.
+           */
+          const barrio = await buscarBarrioPorCoordenadas(
+            latitud,
+            longitud
+          );
 
-        if (estado) {
-          estado.textContent =
-            "Ubicación obtenida en este dispositivo. No se publicó tu dirección exacta.";
+          /*
+           * Proponemos el nombre, pero no lo guardamos
+           * hasta que la persona pulse GUARDAR.
+           */
+          input.value = barrio;
+
+          if (estado) {
+            estado.textContent =
+              `Barrio sugerido: ${barrio}. ` +
+              "Verificá el nombre, corregilo si hace falta " +
+              "y pulsá GUARDAR.";
+          }
+
+          input.focus();
+
+          mostrarNotificacion(
+            "Encontramos una ubicación aproximada. Revisá el nombre y guardalo."
+          );
+        } catch (error) {
+          console.error(
+            "Error al identificar el barrio:",
+            error
+          );
+
+          if (estado) {
+            estado.textContent =
+              "No pudimos identificar el barrio automáticamente. " +
+              "Podés escribirlo manualmente.";
+          }
+
+          mostrarNotificacion(
+            "No se pudo identificar el barrio. Podés escribirlo manualmente."
+          );
+        } finally {
+          ubicacion.disabled = false;
+          ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
+        }
+      },
+      (error) => {
+        ubicacion.disabled = false;
+        ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
+
+        let mensaje =
+          "No se obtuvo la ubicación. Podés escribir el barrio manualmente.";
+
+        if (error.code === 1) {
+          mensaje =
+            "No autorizaste la ubicación. Podés escribir el barrio manualmente.";
+        } else if (error.code === 2) {
+          mensaje =
+            "El teléfono no pudo determinar la ubicación. Probá de nuevo o escribí el barrio.";
+        } else if (error.code === 3) {
+          mensaje =
+            "La ubicación tardó demasiado. Probá de nuevo o escribí el barrio.";
         }
 
-        ubicacion.disabled = false;
-        ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
-        mostrarNotificacion(
-          "Ubicación guardada localmente. No se ha buscado automáticamente el nombre del barrio."
-        );
-      },
-      () => {
-        ubicacion.disabled = false;
-        ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
-        mostrarNotificacion(
-          "No se obtuvo la ubicación. Podés escribir el barrio manualmente."
-        );
+        if (estado) {
+          estado.textContent = mensaje;
+        }
+
+        mostrarNotificacion(mensaje);
       },
       {
         enableHighAccuracy: false,
-        timeout: 10000,
+        timeout: 15000,
         maximumAge: 300000
       }
     );
@@ -143,7 +265,9 @@ function configurarPerfil() {
     const valor = nombre.value.trim();
 
     if (!valor) {
-      mostrarNotificacion("Escribí el nombre que querés mostrar.");
+      mostrarNotificacion(
+        "Escribí el nombre que querés mostrar."
+      );
       nombre.focus();
       return;
     }
@@ -203,6 +327,7 @@ function crearTarjeta(titulo, lineas = []) {
 
   lineas.forEach((texto) => {
     if (!texto) return;
+
     const parrafo = document.createElement("p");
     parrafo.textContent = texto;
     tarjeta.appendChild(parrafo);
@@ -225,7 +350,9 @@ function configurarAyuda() {
 
     if (!Array.isArray(registros) || registros.length === 0) {
       lista.appendChild(
-        crearTarjeta("Todavía no hay solicitudes ni ofrecimientos guardados.")
+        crearTarjeta(
+          "Todavía no hay solicitudes ni ofrecimientos guardados."
+        )
       );
       return;
     }
@@ -239,7 +366,9 @@ function configurarAyuda() {
           registro.disponibilidad
             ? `Disponibilidad: ${registro.disponibilidad}`
             : "",
-          registro.barrio ? `Barrio indicado: ${registro.barrio}` : "",
+          registro.barrio
+            ? `Barrio indicado: ${registro.barrio}`
+            : "",
           `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`,
           "Registro guardado solamente en este dispositivo."
         ]
@@ -281,7 +410,9 @@ function configurarAyuda() {
     const registros = getItem(clave, []);
 
     if (!Array.isArray(registros)) {
-      mostrarNotificacion("No se pudo leer el almacenamiento de ayuda.");
+      mostrarNotificacion(
+        "No se pudo leer el almacenamiento de ayuda."
+      );
       return;
     }
 
@@ -298,11 +429,14 @@ function configurarAyuda() {
     });
 
     if (!setItem(clave, registros)) {
-      mostrarNotificacion("No se pudo guardar el registro de ayuda.");
+      mostrarNotificacion(
+        "No se pudo guardar el registro de ayuda."
+      );
       return;
     }
 
     formulario.reset();
+
     if (estado) {
       estado.textContent =
         "Registro guardado localmente. Todavía no fue enviado a otros usuarios.";
@@ -354,7 +488,9 @@ function configurarEvaluaciones() {
     const detalle = $("detalle-evaluacion").value.trim();
 
     if (!referencia || !detalle) {
-      mostrarNotificacion("Completá la referencia y la explicación.");
+      mostrarNotificacion(
+        "Completá la referencia y la explicación."
+      );
       return;
     }
 
@@ -383,7 +519,9 @@ function configurarEvaluaciones() {
     });
 
     if (!setItem(clave, registros)) {
-      mostrarNotificacion("No se pudo guardar la evaluación.");
+      mostrarNotificacion(
+        "No se pudo guardar la evaluación."
+      );
       return;
     }
 
@@ -415,9 +553,11 @@ async function iniciarAplicacion() {
   configurarEvaluaciones();
 
   initCommunity({ getItem, setItem, mostrarNotificacion });
+
   initConnectivity({
     onChange: (conectado) => {
       const estado = $("estado-conexion");
+
       if (estado) {
         estado.textContent = conectado
           ? "Conexión a internet disponible."
@@ -428,11 +568,17 @@ async function iniciarAplicacion() {
 
   initMessages({ getItem, setItem, mostrarNotificacion });
 
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  if (
+    "serviceWorker" in navigator &&
+    location.protocol.startsWith("http")
+  ) {
     try {
       await navigator.serviceWorker.register("./service-worker.js");
     } catch (error) {
-      console.error("No se pudo registrar el service worker:", error);
+      console.error(
+        "No se pudo registrar el service worker:",
+        error
+      );
     }
   }
 }
