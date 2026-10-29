@@ -1,4 +1,4 @@
-const CACHE_NAME = "humanometro-comunidad-v2";
+const CACHE_NAME = "humanometro-comunidad-v3";
 const CACHE_PREFIX = "humanometro-comunidad-";
 
 const ARCHIVOS = [
