@@ -157,6 +157,60 @@ if (boton) {
 
 });
 
+  // Conectividad Solidaria: oferta voluntaria, nunca obligatoria.
+  if (!$("hm-connectivity-available")) {
+    const bloque = document.createElement("fieldset");
+    bloque.className = "perfil-conectividad tarjeta";
+    bloque.innerHTML = `
+      <legend>Conectividad Solidaria</legend>
+      <label class="control-check" for="hm-connectivity-available">
+        <input id="hm-connectivity-available" type="checkbox">
+        Puedo ofrecer acceso a Internet voluntariamente
+      </label>
+      <label for="hm-connectivity-mode">Modalidad</label>
+      <select id="hm-connectivity-mode">
+        <option value="gratuito">Gratuito / solidario</option>
+        <option value="intercambio">Por intercambio</option>
+        <option value="ambas">Ambas modalidades</option>
+      </select>
+      <label class="control-check" for="hm-connectivity-emergency">
+        <input id="hm-connectivity-emergency" type="checkbox">
+        Podría ofrecerlo durante una emergencia si tengo conexión y energía
+      </label>
+      <label for="hm-connectivity-zone">Zona aproximada para ofrecer conectividad</label>
+      <input id="hm-connectivity-zone" type="text" maxlength="120" placeholder="Ej.: zona centro de mi localidad">
+      <p class="texto-ayuda">La oferta es voluntaria. No publiques contraseñas ni tu dirección exacta. Podés pausar o desactivar esta opción cuando quieras.</p>
+    `;
+    if (boton) formulario.insertBefore(bloque, boton);
+    else formulario.appendChild(bloque);
+  }
+
+  const selectorFoto = $("foto-perfil-archivo");
+  selectorFoto?.addEventListener("change", () => {
+    const archivo = selectorFoto.files?.[0];
+    if (!archivo) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type)) {
+      mostrarEstadoPerfil("Elegí una imagen JPG, PNG o WebP.");
+      selectorFoto.value = "";
+      return;
+    }
+    if (archivo.size > 5 * 1024 * 1024) {
+      mostrarEstadoPerfil("La foto debe pesar 5 MB o menos.");
+      selectorFoto.value = "";
+      return;
+    }
+    const vista = $("foto-perfil-vista");
+    const inicial = $("foto-perfil-inicial");
+    const urlTemporal = URL.createObjectURL(archivo);
+    if (vista) {
+      if (vista.dataset.previewUrl) URL.revokeObjectURL(vista.dataset.previewUrl);
+      vista.src = urlTemporal;
+      vista.dataset.previewUrl = urlTemporal;
+      vista.hidden = false;
+    }
+    if (inicial) inicial.hidden = true;
+  });
+
 formulario.addEventListener("submit", guardarPerfil, true);
 }
 
@@ -313,11 +367,64 @@ const nombre = $("nombre-usuario");
 const presentacion = $("hm-profile-presentation");
 const localidad = $("hm-profile-locality");
 const zona = $("hm-profile-zone");
+const conectividad = $("hm-connectivity-available");
+const modalidad = $("hm-connectivity-mode");
+const emergencia = $("hm-connectivity-emergency");
+const zonaConectividad = $("hm-connectivity-zone");
+const foto = $("foto-perfil-vista");
+const inicialFoto = $("foto-perfil-inicial");
 
+if (foto) { foto.hidden = true; foto.removeAttribute("src"); }
+if (inicialFoto) inicialFoto.hidden = false;
+if (conectividad) conectividad.checked = false;
+if (modalidad) modalidad.value = "gratuito";
+if (emergencia) emergencia.checked = false;
+if (zonaConectividad) zonaConectividad.value = "";
 if (nombre) nombre.value = "";
 if (presentacion) presentacion.value = "";
 if (localidad) localidad.value = "";
 if (zona) zona.value = "";
+}
+
+async function cargarMisPublicaciones() {
+const contenedor = $("lista-mis-publicaciones");
+if (!contenedor) return;
+contenedor.replaceChildren();
+if (!usuarioActual || !perfilActual?.id) {
+  contenedor.textContent = "Iniciá sesión y completá tu perfil para ver tus publicaciones.";
+  return;
+}
+const aviso = document.createElement("p");
+aviso.textContent = "Cargando tus publicaciones…";
+contenedor.appendChild(aviso);
+try {
+  const { data, error } = await supabase
+    .from("publicaciones")
+    .select("id, tipo, categoria, titulo, descripcion, estado, creado_en")
+    .eq("perfil_id", perfilActual.id)
+    .order("creado_en", { ascending: false });
+  contenedor.replaceChildren();
+  if (error) throw error;
+  if (!data?.length) {
+    contenedor.textContent = "Todavía no publicaste productos ni servicios desde esta cuenta.";
+    return;
+  }
+  data.forEach((publicacion) => {
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "tarjeta-publicacion";
+    const titulo = document.createElement("h4");
+    titulo.textContent = publicacion.titulo || "Publicación sin título";
+    const detalle = document.createElement("p");
+    detalle.textContent = publicacion.descripcion || "";
+    const estado = document.createElement("small");
+    estado.textContent = `${publicacion.tipo === "oferta" ? "OFREZCO" : "BUSCO"} · ${publicacion.categoria || "Sin categoría"} · Estado: ${publicacion.estado || "sin especificar"}`;
+    tarjeta.append(titulo, detalle, estado);
+    contenedor.appendChild(tarjeta);
+  });
+} catch (error) {
+  console.error("Error cargando publicaciones propias:", error);
+  contenedor.textContent = "No se pudieron cargar tus publicaciones. Revisaremos la tabla publicaciones y sus permisos en Supabase.";
+}
 }
 
 async function cargarPerfil() {
@@ -332,7 +439,7 @@ mostrarEstadoPerfil("Buscando tu perfil…");
 const { data, error } = await supabase
   .from("perfiles")
   .select(
-    "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url"
+    "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
   )
   .eq("id", usuarioActual.id)
   .maybeSingle();
@@ -362,12 +469,22 @@ if ($("hm-profile-locality")) {
 if ($("hm-profile-zone")) {
   $("hm-profile-zone").value = data?.zona_aproximada || "";
 }
+if ($("hm-connectivity-available")) $("hm-connectivity-available").checked = Boolean(data?.conectividad_disponible);
+if ($("hm-connectivity-mode")) $("hm-connectivity-mode").value = data?.conectividad_modalidad || "gratuito";
+if ($("hm-connectivity-emergency")) $("hm-connectivity-emergency").checked = Boolean(data?.conectividad_emergencias);
+if ($("hm-connectivity-zone")) $("hm-connectivity-zone").value = data?.conectividad_zona || "";
+if ($("foto-perfil-vista") && data?.foto_url) {
+  $("foto-perfil-vista").src = data.foto_url;
+  $("foto-perfil-vista").hidden = false;
+  if ($("foto-perfil-inicial")) $("foto-perfil-inicial").hidden = true;
+}
 
 mostrarEstadoPerfil(
   data
     ? "Perfil cargado. Podés revisar tus datos y guardarlos."
     : "Todavía no tenés perfil. Completá tus datos y guardalos."
 );
+await cargarMisPublicaciones();
 
 } catch (error) {
 console.error("Error inesperado al cargar el perfil:", error);
@@ -390,6 +507,11 @@ const nombre = $("nombre-usuario")?.value.trim() || "";
 const presentacion = $("hm-profile-presentation")?.value.trim() || "";
 const localidad = $("hm-profile-locality")?.value.trim() || "";
 const zona = $("hm-profile-zone")?.value.trim() || "";
+const conectividadDisponible = Boolean($("hm-connectivity-available")?.checked);
+const conectividadModalidad = $("hm-connectivity-mode")?.value || "gratuito";
+const conectividadEmergencias = Boolean($("hm-connectivity-emergency")?.checked);
+const conectividadZona = $("hm-connectivity-zone")?.value.trim() || "";
+let fotoUrl = perfilActual?.foto_url || null;
 
 if (!nombre) {
 mostrarEstadoPerfil("Escribí el nombre visible.");
@@ -406,12 +528,36 @@ boton.textContent = "GUARDANDO…";
 mostrarEstadoPerfil("Guardando perfil en tu cuenta…");
 
 try {
+const archivoFoto = $("foto-perfil-archivo")?.files?.[0];
+if (archivoFoto) {
+  const extension = archivoFoto.type === "image/png" ? "png" : archivoFoto.type === "image/webp" ? "webp" : "jpg";
+  const rutaFoto = `${usuarioActual.id}/perfil-${Date.now()}.${extension}`;
+  const { error: errorSubida } = await supabase.storage
+    .from("fotos-perfil")
+    .upload(rutaFoto, archivoFoto, {
+      upsert: true,
+      contentType: archivoFoto.type,
+      cacheControl: "3600"
+    });
+  if (errorSubida) {
+    mostrarEstadoPerfil("No se pudo subir la foto. Revisaremos el bucket fotos-perfil en Supabase: " + errorSubida.message);
+    return;
+  }
+  const { data: urlFoto } = supabase.storage.from("fotos-perfil").getPublicUrl(rutaFoto);
+  fotoUrl = urlFoto?.publicUrl || null;
+}
+
 const registro = {
 id: usuarioActual.id,
 nombre_visible: nombre,
 presentacion: presentacion || null,
 localidad: localidad || null,
 zona_aproximada: zona || null,
+foto_url: fotoUrl,
+conectividad_disponible: conectividadDisponible,
+conectividad_modalidad: conectividadModalidad,
+conectividad_emergencias: conectividadEmergencias,
+conectividad_zona: conectividadZona || null,
 actualizado_en: new Date().toISOString()
 };
 
@@ -419,7 +565,7 @@ const { data, error } = await supabase
   .from("perfiles")
   .upsert(registro, { onConflict: "id" })
   .select(
-    "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url"
+    "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
   )
   .single();
 
@@ -430,6 +576,14 @@ if (error) {
 }
 
 perfilActual = data;
+const vistaFoto = $("foto-perfil-vista");
+if (vistaFoto && data?.foto_url) {
+  vistaFoto.src = data.foto_url;
+  vistaFoto.hidden = false;
+  if ($("foto-perfil-inicial")) $("foto-perfil-inicial").hidden = true;
+}
+if ($("foto-perfil-archivo")) $("foto-perfil-archivo").value = "";
+await cargarMisPublicaciones();
 
 mostrarEstadoPerfil("¡Perfil guardado correctamente en Supabase!");
 mostrarEstado("Sesión activa: " + usuarioActual.email);
