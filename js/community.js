@@ -31,6 +31,9 @@ export function initCommunity({
   const limpiarFiltrosBtn = document.getElementById(
     "btn-limpiar-filtros"
   );
+  const buscarPublicacionesBtn = document.getElementById(
+    "btn-buscar-publicaciones"
+  );
   const estadoPublicacion = document.getElementById("estado-publicacion");
 
   let publicaciones = [];
@@ -387,6 +390,7 @@ export function initCommunity({
       const coincideTipo =
         !tipoFiltro ||
         tipoFiltro === "todos" ||
+        tipoFiltro === "todas" ||
         String(publicacion.tipo)
           .toLocaleLowerCase("es-AR") === tipoFiltro;
 
@@ -682,7 +686,7 @@ export function initCommunity({
     }
 
     if (filtroTipoInput) {
-      filtroTipoInput.value = "";
+      filtroTipoInput.value = "todas";
     }
 
     renderizarPublicaciones();
@@ -705,15 +709,24 @@ export function initCommunity({
     manejarCategoria
   );
 
-  busquedaInput?.addEventListener(
-    "input",
+  buscarPublicacionesBtn?.addEventListener(
+    "click",
     manejarBusqueda
   );
 
-  filtroTipoInput?.addEventListener(
-    "change",
-    manejarBusqueda
-  );
+  busquedaInput?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      manejarBusqueda();
+    }
+  });
+
+  filtroTipoInput?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      manejarBusqueda();
+    }
+  });
 
   limpiarFiltrosBtn?.addEventListener(
     "click",
