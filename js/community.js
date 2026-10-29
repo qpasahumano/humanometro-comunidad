@@ -52,9 +52,28 @@ export function initCommunity({
   }
 
   function convertirRemota(publicacion) {
-    const fotos = Array.isArray(publicacion.fotos)
-      ? publicacion.fotos
-      : [];
+    const descripcion = String(publicacion.descripcion || "");
+    const prefijoCondicion = "[Condición informada: ";
+    let detalle = descripcion;
+    let condicion = "";
+
+    // La condición se identifica en la descripción sin depender
+    // de que el campo "modalidad" tenga ese significado.
+    const inicioCondicion = descripcion.lastIndexOf(prefijoCondicion);
+
+    if (inicioCondicion >= 0 && descripcion.endsWith("]")) {
+      condicion = descripcion
+        .slice(
+          inicioCondicion + prefijoCondicion.length,
+          -1
+        )
+        .trim();
+
+      detalle = descripcion
+        .slice(0, inicioCondicion)
+        .trim()
+        .replace(/\n+$/, "");
+    }
 
     return {
       id: publicacion.id,
@@ -63,13 +82,13 @@ export function initCommunity({
       categoria: publicacion.categoria,
       otraCategoria: "",
       titulo: publicacion.titulo,
-      detalle: publicacion.descripcion || "",
-      condicion: publicacion.modalidad || "",
+      detalle,
+      condicion,
       modalidad: publicacion.modalidad || "",
       modalidadIntercambio: publicacion.modalidad_intercambio || "",
       queNecesitaACambio: publicacion.que_necesita_a_cambio || "",
       barrio: publicacion.zona_aproximada || "",
-      fotos,
+      fotos: Array.isArray(publicacion.fotos) ? publicacion.fotos : [],
       estado: publicacion.estado,
       fecha: publicacion.creado_en,
       origen: "supabase"
@@ -117,6 +136,7 @@ export function initCommunity({
         publicacion.modalidad,
         publicacion.modalidadIntercambio,
         publicacion.queNecesitaACambio,
+        publicacion.condicion,
         tipo
       ].join(" "));
 
@@ -125,9 +145,11 @@ export function initCommunity({
 
     if (!publicaciones.length) {
       const mensaje = document.createElement("p");
+
       mensaje.textContent = termino || tipoSeleccionado !== "todas"
         ? "No hay publicaciones que coincidan con esa búsqueda."
         : "Todavía no hay publicaciones disponibles en La Góndola.";
+
       lista.appendChild(mensaje);
       return;
     }
@@ -163,22 +185,28 @@ export function initCommunity({
 
         if (publicacion.condicion) {
           const condicion = document.createElement("p");
+
           condicion.textContent =
             `Condición informada: ${traducirCondicion(publicacion.condicion)}`;
+
           tarjeta.appendChild(condicion);
         }
 
         if (publicacion.modalidadIntercambio) {
           const modalidad = document.createElement("p");
+
           modalidad.textContent =
             `Modalidad de intercambio: ${publicacion.modalidadIntercambio}`;
+
           tarjeta.appendChild(modalidad);
         }
 
         if (publicacion.queNecesitaACambio) {
           const cambio = document.createElement("p");
+
           cambio.textContent =
             `Qué necesita a cambio: ${publicacion.queNecesitaACambio}`;
+
           tarjeta.appendChild(cambio);
         }
 
@@ -202,6 +230,7 @@ export function initCommunity({
 
         const alcance = document.createElement("small");
         alcance.style.display = "block";
+
         alcance.textContent = publicacion.origen === "supabase"
           ? "Publicación compartida en la comunidad."
           : "Publicación guardada en este dispositivo; todavía no se compartió.";
@@ -215,6 +244,7 @@ export function initCommunity({
     if (!categoria || !contenedorOtra || !otraCategoria) return;
 
     const mostrar = categoria.value === "otros";
+
     contenedorOtra.hidden = !mostrar;
     otraCategoria.required = mostrar;
 
@@ -286,6 +316,12 @@ export function initCommunity({
     const condicion =
       document.getElementById("condicion-publicacion")?.value || "";
 
+    const modalidadIntercambio =
+      document.getElementById("modalidad-intercambio")?.value || "";
+
+    const queNecesitaACambio =
+      document.getElementById("que-necesita-a-cambio")?.value.trim() || "";
+
     if (!tipo || !categoria || !titulo || !detalle) {
       mostrarNotificacion("Completá los campos obligatorios.");
       return;
@@ -305,33 +341,47 @@ export function initCommunity({
 
     if (!usuario) {
       mostrarNotificacion("Iniciá sesión para publicar en La Góndola.");
+
       mostrarEstadoFormulario(
         "Iniciá sesión para publicar. Tus publicaciones locales anteriores se conservan."
       );
+
       return;
     }
 
     if (!perfil || !perfil.id) {
       mostrarNotificacion("Primero completá y guardá tu perfil comunitario.");
+
       mostrarEstadoFormulario(
         "Para publicar en la comunidad, primero tenés que guardar tu perfil."
       );
+
       return;
     }
 
     const zona = String(getItem("hm_barrio", "") || "").trim();
+    const categoriaFinal = categoriaPersonalizada || categoriaSeleccionada;
+
+    const detalleConCondicion = condicion
+      ? `${detalle}\n\n[Condición informada: ${condicion}]`
+      : detalle;
 
     const nuevaPublicacion = {
       id: crearId(),
+      perfil_id: perfil.id,
       tipo,
-      categoria: categoriaPersonalizada || categoriaSeleccionada,
+      categoria: categoriaFinal,
       otraCategoria: categoriaSeleccionada === "otros"
         ? categoriaPersonalizada
         : "",
       titulo,
       detalle,
       condicion,
+      modalidadIntercambio,
+      queNecesitaACambio,
       barrio: zona,
+      fotos: [],
+      estado: "activa",
       fecha: new Date().toISOString(),
       origen: "local"
     };
@@ -339,12 +389,12 @@ export function initCommunity({
     const registroRemoto = {
       perfil_id: perfil.id,
       tipo,
-      categoria: categoriaPersonalizada || categoriaSeleccionada,
+      categoria: categoriaFinal,
       titulo,
-      descripcion: detalle,
-      modalidad: condicion || null,
-      modalidad_intercambio: null,
-      que_necesita_a_cambio: null,
+      descripcion: detalleConCondicion,
+      modalidad: null,
+      modalidad_intercambio: modalidadIntercambio || null,
+      que_necesita_a_cambio: queNecesitaACambio || null,
       zona_aproximada: zona || perfil.zona_aproximada || null,
       fotos: [],
       estado: "activa",
@@ -375,7 +425,6 @@ export function initCommunity({
     if (error) {
       console.error("Error al compartir publicación:", error);
 
-      // Conserva la publicación local aunque Supabase rechace el registro.
       publicacionesLocales.push(nuevaPublicacion);
 
       if (!setItem(STORAGE_KEY, publicacionesLocales)) {
@@ -397,6 +446,7 @@ export function initCommunity({
       mostrarNotificacion(
         "Guardada localmente. No se pudo compartir en Supabase."
       );
+
       return;
     }
 
@@ -406,7 +456,6 @@ export function initCommunity({
 
     formulario.reset();
     actualizarCampoOtraCategoria();
-
     mostrarPublicaciones();
 
     mostrarEstadoFormulario(
@@ -427,6 +476,7 @@ export function initCommunity({
   limpiarFiltros?.addEventListener("click", () => {
     if (busqueda) busqueda.value = "";
     if (filtroTipo) filtroTipo.value = "todas";
+
     mostrarPublicaciones();
   });
 
@@ -445,6 +495,7 @@ export function initCommunity({
   return {
     mostrarPublicaciones,
     cargarPublicacionesRemotas,
+
     destruir() {
       cambioSesion.data.subscription.unsubscribe();
     }
