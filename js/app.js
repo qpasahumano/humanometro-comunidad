@@ -6,18 +6,27 @@ import { getItem, setItem } from "./storage.js";
 
 const $ = (id) => document.getElementById(id);
 
+/* =========================
+NOTIFICACIONES
+========================= */
+
 function mostrarNotificacion(mensaje) {
 const elemento = $("notificacion");
 if (!elemento) return;
 
 elemento.textContent = mensaje;
 elemento.hidden = false;
+
 clearTimeout(mostrarNotificacion.timer);
 
 mostrarNotificacion.timer = setTimeout(() => {
 elemento.hidden = true;
 }, 3500);
 }
+
+/* =========================
+NAVEGACIÓN ENTRE PANTALLAS
+========================= */
 
 function mostrarVista(nombre) {
 const vistas = [
@@ -44,27 +53,28 @@ elementosInicio.forEach((elemento) => {
 if (elemento) elemento.hidden = Boolean(nombre);
 });
 
-window.scrollTo({ top: 0, behavior: "smooth" });
+window.scrollTo({
+top: 0,
+behavior: "smooth"
+});
 }
 
-/*
+/* =========================
+GEOLOCALIZACIÓN INVERSA
 
-* GEOLOCALIZACIÓN INVERSA
-* Convierte las coordenadas obtenidas con permiso del usuario
-* en un nombre de barrio o localidad.
-* 
-* Las coordenadas se utilizan para realizar la consulta,
-* pero no se guardan en el almacenamiento local.
-  */
-  async function buscarBarrioPorCoordenadas(latitud, longitud) {
-  const parametros = new URLSearchParams({
-  format: "jsonv2",
-  lat: String(latitud),
-  lon: String(longitud),
-  zoom: "14",
-  addressdetails: "1",
-  "accept-language": "es"
-  });
+Las coordenadas se consultan para sugerir
+un barrio o localidad. No se guardan.
+========================= */
+
+async function buscarBarrioPorCoordenadas(latitud, longitud) {
+const parametros = new URLSearchParams({
+format: "jsonv2",
+lat: String(latitud),
+lon: String(longitud),
+zoom: "14",
+addressdetails: "1",
+"accept-language": "es"
+});
 
 const respuesta = await fetch(
 "https://nominatim.openstreetmap.org/reverse?${parametros.toString()}",
@@ -85,7 +95,7 @@ const datos = await respuesta.json();
 const direccion = datos.address;
 
 if (!direccion) {
-throw new Error("No se encontró un nombre de barrio.");
+throw new Error("No se encontró una dirección reconocible.");
 }
 
 const barrio =
@@ -106,6 +116,10 @@ throw new Error("El servicio no identificó el barrio.");
 
 return String(barrio).trim();
 }
+
+/* =========================
+CONFIGURACIÓN DEL BARRIO
+========================= */
 
 function configurarBarrio() {
 const input = $("barrio");
@@ -189,10 +203,7 @@ navigator.geolocation.getCurrentPosition(
         "Encontramos una ubicación aproximada. Revisá el nombre y guardalo."
       );
     } catch (error) {
-      console.error(
-        "Error al identificar el barrio:",
-        error
-      );
+      console.error("Error al identificar el barrio:", error);
 
       if (estado) {
         estado.textContent =
@@ -242,47 +253,28 @@ navigator.geolocation.getCurrentPosition(
 });
 }
 
-function configurarPerfil() {
-const formulario = $("form-perfil");
-const nombre = $("nombre-usuario");
-const estado = $("estado-perfil");
+/*
 
-if (!formulario || !nombre) return;
+* IMPORTANTE:
+* El perfil ya lo gestiona js/auth.js mediante Supabase.
+* No se debe volver a guardar el nombre en el almacenamiento
+* local ni agregar un segundo manejador de envío al formulario.
+  */
 
-nombre.value = getItem("hm_nombre_usuario", "");
-
-formulario.addEventListener("submit", (evento) => {
-evento.preventDefault();
-
-const valor = nombre.value.trim();
-
-if (!valor) {
-  mostrarNotificacion(
-    "Escribí el nombre que querés mostrar."
-  );
-  nombre.focus();
-  return;
-}
-
-if (!setItem("hm_nombre_usuario", valor)) {
-  mostrarNotificacion("No se pudo guardar el perfil.");
-  return;
-}
-
-if (estado) {
-  estado.textContent = "Nombre guardado en este dispositivo.";
-}
-
-mostrarNotificacion("Perfil guardado localmente.");
-
-});
-}
+/* =========================
+NAVEGACIÓN PRINCIPAL
+========================= */
 
 function configurarNavegacion() {
 $("btn-entrar")?.addEventListener("click", () => {
-$("pantalla-inicial").hidden = true;
-$("pantalla-comunidad").hidden = false;
+const inicial = $("pantalla-inicial");
+const comunidad = $("pantalla-comunidad");
+
+if (inicial) inicial.hidden = true;
+if (comunidad) comunidad.hidden = false;
+
 mostrarVista(null);
+
 });
 
 $("btn-gondola")?.addEventListener("click", () => {
@@ -310,6 +302,10 @@ boton.addEventListener("click", () => mostrarVista(null));
 });
 }
 
+/* =========================
+TARJETAS INFORMATIVAS
+========================= */
+
 function crearTarjeta(titulo, lineas = []) {
 const tarjeta = document.createElement("article");
 tarjeta.className = "tarjeta-publicacion";
@@ -330,6 +326,13 @@ tarjeta.appendChild(parrafo);
 return tarjeta;
 }
 
+/* =========================
+SOLICITUDES Y OFRECIMIENTOS DE AYUDA
+
+Esta versión conserva el almacenamiento local.
+Todavía no representa publicaciones compartidas.
+========================= */
+
 function configurarAyuda() {
 const formulario = $("form-ayuda");
 const lista = $("lista-ayuda");
@@ -340,6 +343,7 @@ function renderizar() {
 if (!lista) return;
 
 lista.replaceChildren();
+
 const registros = getItem(clave, []);
 
 if (!Array.isArray(registros) || registros.length === 0) {
@@ -363,7 +367,9 @@ registros.slice().reverse().forEach((registro) => {
       registro.barrio
         ? `Barrio indicado: ${registro.barrio}`
         : "",
-      `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`,
+      registro.fecha
+        ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
+        : "",
       "Registro guardado solamente en este dispositivo."
     ]
   );
@@ -376,10 +382,11 @@ registros.slice().reverse().forEach((registro) => {
 formulario?.addEventListener("submit", (evento) => {
 evento.preventDefault();
 
-const tipo = $("tipo-ayuda").value;
-const categoria = $("categoria-ayuda").value;
-const detalle = $("detalle-ayuda").value.trim();
-const disponibilidad = $("disponibilidad-ayuda").value.trim();
+const tipo = $("tipo-ayuda")?.value || "";
+const categoria = $("categoria-ayuda")?.value || "";
+const detalle = $("detalle-ayuda")?.value.trim() || "";
+const disponibilidad =
+  $("disponibilidad-ayuda")?.value.trim() || "";
 
 if (!detalle) {
   mostrarNotificacion("Contanos qué necesitás u ofrecés.");
@@ -445,6 +452,13 @@ mostrarNotificacion("Registro guardado en este dispositivo.");
 renderizar();
 }
 
+/* =========================
+EVALUACIONES DE INTERCAMBIOS
+
+Esta versión conserva el almacenamiento local.
+No publica evaluaciones ni las presenta como verificadas.
+========================= */
+
 function configurarEvaluaciones() {
 const formulario = $("form-evaluacion");
 const lista = $("lista-evaluaciones");
@@ -455,6 +469,7 @@ function renderizar() {
 if (!lista) return;
 
 lista.replaceChildren();
+
 const registros = getItem(clave, []);
 
 if (!Array.isArray(registros) || registros.length === 0) {
@@ -469,7 +484,9 @@ registros.slice().reverse().forEach((registro) => {
     crearTarjeta(registro.referencia, [
       `Resultado: ${registro.resultadoTexto}`,
       registro.detalle,
-      `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`,
+      registro.fecha
+        ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
+        : "",
       "Evaluación local, sin verificación independiente."
     ])
   );
@@ -480,9 +497,12 @@ registros.slice().reverse().forEach((registro) => {
 formulario?.addEventListener("submit", (evento) => {
 evento.preventDefault();
 
-const referencia = $("referencia-evaluacion").value.trim();
-const resultado = $("resultado-evaluacion").value;
-const detalle = $("detalle-evaluacion").value.trim();
+const referencia =
+  $("referencia-evaluacion")?.value.trim() || "";
+const resultado =
+  $("resultado-evaluacion")?.value || "";
+const detalle =
+  $("detalle-evaluacion")?.value.trim() || "";
 
 if (!referencia || !detalle) {
   mostrarNotificacion(
@@ -537,34 +557,47 @@ mostrarNotificacion("Evaluación guardada en este dispositivo.");
 renderizar();
 }
 
+/* =========================
+IDENTIFICADOR LOCAL
+========================= */
+
 function crearId() {
-return typeof crypto !== "undefined" && crypto.randomUUID
-? crypto.randomUUID()
-: "${Date.now()}-${Math.random().toString(16).slice(2)}";
+if (
+typeof crypto !== "undefined" &&
+typeof crypto.randomUUID === "function"
+) {
+return crypto.randomUUID();
 }
 
-async function iniciarAplicacion() {
-/*
+return "${Date.now()}-${Math.random().toString(16).slice(2)}";
+}
 
-* Inicializamos el acceso a Supabase.
-* La interfaz de autenticación se crea desde auth.js.
-  */
-  try {
-  await iniciarAutenticacion();
-  } catch (error) {
-  console.error("Error al iniciar la autenticación:", error);
-  mostrarNotificacion(
+/* =========================
+INICIO DE LA APLICACIÓN
+========================= */
+
+async function iniciarAplicacion() {
+try {
+await iniciarAutenticacion();
+} catch (error) {
+console.error("Error al iniciar la autenticación:", error);
+
+mostrarNotificacion(
   "No se pudo inicializar el acceso a la cuenta."
-  );
-  }
+);
+
+}
 
 configurarNavegacion();
 configurarBarrio();
-configurarPerfil();
 configurarAyuda();
 configurarEvaluaciones();
 
-initCommunity({ getItem, setItem, mostrarNotificacion });
+initCommunity({
+getItem,
+setItem,
+mostrarNotificacion
+});
 
 initConnectivity({
 onChange: (conectado) => {
@@ -579,7 +612,11 @@ const estado = $("estado-conexion");
 
 });
 
-initMessages({ getItem, setItem, mostrarNotificacion });
+initMessages({
+getItem,
+setItem,
+mostrarNotificacion
+});
 
 if (
 "serviceWorker" in navigator &&
