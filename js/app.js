@@ -6,631 +6,619 @@ import { getItem, setItem } from "./storage.js";
 
 const $ = (id) => document.getElementById(id);
 
-/* =========================
-NOTIFICACIONES
-========================= */
+let navegacionConfigurada = false;
+let barrioConfigurado = false;
+let ayudaConfigurada = false;
+let evaluacionesConfiguradas = false;
 
 function mostrarNotificacion(mensaje) {
-const elemento = $("notificacion");
-if (!elemento) return;
+  const elemento = $("notificacion");
+  if (!elemento) return;
 
-elemento.textContent = mensaje;
-elemento.hidden = false;
+  elemento.textContent = mensaje;
+  elemento.hidden = false;
 
-clearTimeout(mostrarNotificacion.timer);
+  clearTimeout(mostrarNotificacion.timer);
 
-mostrarNotificacion.timer = setTimeout(() => {
-elemento.hidden = true;
-}, 3500);
+  mostrarNotificacion.timer = setTimeout(() => {
+    elemento.hidden = true;
+  }, 3500);
 }
 
 /* =========================
-NAVEGACIÓN ENTRE PANTALLAS
+   NAVEGACIÓN ENTRE VISTAS
 ========================= */
 
-function mostrarVista(nombre) {
-const vistas = [
-"vista-gondola",
-"vista-comunicacion",
-"vista-ayuda",
-"vista-perfil",
-"vista-humanometro"
-];
+function mostrarVista(nombre = null) {
+  const vistas = [
+    "vista-gondola",
+    "vista-comunicacion",
+    "vista-ayuda",
+    "vista-perfil",
+    "vista-humanometro"
+  ];
 
-vistas.forEach((id) => {
-const elemento = $(id);
-if (elemento) elemento.hidden = id !== nombre;
-});
+  vistas.forEach((id) => {
+    const elemento = $(id);
+    if (elemento) elemento.hidden = id !== nombre;
+  });
 
-const elementosInicio = [
-document.querySelector(".bienvenida"),
-document.querySelector(".selector-barrio"),
-document.querySelector(".acciones-principales"),
-document.querySelector(".humanometro")
-];
+  const elementosInicio = [
+    document.querySelector(".bienvenida"),
+    document.querySelector(".selector-barrio"),
+    document.querySelector(".acciones-principales"),
+    document.querySelector(".humanometro")
+  ];
 
-elementosInicio.forEach((elemento) => {
-if (elemento) elemento.hidden = Boolean(nombre);
-});
+  elementosInicio.forEach((elemento) => {
+    if (elemento) elemento.hidden = Boolean(nombre);
+  });
 
-window.scrollTo({
-top: 0,
-behavior: "smooth"
-});
+  window.scrollTo({
+    top: 0,
+    behavior: "auto"
+  });
+}
+
+function entrarALaComunidad() {
+  const inicial = $("pantalla-inicial");
+  const comunidad = $("pantalla-comunidad");
+
+  if (inicial) inicial.hidden = true;
+  if (comunidad) comunidad.hidden = false;
+
+  mostrarVista(null);
+}
+
+function configurarNavegacion() {
+  if (navegacionConfigurada) return;
+  navegacionConfigurada = true;
+
+  $("btn-entrar")?.addEventListener("click", entrarALaComunidad);
+
+  $("btn-gondola")?.addEventListener("click", () => {
+    mostrarVista("vista-gondola");
+  });
+
+  $("btn-comunicacion")?.addEventListener("click", () => {
+    mostrarVista("vista-comunicacion");
+  });
+
+  $("btn-ayuda")?.addEventListener("click", () => {
+    mostrarVista("vista-ayuda");
+  });
+
+  $("btn-humanometro")?.addEventListener("click", () => {
+    mostrarVista("vista-humanometro");
+  });
+
+  $("btn-perfil")?.addEventListener("click", () => {
+    mostrarVista("vista-perfil");
+  });
+
+  document.querySelectorAll("[data-volver]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      mostrarVista(null);
+    });
+  });
 }
 
 /* =========================
-GEOLOCALIZACIÓN INVERSA
+   GEOLOCALIZACIÓN INVERSA
 
-Las coordenadas se consultan para sugerir
-un barrio o localidad. No se guardan.
+   Las coordenadas se consultan para
+   sugerir una localidad o barrio.
+   No se guardan en el almacenamiento.
 ========================= */
 
 async function buscarBarrioPorCoordenadas(latitud, longitud) {
-const parametros = new URLSearchParams({
-format: "jsonv2",
-lat: String(latitud),
-lon: String(longitud),
-zoom: "14",
-addressdetails: "1",
-"accept-language": "es"
-});
+  const parametros = new URLSearchParams({
+    format: "jsonv2",
+    lat: String(latitud),
+    lon: String(longitud),
+    zoom: "14",
+    addressdetails: "1",
+    "accept-language": "es"
+  });
 
-const respuesta = await fetch(
-"https://nominatim.openstreetmap.org/reverse?${parametros.toString()}",
-{
-method: "GET",
-headers: {
-Accept: "application/json"
-},
-cache: "no-store"
-}
-);
+  const respuesta = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      cache: "no-store"
+    }
+  );
 
-if (!respuesta.ok) {
-throw new Error("No se pudo consultar el servicio geográfico.");
-}
+  if (!respuesta.ok) {
+    throw new Error("No se pudo consultar el servicio geográfico.");
+  }
 
-const datos = await respuesta.json();
-const direccion = datos.address;
+  const datos = await respuesta.json();
+  const direccion = datos.address;
 
-if (!direccion) {
-throw new Error("No se encontró una dirección reconocible.");
-}
+  if (!direccion) {
+    throw new Error("No se encontró una dirección reconocible.");
+  }
 
-const barrio =
-direccion.neighbourhood ||
-direccion.suburb ||
-direccion.quarter ||
-direccion.city_district ||
-direccion.borough ||
-direccion.village ||
-direccion.town ||
-direccion.city ||
-direccion.municipality ||
-direccion.county;
+  const barrio =
+    direccion.neighbourhood ||
+    direccion.suburb ||
+    direccion.quarter ||
+    direccion.city_district ||
+    direccion.borough ||
+    direccion.village ||
+    direccion.town ||
+    direccion.city ||
+    direccion.municipality ||
+    direccion.county;
 
-if (!barrio) {
-throw new Error("El servicio no identificó el barrio.");
-}
+  if (!barrio) {
+    throw new Error("El servicio no identificó el barrio.");
+  }
 
-return String(barrio).trim();
+  return String(barrio).trim();
 }
 
 /* =========================
-CONFIGURACIÓN DEL BARRIO
+   BARRIO O LOCALIDAD
 ========================= */
 
 function configurarBarrio() {
-const input = $("barrio");
-const boton = $("btn-guardar-barrio");
-const estado = $("estado-barrio");
-const ubicacion = $("btn-ubicacion");
+  if (barrioConfigurado) return;
+  barrioConfigurado = true;
 
-if (!input || !boton) return;
+  const input = $("barrio");
+  const boton = $("btn-guardar-barrio");
+  const estado = $("estado-barrio");
+  const ubicacion = $("btn-ubicacion");
 
-input.value = getItem("hm_barrio", "");
+  if (!input || !boton) return;
 
-if (input.value && estado) {
-estado.textContent = "Comunidad seleccionada: ${input.value}";
-}
+  input.value = getItem("hm_barrio", "");
 
-boton.addEventListener("click", () => {
-const barrio = input.value.trim();
+  if (input.value && estado) {
+    estado.textContent = `Comunidad seleccionada: ${input.value}`;
+  }
 
-if (!barrio) {
-  mostrarNotificacion("Escribí el nombre de tu barrio.");
-  input.focus();
-  return;
-}
+  boton.addEventListener("click", () => {
+    const barrio = input.value.trim();
 
-if (!setItem("hm_barrio", barrio)) {
-  mostrarNotificacion(
-    "No se pudo guardar el barrio en este dispositivo."
-  );
-  return;
-}
-
-if (estado) {
-  estado.textContent = `Comunidad seleccionada: ${barrio}`;
-}
-
-mostrarNotificacion("Barrio guardado en este dispositivo.");
-
-});
-
-ubicacion?.addEventListener("click", () => {
-if (!navigator.geolocation) {
-mostrarNotificacion(
-"Este navegador no ofrece geolocalización."
-);
-return;
-}
-
-if (!navigator.onLine) {
-  mostrarNotificacion(
-    "Necesitás internet para identificar el barrio automáticamente."
-  );
-  return;
-}
-
-ubicacion.disabled = true;
-ubicacion.textContent = "BUSCANDO TU BARRIO...";
-
-navigator.geolocation.getCurrentPosition(
-  async (posicion) => {
-    try {
-      const latitud = posicion.coords.latitude;
-      const longitud = posicion.coords.longitude;
-
-      const barrio = await buscarBarrioPorCoordenadas(
-        latitud,
-        longitud
-      );
-
-      input.value = barrio;
-
-      if (estado) {
-        estado.textContent =
-          `Barrio sugerido: ${barrio}. ` +
-          "Verificá el nombre, corregilo si hace falta " +
-          "y pulsá GUARDAR.";
-      }
-
+    if (!barrio) {
+      mostrarNotificacion("Escribí el nombre de tu barrio.");
       input.focus();
-
-      mostrarNotificacion(
-        "Encontramos una ubicación aproximada. Revisá el nombre y guardalo."
-      );
-    } catch (error) {
-      console.error("Error al identificar el barrio:", error);
-
-      if (estado) {
-        estado.textContent =
-          "No pudimos identificar el barrio automáticamente. " +
-          "Podés escribirlo manualmente.";
-      }
-
-      mostrarNotificacion(
-        "No se pudo identificar el barrio. Podés escribirlo manualmente."
-      );
-    } finally {
-      ubicacion.disabled = false;
-      ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
+      return;
     }
-  },
-  (error) => {
-    ubicacion.disabled = false;
-    ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
 
-    let mensaje =
-      "No se obtuvo la ubicación. Podés escribir el barrio manualmente.";
-
-    if (error.code === 1) {
-      mensaje =
-        "No autorizaste la ubicación. Podés escribir el barrio manualmente.";
-    } else if (error.code === 2) {
-      mensaje =
-        "El teléfono no pudo determinar la ubicación. Probá de nuevo o escribí el barrio.";
-    } else if (error.code === 3) {
-      mensaje =
-        "La ubicación tardó demasiado. Probá de nuevo o escribí el barrio.";
+    if (!setItem("hm_barrio", barrio)) {
+      mostrarNotificacion(
+        "No se pudo guardar el barrio en este dispositivo."
+      );
+      return;
     }
 
     if (estado) {
-      estado.textContent = mensaje;
+      estado.textContent = `Comunidad seleccionada: ${barrio}`;
     }
 
-    mostrarNotificacion(mensaje);
-  },
-  {
-    enableHighAccuracy: false,
-    timeout: 15000,
-    maximumAge: 300000
-  }
-);
+    mostrarNotificacion("Barrio guardado en este dispositivo.");
+  });
 
-});
+  ubicacion?.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      mostrarNotificacion(
+        "Este navegador no ofrece geolocalización."
+      );
+      return;
+    }
+
+    if (!navigator.onLine) {
+      mostrarNotificacion(
+        "Necesitás internet para identificar el barrio automáticamente."
+      );
+      return;
+    }
+
+    ubicacion.disabled = true;
+    ubicacion.textContent = "BUSCANDO TU BARRIO...";
+
+    navigator.geolocation.getCurrentPosition(
+      async (posicion) => {
+        try {
+          const { latitude, longitude } = posicion.coords;
+
+          const barrio = await buscarBarrioPorCoordenadas(
+            latitude,
+            longitude
+          );
+
+          input.value = barrio;
+
+          if (estado) {
+            estado.textContent =
+              `Barrio sugerido: ${barrio}. ` +
+              "Verificá el nombre y pulsá GUARDAR.";
+          }
+
+          input.focus();
+
+          mostrarNotificacion(
+            "Ubicación aproximada identificada. Revisá el nombre y guardalo."
+          );
+        } catch (error) {
+          console.error("Error al identificar el barrio:", error);
+
+          if (estado) {
+            estado.textContent =
+              "No pudimos identificar el barrio automáticamente. " +
+              "Podés escribirlo manualmente.";
+          }
+
+          mostrarNotificacion(
+            "No se pudo identificar el barrio. Podés escribirlo manualmente."
+          );
+        } finally {
+          ubicacion.disabled = false;
+          ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
+        }
+      },
+      (error) => {
+        ubicacion.disabled = false;
+        ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
+
+        let mensaje =
+          "No se obtuvo la ubicación. Podés escribir el barrio manualmente.";
+
+        if (error.code === 1) {
+          mensaje =
+            "No autorizaste la ubicación. Podés escribir el barrio manualmente.";
+        } else if (error.code === 2) {
+          mensaje =
+            "El teléfono no pudo determinar la ubicación. Escribí el barrio manualmente.";
+        } else if (error.code === 3) {
+          mensaje =
+            "La ubicación tardó demasiado. Probá de nuevo o escribí el barrio.";
+        }
+
+        if (estado) estado.textContent = mensaje;
+        mostrarNotificacion(mensaje);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 300000
+      }
+    );
+  });
 }
 
-/*
-
-* IMPORTANTE:
-* El perfil ya lo gestiona js/auth.js mediante Supabase.
-* No se debe volver a guardar el nombre en el almacenamiento
-* local ni agregar un segundo manejador de envío al formulario.
-  */
-
 /* =========================
-NAVEGACIÓN PRINCIPAL
-========================= */
-
-function configurarNavegacion() {
-$("btn-entrar")?.addEventListener("click", () => {
-const inicial = $("pantalla-inicial");
-const comunidad = $("pantalla-comunidad");
-
-if (inicial) inicial.hidden = true;
-if (comunidad) comunidad.hidden = false;
-
-mostrarVista(null);
-
-});
-
-$("btn-gondola")?.addEventListener("click", () => {
-mostrarVista("vista-gondola");
-});
-
-$("btn-comunicacion")?.addEventListener("click", () => {
-mostrarVista("vista-comunicacion");
-});
-
-$("btn-ayuda")?.addEventListener("click", () => {
-mostrarVista("vista-ayuda");
-});
-
-$("btn-humanometro")?.addEventListener("click", () => {
-mostrarVista("vista-humanometro");
-});
-
-$("btn-perfil")?.addEventListener("click", () => {
-mostrarVista("vista-perfil");
-});
-
-document.querySelectorAll("[data-volver]").forEach((boton) => {
-boton.addEventListener("click", () => mostrarVista(null));
-});
-}
-
-/* =========================
-TARJETAS INFORMATIVAS
+   TARJETAS INFORMATIVAS
 ========================= */
 
 function crearTarjeta(titulo, lineas = []) {
-const tarjeta = document.createElement("article");
-tarjeta.className = "tarjeta-publicacion";
+  const tarjeta = document.createElement("article");
+  tarjeta.className = "tarjeta-publicacion";
 
-const encabezado = document.createElement("h3");
-encabezado.textContent = titulo;
-tarjeta.appendChild(encabezado);
+  const encabezado = document.createElement("h3");
+  encabezado.textContent = titulo;
+  tarjeta.appendChild(encabezado);
 
-lineas.forEach((texto) => {
-if (!texto) return;
+  lineas.forEach((texto) => {
+    if (!texto) return;
 
-const parrafo = document.createElement("p");
-parrafo.textContent = texto;
-tarjeta.appendChild(parrafo);
+    const parrafo = document.createElement("p");
+    parrafo.textContent = texto;
+    tarjeta.appendChild(parrafo);
+  });
 
-});
-
-return tarjeta;
+  return tarjeta;
 }
 
 /* =========================
-SOLICITUDES Y OFRECIMIENTOS DE AYUDA
-
-Esta versión conserva el almacenamiento local.
-Todavía no representa publicaciones compartidas.
+   SOLICITUDES Y OFRECIMIENTOS
+   DE AYUDA: ALMACENAMIENTO LOCAL
 ========================= */
 
 function configurarAyuda() {
-const formulario = $("form-ayuda");
-const lista = $("lista-ayuda");
-const estado = $("estado-ayuda");
-const clave = "hm_solicitudes_ayuda";
+  if (ayudaConfigurada) return;
+  ayudaConfigurada = true;
 
-function renderizar() {
-if (!lista) return;
+  const formulario = $("form-ayuda");
+  const lista = $("lista-ayuda");
+  const estado = $("estado-ayuda");
+  const clave = "hm_solicitudes_ayuda";
 
-lista.replaceChildren();
+  function obtenerRegistros() {
+    const registros = getItem(clave, []);
+    return Array.isArray(registros) ? registros : [];
+  }
 
-const registros = getItem(clave, []);
+  function renderizar() {
+    if (!lista) return;
 
-if (!Array.isArray(registros) || registros.length === 0) {
-  lista.appendChild(
-    crearTarjeta(
-      "Todavía no hay solicitudes ni ofrecimientos guardados."
-    )
-  );
-  return;
-}
+    lista.replaceChildren();
+    const registros = obtenerRegistros();
 
-registros.slice().reverse().forEach((registro) => {
-  const tarjeta = crearTarjeta(
-    registro.tipoTexto,
-    [
-      `Categoría: ${registro.categoriaTexto}`,
-      registro.detalle,
-      registro.disponibilidad
-        ? `Disponibilidad: ${registro.disponibilidad}`
-        : "",
-      registro.barrio
-        ? `Barrio indicado: ${registro.barrio}`
-        : "",
-      registro.fecha
-        ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
-        : "",
-      "Registro guardado solamente en este dispositivo."
-    ]
-  );
+    if (!registros.length) {
+      lista.appendChild(
+        crearTarjeta(
+          "Todavía no hay solicitudes ni ofrecimientos guardados."
+        )
+      );
+      return;
+    }
 
-  lista.appendChild(tarjeta);
-});
+    registros.slice().reverse().forEach((registro) => {
+      const tarjeta = crearTarjeta(
+        registro.tipoTexto || "REGISTRO DE AYUDA",
+        [
+          `Categoría: ${registro.categoriaTexto || "Sin especificar"}`,
+          registro.detalle || "",
+          registro.disponibilidad
+            ? `Disponibilidad: ${registro.disponibilidad}`
+            : "",
+          registro.barrio
+            ? `Barrio indicado: ${registro.barrio}`
+            : "",
+          registro.fecha
+            ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
+            : "",
+          "Registro guardado solamente en este dispositivo."
+        ]
+      );
 
-}
+      lista.appendChild(tarjeta);
+    });
+  }
 
-formulario?.addEventListener("submit", (evento) => {
-evento.preventDefault();
+  formulario?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
 
-const tipo = $("tipo-ayuda")?.value || "";
-const categoria = $("categoria-ayuda")?.value || "";
-const detalle = $("detalle-ayuda")?.value.trim() || "";
-const disponibilidad =
-  $("disponibilidad-ayuda")?.value.trim() || "";
+    const tipo = $("tipo-ayuda")?.value || "";
+    const categoria = $("categoria-ayuda")?.value || "";
+    const detalle = $("detalle-ayuda")?.value.trim() || "";
+    const disponibilidad =
+      $("disponibilidad-ayuda")?.value.trim() || "";
 
-if (!detalle) {
-  mostrarNotificacion("Contanos qué necesitás u ofrecés.");
-  return;
-}
+    if (!detalle) {
+      mostrarNotificacion("Contanos qué necesitás u ofrecés.");
+      return;
+    }
 
-const tipos = {
-  solicitud: "SOLICITUD DE AYUDA",
-  oferta: "OFRECIMIENTO DE AYUDA",
-  carga: "PUNTO DE CARGA DE CELULARES"
-};
+    const tipos = {
+      solicitud: "SOLICITUD DE AYUDA",
+      oferta: "OFRECIMIENTO DE AYUDA",
+      carga: "PUNTO DE CARGA DE CELULARES"
+    };
 
-const categorias = {
-  alimentos: "Alimentos",
-  ropa: "Ropa y calzado",
-  transporte: "Traslado",
-  energia: "Electricidad o carga de celular",
-  herramientas: "Herramientas o materiales",
-  acompanamiento: "Acompañamiento o colaboración",
-  otra: "Otra necesidad u oferta"
-};
+    const categorias = {
+      alimentos: "Alimentos",
+      ropa: "Ropa y calzado",
+      transporte: "Traslado",
+      energia: "Electricidad o carga de celular",
+      herramientas: "Herramientas o materiales",
+      acompanamiento: "Acompañamiento o colaboración",
+      otra: "Otra necesidad u oferta"
+    };
 
-const registros = getItem(clave, []);
+    const registros = obtenerRegistros();
 
-if (!Array.isArray(registros)) {
-  mostrarNotificacion(
-    "No se pudo leer el almacenamiento de ayuda."
-  );
-  return;
-}
+    registros.push({
+      id: crearId(),
+      tipo,
+      tipoTexto: tipos[tipo] || "REGISTRO DE AYUDA",
+      categoria,
+      categoriaTexto: categorias[categoria] || categoria,
+      detalle,
+      disponibilidad,
+      barrio: getItem("hm_barrio", ""),
+      fecha: new Date().toISOString()
+    });
 
-registros.push({
-  id: crearId(),
-  tipo,
-  tipoTexto: tipos[tipo] || "REGISTRO DE AYUDA",
-  categoria,
-  categoriaTexto: categorias[categoria] || categoria,
-  detalle,
-  disponibilidad,
-  barrio: getItem("hm_barrio", ""),
-  fecha: new Date().toISOString()
-});
+    if (!setItem(clave, registros)) {
+      mostrarNotificacion(
+        "No se pudo guardar el registro de ayuda."
+      );
+      return;
+    }
 
-if (!setItem(clave, registros)) {
-  mostrarNotificacion(
-    "No se pudo guardar el registro de ayuda."
-  );
-  return;
-}
+    formulario.reset();
 
-formulario.reset();
+    if (estado) {
+      estado.textContent =
+        "Registro guardado localmente. Todavía no fue enviado a otros usuarios.";
+    }
 
-if (estado) {
-  estado.textContent =
-    "Registro guardado localmente. Todavía no fue enviado a otros usuarios.";
-}
+    renderizar();
+    mostrarNotificacion("Registro guardado en este dispositivo.");
+  });
 
-renderizar();
-mostrarNotificacion("Registro guardado en este dispositivo.");
-
-});
-
-renderizar();
+  renderizar();
 }
 
 /* =========================
-EVALUACIONES DE INTERCAMBIOS
-
-Esta versión conserva el almacenamiento local.
-No publica evaluaciones ni las presenta como verificadas.
+   EVALUACIONES DE INTERCAMBIOS
+   ALMACENAMIENTO LOCAL
 ========================= */
 
 function configurarEvaluaciones() {
-const formulario = $("form-evaluacion");
-const lista = $("lista-evaluaciones");
-const estado = $("estado-evaluacion");
-const clave = "hm_evaluaciones";
+  if (evaluacionesConfiguradas) return;
+  evaluacionesConfiguradas = true;
 
-function renderizar() {
-if (!lista) return;
+  const formulario = $("form-evaluacion");
+  const lista = $("lista-evaluaciones");
+  const estado = $("estado-evaluacion");
+  const clave = "hm_evaluaciones";
 
-lista.replaceChildren();
+  function obtenerRegistros() {
+    const registros = getItem(clave, []);
+    return Array.isArray(registros) ? registros : [];
+  }
 
-const registros = getItem(clave, []);
+  function renderizar() {
+    if (!lista) return;
 
-if (!Array.isArray(registros) || registros.length === 0) {
-  lista.appendChild(
-    crearTarjeta("Todavía no hay evaluaciones guardadas.")
-  );
-  return;
-}
+    lista.replaceChildren();
+    const registros = obtenerRegistros();
 
-registros.slice().reverse().forEach((registro) => {
-  lista.appendChild(
-    crearTarjeta(registro.referencia, [
-      `Resultado: ${registro.resultadoTexto}`,
-      registro.detalle,
-      registro.fecha
-        ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
-        : "",
-      "Evaluación local, sin verificación independiente."
-    ])
-  );
-});
+    if (!registros.length) {
+      lista.appendChild(
+        crearTarjeta("Todavía no hay evaluaciones guardadas.")
+      );
+      return;
+    }
 
-}
+    registros.slice().reverse().forEach((registro) => {
+      lista.appendChild(
+        crearTarjeta(registro.referencia || "Intercambio", [
+          `Resultado: ${registro.resultadoTexto || "Sin especificar"}`,
+          registro.detalle || "",
+          registro.fecha
+            ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
+            : "",
+          "Evaluación local, sin verificación independiente."
+        ])
+      );
+    });
+  }
 
-formulario?.addEventListener("submit", (evento) => {
-evento.preventDefault();
+  formulario?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
 
-const referencia =
-  $("referencia-evaluacion")?.value.trim() || "";
-const resultado =
-  $("resultado-evaluacion")?.value || "";
-const detalle =
-  $("detalle-evaluacion")?.value.trim() || "";
+    const referencia =
+      $("referencia-evaluacion")?.value.trim() || "";
+    const resultado = $("resultado-evaluacion")?.value || "";
+    const detalle =
+      $("detalle-evaluacion")?.value.trim() || "";
 
-if (!referencia || !detalle) {
-  mostrarNotificacion(
-    "Completá la referencia y la explicación."
-  );
-  return;
-}
+    if (!referencia || !detalle) {
+      mostrarNotificacion(
+        "Completá la referencia y la explicación."
+      );
+      return;
+    }
 
-const textos = {
-  buena: "BUENA",
-  intermedia: "INTERMEDIA",
-  mala: "MALA",
-  "sin-acuerdo": "NO LLEGAMOS A UN ACUERDO",
-  "cancelacion-mutua": "CANCELACIÓN DE COMÚN ACUERDO"
-};
+    const textos = {
+      buena: "BUENA",
+      intermedia: "INTERMEDIA",
+      mala: "MALA",
+      "sin-acuerdo": "NO LLEGAMOS A UN ACUERDO",
+      "cancelacion-mutua": "CANCELACIÓN DE COMÚN ACUERDO"
+    };
 
-const registros = getItem(clave, []);
+    const registros = obtenerRegistros();
 
-if (!Array.isArray(registros)) {
-  mostrarNotificacion("No se pudo leer el historial.");
-  return;
-}
+    registros.push({
+      id: crearId(),
+      referencia,
+      resultado,
+      resultadoTexto: textos[resultado] || resultado,
+      detalle,
+      fecha: new Date().toISOString()
+    });
 
-registros.push({
-  id: crearId(),
-  referencia,
-  resultado,
-  resultadoTexto: textos[resultado] || resultado,
-  detalle,
-  fecha: new Date().toISOString()
-});
+    if (!setItem(clave, registros)) {
+      mostrarNotificacion("No se pudo guardar la evaluación.");
+      return;
+    }
 
-if (!setItem(clave, registros)) {
-  mostrarNotificacion(
-    "No se pudo guardar la evaluación."
-  );
-  return;
-}
+    formulario.reset();
 
-formulario.reset();
+    if (estado) {
+      estado.textContent =
+        "Evaluación guardada localmente. No se publicó ni se envió a nadie.";
+    }
 
-if (estado) {
-  estado.textContent =
-    "Evaluación guardada localmente. No se publicó ni se envió a nadie.";
-}
+    renderizar();
+    mostrarNotificacion("Evaluación guardada en este dispositivo.");
+  });
 
-renderizar();
-mostrarNotificacion("Evaluación guardada en este dispositivo.");
-
-});
-
-renderizar();
+  renderizar();
 }
 
 /* =========================
-IDENTIFICADOR LOCAL
+   IDENTIFICADOR
 ========================= */
 
 function crearId() {
-if (
-typeof crypto !== "undefined" &&
-typeof crypto.randomUUID === "function"
-) {
-return crypto.randomUUID();
-}
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
 
-return "${Date.now()}-${Math.random().toString(16).slice(2)}";
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 /* =========================
-INICIO DE LA APLICACIÓN
+   INICIO DE LA APLICACIÓN
 ========================= */
 
 async function iniciarAplicacion() {
-try {
-await iniciarAutenticacion();
-} catch (error) {
-console.error("Error al iniciar la autenticación:", error);
+  configurarNavegacion();
+  configurarBarrio();
+  configurarAyuda();
+  configurarEvaluaciones();
 
-mostrarNotificacion(
-  "No se pudo inicializar el acceso a la cuenta."
-);
+  try {
+    await iniciarAutenticacion();
+  } catch (error) {
+    console.error("Error al iniciar la autenticación:", error);
 
-}
+    mostrarNotificacion(
+      "No se pudo inicializar el acceso a la cuenta. Revisá tu conexión."
+    );
+  }
 
-configurarNavegacion();
-configurarBarrio();
-configurarAyuda();
-configurarEvaluaciones();
+  initCommunity({
+    getItem,
+    setItem,
+    mostrarNotificacion
+  });
 
-initCommunity({
-getItem,
-setItem,
-mostrarNotificacion
-});
+  initConnectivity({
+    onChange: (conectado) => {
+      const estado = $("estado-conexion");
 
-initConnectivity({
-onChange: (conectado) => {
-const estado = $("estado-conexion");
+      if (estado) {
+        estado.textContent = conectado
+          ? "Conexión a internet disponible."
+          : "Sin conexión. Los mensajes guardados siguen disponibles en este dispositivo.";
+      }
+    }
+  });
 
-  if (estado) {
-    estado.textContent = conectado
-      ? "Conexión a internet disponible."
-      : "Sin conexión. Los datos guardados en este dispositivo siguen disponibles.";
+  initMessages({
+    getItem,
+    setItem,
+    mostrarNotificacion
+  });
+
+  if (
+    "serviceWorker" in navigator &&
+    location.protocol.startsWith("http")
+  ) {
+    try {
+      await navigator.serviceWorker.register("./service-worker.js");
+    } catch (error) {
+      console.error(
+        "No se pudo registrar el service worker:",
+        error
+      );
+    }
   }
 }
 
-});
-
-initMessages({
-getItem,
-setItem,
-mostrarNotificacion
-});
-
-if (
-"serviceWorker" in navigator &&
-location.protocol.startsWith("http")
-) {
-try {
-await navigator.serviceWorker.register("./service-worker.js");
-} catch (error) {
-console.error(
-"No se pudo registrar el service worker:",
-error
-);
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    iniciarAplicacion,
+    { once: true }
+  );
+} else {
+  iniciarAplicacion();
 }
-}
-}
-
-document.addEventListener("DOMContentLoaded", iniciarAplicacion);
