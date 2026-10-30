@@ -126,7 +126,7 @@ function prepararFormularioPerfil() {
     {
       id: "hm-profile-whatsapp",
       nombre: "WhatsApp",
-      etiqueta: "Número de WhatsApp (para contacto con Wi-Fi)",
+      etiqueta: "Número de WhatsApp (con código de país y área)",
       tipo: "input",
       max: 30,
       placeholder: "Ej.: +5491112345678"
@@ -266,51 +266,75 @@ function renderizarFichaVisual(contenedor) {
   const fotoSrc = datos.foto_url || "";
   const inicial = datos.nombre_visible ? datos.nombre_visible.charAt(0).toUpperCase() : "H";
 
-  // Estado dinámico calculado desde las evaluaciones de Supabase
+  // Estado dinámico del Termómetro de Humanidad
   const estadoHumanometro = datos.estado_humanometro || "verde"; 
-  const coloresTermometro = {
-    verde: { bg: "#22c55e", texto: "Verde: Todo bien y aceptado mayoritariamente" },
-    amarillo: { bg: "#eab308", texto: "Amarillo: Intermitente o con dificultades" },
-    rojo: { bg: "#ef4444", texto: "Rojo: Tendencias negativas / Incumplimientos" }
+  const termometros = {
+    verde: { bg: "#22c55e", label: "Óptimo / Fluido" },
+    amarillo: { bg: "#eab308", label: "Intermitente" },
+    rojo: { bg: "#ef4444", label: "Con Incumplimientos" }
   };
-  const actualTermometro = coloresTermometro[estadoHumanometro] || coloresTermometro.verde;
+  const tActual = termometros[estadoHumanometro] || termometros.verde;
+
+  // Enlace y formato limpio de WhatsApp
+  const wppRaw = datos.whatsapp ? datos.whatsapp.replace(/\D/g, "") : "";
+  const wppLink = wppRaw ? `https://wa.me/${wppRaw}` : "";
 
   contenedor.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 15px;">
-      <div style="width: 70px; height: 70px; border-radius: 50%; overflow: hidden; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; font-weight: bold; flex-shrink: 0; border: 2px solid #38bdf8;">
-        ${fotoSrc ? `<img src="${fotoSrc}" alt="Foto de perfil" style="width: 100%; height: 100%; object-fit: cover;">` : inicial}
+    <!-- CREDENCIAL DIGITAL COMPACTA -->
+    <div style="background: #0b0f19; border: 1px solid #334155; border-radius: 12px; padding: 12px; font-family: inherit;">
+      
+      <!-- Cabecera: Foto y Datos Principales -->
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+        <div style="width: 55px; height: 55px; border-radius: 50%; overflow: hidden; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; font-weight: bold; flex-shrink: 0; border: 2px solid #38bdf8;">
+          ${fotoSrc ? `<img src="${fotoSrc}" alt="Foto" style="width: 100%; height: 100%; object-fit: cover;">` : inicial}
+        </div>
+        <div style="overflow: hidden; flex-grow: 1;">
+          <h3 style="margin: 0; color: #38bdf8; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${datos.nombre_visible || "Sin nombre"}</h3>
+          <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #94a3b8;">📍 ${datos.localidad || "Sin localidad"} ${datos.zona_aproximada ? `(${datos.zona_aproximada})` : ""}</p>
+        </div>
       </div>
-      <div>
-        <h3 style="margin: 0; color: #38bdf8; font-size: 1.2rem;">${datos.nombre_visible || "Sin nombre visible"}</h3>
-        <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #94a3b8;">${datos.localidad ? `📍 ${datos.localidad}` : "Sin localidad especificada"}</p>
-      </div>
-    </div>
 
-    <!-- TERMÓMETRO DEL HUMANÓMETRO DINÁMICO -->
-    <div style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #334155;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <strong style="font-size: 0.9rem; color: #38bdf8;">Termómetro Humanómetro</strong>
-        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${actualTermometro.bg}; box-shadow: 0 0 8px ${actualTermometro.bg};"></span>
+      <!-- Fila de Estado: Termómetro de Humanidad (Diferenciado) -->
+      <div style="background: #1e293b; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #475569;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: ${tActual.bg}; box-shadow: 0 0 6px ${tActual.bg}; display: inline-block;"></span>
+          <span style="font-size: 0.8rem; color: #e2e8f0; font-weight: bold;">Humanómetro: ${tActual.label}</span>
+        </div>
+        <button id="btn-medicion-humanidad" class="boton-secundario" type="button" style="font-size: 0.75rem; padding: 4px 8px; margin: 0;">
+          MEDIR HUMANIDAD
+        </button>
       </div>
-      <p style="margin: 0; font-size: 0.85rem; color: #cbd5e1;">${actualTermometro.texto}</p>
-      <button id="btn-medicion-humanidad" class="boton-secundario" type="button" style="margin-top: 10px; width: 100%; font-size: 0.85rem; padding: 6px;">
-        MEDICIÓN DE HUMANIDAD
+
+      <!-- Presentación corta y Contacto / Conectividad en bloque resumido -->
+      <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flexDirection: column; gap: 6px; margin-bottom: 10px;">
+        <p style="margin: 0; font-style: italic; color: #94a3b8; font-size: 0.8rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+          "${datos.presentacion || "Sin presentación cargada."}"
+        </p>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
+          <span style="font-size: 0.8rem;">📱 WhatsApp:</span>
+          ${wppLink ? `<a href="${wppLink}" target="_blank" style="color: #4ade80; text-decoration: none; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">💬 Chatear</a>` : `<span style="color: #64748b; font-size: 0.8rem;">No vinculado</span>`}
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
+          <span style="font-size: 0.8rem;">📡 Wi-Fi Solidario:</span>
+          <span style="font-size: 0.8rem; color: ${datos.conectividad_disponible ? "#4ade80" : "#f87171"}; font-weight: bold;">
+            ${datos.conectividad_disponible ? `🟢 Activo (${datos.conectividad_modalidad})` : "🔴 Inactivo"}
+          </span>
+        </div>
+      </div>
+
+      <!-- Nota estratégica del Ecosistema -->
+      <p style="margin: 0 0 10px 0; font-size: 0.7rem; color: #64748b; text-align: center;">
+        💡 El nexo es aquí: acordá como quieras, pero medí la humanidad para cuidar la comunidad.
+      </p>
+
+      <!-- Botón de Edición compacto -->
+      <button id="btn-activar-edicion" class="boton-accion" type="button" style="width: 100%; font-size: 0.8rem; padding: 6px;">
+        EDITAR MI PERFIL
       </button>
-    </div>
 
-    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; color: #cbd5e1; border-top: 1px solid #334155; padding-top: 12px;">
-      <p><strong>Presentación:</strong> ${datos.presentacion || "Sin presentación cargada."}</p>
-      <p><strong>Zona aproximada:</strong> ${datos.zona_aproximada || "No especificada"}</p>
-      <p><strong>WhatsApp:</strong> ${datos.whatsapp || "No vinculado"}</p>
-      <div style="background: #0f172a; padding: 10px; border-radius: 6px; margin-top: 6px; border: 1px solid #334155;">
-        <strong style="color: #38bdf8; display: block; margin-bottom: 4px;">🌐 Conectividad Solidaria</strong>
-        <p style="margin: 0; font-size: 0.85rem;">${datos.conectividad_disponible ? `🟢 Activa (${datos.conectividad_modalidad}) - Zona: ${datos.conectividad_zona || "General"}` : "🔴 No ofrecida actualmente"}</p>
-      </div>
     </div>
-
-    <button id="btn-activar-edicion" class="boton-accion" type="button" style="margin-top: 15px; width: 100%;">
-      EDITAR PERFIL
-    </button>
   `;
 
   $("btn-activar-edicion")?.addEventListener("click", () => {
@@ -546,7 +570,7 @@ async function calcularEstadoHumanometro(perfilId) {
       .eq("evaluado_id", perfilId);
 
     if (error || !evaluaciones || evaluaciones.length === 0) {
-      return "verde"; // Predeterminado si no hay calificaciones
+      return "verde"; 
     }
 
     let malas = 0;
@@ -594,7 +618,6 @@ async function cargarPerfil() {
     perfilActual = data || null;
 
     if (perfilActual) {
-      // Calcular automáticamente el termómetro en base a las evaluaciones de Supabase
       perfilActual.estado_humanometro = await calcularEstadoHumanometro(usuarioActual.id);
     }
 
