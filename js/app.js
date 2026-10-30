@@ -1,4 +1,4 @@
-Import { initCommunity } from "./community.js";
+import { initCommunity } from "./community.js";
 import { initConnectivity } from "./connectivity.js";
 import { initMessages } from "./messages.js";
 import { iniciarAutenticacion } from "./auth.js";
@@ -176,7 +176,6 @@ function configurarBarrio() {
   const estado = $("estado-barrio");
   const ubicacion = $("btn-ubicacion");
   
-  // Elementos nuevos para el selector de exploración
   const modoVisualizacion = $("modo-visualizacion");
   const contenedorExplorarZona = $("contenedor-explorar-zona");
   const inputZonaExplorar = $("zona-explorar");
@@ -185,7 +184,6 @@ function configurarBarrio() {
 
   input.value = getItem("hm_barrio", "");
   
-  // Recuperar modo de visualización previo si existe
   const modoGuardado = getItem("hm_modo_visualizacion", "barrio");
   if (modoVisualizacion) {
     modoVisualizacion.value = modoGuardado;
@@ -216,7 +214,6 @@ function configurarBarrio() {
       mostrarNotificacion("Modo exploración de otra localidad activado.");
     }
     
-    // Disparar evento personalizado para que community.js u otros módulos recarguen el feed
     window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
@@ -508,7 +505,7 @@ function configurarAyuda() {
 }
 
 /* =========================
-   EVALUACIONES DE INTERCAMBIOS (HUMANÓMETRO PROGRESIVO Y FORZADO A 0%)
+   EVALUACIONES DE INTERCAMBIOS
 ========================= */
 
 function configurarEvaluaciones() {
@@ -661,7 +658,7 @@ function configurarEvaluaciones() {
 }
 
 /* =========================
-   GESTIÓN DE PERFIL (CON FILTRO DE WHATSAPP OBLIGATORIO)
+   GESTIÓN DE PERFIL
 ========================= */
 
 function configurarPerfil() {
