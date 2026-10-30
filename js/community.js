@@ -367,7 +367,6 @@ export function initCommunity({
     const esIntercambio =
       String(publicacion.tipo).toLowerCase().includes("intercambio");
 
-    // Nombre de autor simulado o recuperado de perfil si viniera adjunto
     const nombreAutor = escaparHTML(publicacion.perfil_nombre || "Vecino");
     const autorId = publicacion.perfil_id || "";
 
@@ -428,7 +427,7 @@ export function initCommunity({
     return tarjeta;
   }
 
-  // Event listener global para capturar clics en el botón de contacto de las tarjetas
+  // Event listener global para capturar clics en el botón de contacto directo
   document.addEventListener("click", (e) => {
     if (e.target.classList.contains("btn-contactar-trueque")) {
       const destinatarioId = e.target.getAttribute("data-id");
@@ -805,7 +804,6 @@ export function initCommunity({
 
   actualizarCampoOtraCategoria();
 
-  // Sincronización automática de red Matrix online
   window.addEventListener('online', () => {
     cargarPublicacionesRemotas();
   });
