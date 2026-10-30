@@ -319,8 +319,19 @@ function crearTarjeta(titulo, lineas = []) {
 }
 
 /* =========================
-   SOLICITUDES Y OFRECIMIENTOS
+   SOLICITUDES Y OFRECIMIENTOS (RED HUMANA Y SEGURIDAD)
 ========================= */
+
+function validarPublicacionSegura(texto) {
+  const terminosProhibidos = [
+    'medicamento', 'medicamentos', 'remedio', 'remedios', 'farmaco', 'fármaco', 
+    'farmacos', 'fármacos', 'pastilla', 'pastillas', 'droga', 'drogas', 'ampolla', 
+    'ampollas', 'comprimido', 'comprimidos', 'jarabe', 'jarabes', 'vacuna', 'vacunas'
+  ];
+  
+  const textoNormalizado = texto.toLowerCase();
+  return !terminosProhibidos.some(termino => textoNormalizado.includes(termino));
+}
 
 function configurarAyuda() {
   if (ayudaConfigurada) return;
@@ -385,6 +396,17 @@ function configurarAyuda() {
 
     if (!detalle) {
       mostrarNotificacion("Contanos qué necesitás u ofrecés.");
+      return;
+    }
+
+    // Validación de seguridad sobre publicación de medicamentos
+    if (!validarPublicacionSegura(detalle)) {
+      mostrarNotificacion(
+        "Por políticas de seguridad sanitaria no se permite publicar o solicitar medicamentos entre particulares. Consultá los Bancos de Medicamentos oficiales."
+      );
+      if (estado) {
+        estado.textContent = "Prohibida la publicación de fármacos particulares. Acudí a los Bancos de Medicamentos oficiales.";
+      }
       return;
     }
 
