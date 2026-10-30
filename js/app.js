@@ -363,7 +363,7 @@ function crearTarjeta(titulo, lineas = []) {
 }
 
 /* =========================
-   SOLICITUDES Y OFRECIMIENTOS (RED HUMANA Y SEGURIDAD)
+   SOLICITUDES Y OFRECIMIENTOS
 ========================= */
 
 function validarPublicacionSegura(texto) {
