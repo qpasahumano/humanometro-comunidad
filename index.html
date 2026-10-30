@@ -152,7 +152,7 @@
 
         <span class="contenido-modulo">
           <strong>NO PIERDAS LA COMUNICACIÓN</strong>
-          <small>Prepará mensajes y consultá la conexión.</small>
+          <small>Prepará mensajes, chat y kit de emergencia.</small>
         </span>
 
         <span class="flecha" aria-hidden="true">›</span>
@@ -277,7 +277,7 @@
             id="otra-categoria"
             type="text"
             maxlength="80"
-            placeholder="¿Qué categoría necesitás?"
+            placeholder="Ej.: Cantante, Paseador de perros, etc."
           >
         </div>
 
@@ -368,7 +368,7 @@
         <input
           id="buscar-publicaciones"
           type="search"
-          placeholder="Buscar por título, detalle o categoría"
+          placeholder="Buscá por servicio, título, detalle o categoría"
         >
 
         <label for="filtro-tipo">Mostrar</label>
@@ -439,9 +439,54 @@
         <p class="aviso-local">
           Para enviar mensajes necesitás iniciar sesión y completar tu perfil.
           Escribí el nombre visible exacto de la otra persona. Si no hay conexión,
-          el mensaje puede quedar guardado localmente, pero no se envía.
+          el mensaje queda guardado localmente en la red de relevo y se envía al restablecerse la red.
         </p>
       </div>
+
+      <!-- =====================================================
+           RESILIENCIA TÁCTICA: KIT DE COMUNICACIÓN PREVENTIVO
+           ===================================================== -->
+      <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff;">
+        <h3 style="color: #38bdf8; margin-top: 0;">📡 Kit de Comunicación Táctico (Sin Internet)</h3>
+        
+        <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+          <strong>Aviso importante:</strong> Las aplicaciones web requieren conectividad de red para operar de forma centralizada. 
+          Ante cortes totales de energía o caídas de internet que dejen los dispositivos sin señal Wi-Fi, 
+          <strong>los navegadores no pueden transmitir datos por el aire</strong>. 
+        </p>
+        <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+          Para garantizar que una emergencia o contingencia no te agarre desprevenido/a, te recomendamos firmemente tener instaladas 
+          <strong>ahora mismo</strong> (mientras hay conexión) aplicaciones de red de malla (*mesh*) o mensajería descentralizada por Bluetooth:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+          <!-- Bridgefy -->
+          <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+            <strong style="color: #38bdf8; font-size: 0.95rem;">Bridgefy (Red Mesh por Bluetooth)</strong>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 8px 0;">
+              Permite chatear de celular a celular saltando de dispositivo en dispositivo sin internet ni red celular en tu zona.
+            </p>
+            <a href="https://play.google.com/store/apps/details?id=com.bridgefy.android" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
+              Descargar Bridgefy (Android / iOS)
+            </a>
+          </div>
+
+          <!-- Briar -->
+          <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+            <strong style="color: #38bdf8; font-size: 0.95rem;">Briar (Mensajería P2P Segura)</strong>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 8px 0;">
+              Diseñado para crisis y zonas incomunicadas. Sincroniza mensajes vía Bluetooth, Wi-Fi local o redes de relevo punto a punto.
+            </p>
+            <a href="https://briarproject.org/" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
+              Sitio oficial y descarga de Briar
+            </a>
+          </div>
+        </div>
+
+        <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 15px; text-align: center; border-top: 1px solid #334155; padding-top: 10px;">
+          💡 <em>Consejo de trinchera:</em> Conectate con tus vecinos de confianza, instalen alguna de estas herramientas preventivamente y mantengan handies o radios analógicas preparadas en el hogar.
+        </p>
+      </section>
 
       <!-- CONECTIVIDAD SOLIDARIA -->
       <section class="tarjeta conectividad-solidaria" aria-labelledby="titulo-conectividad-solidaria">
