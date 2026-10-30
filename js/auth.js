@@ -192,7 +192,7 @@ function prepararFormularioPerfil() {
     else formulario.appendChild(bloque);
   }
 
-  // Crear contenedor de Ficha Visual (Modo Lectura) si no existe
+  // Crear contenedor de Ficha Visual si no existe
   let fichaVisual = $("hm-perfil-ficha");
   if (!fichaVisual) {
     fichaVisual = document.createElement("div");
@@ -268,6 +268,16 @@ function renderizarFichaVisual(contenedor) {
   const fotoSrc = datos.foto_url || "";
   const inicial = datos.nombre_visible ? datos.nombre_visible.charAt(0).toUpperCase() : "H";
 
+  // Simulación o cálculo del estado del Humanómetro (Verde = Óptimo, Amarillo = Intermitente, Rojo = Negativo)
+  // Por defecto se asigna verde (aceptado y fluido) o el estado correspondiente registrado
+  const estadoHumanometro = datos.estado_humanometro || "verde"; 
+  const coloresTermometro = {
+    verde: { bg: "#22c55e", texto: "Verde: Todo bien y aceptado mayoritariamente", colorTexto: "#15803d" },
+    amarillo: { bg: "#eab308", texto: "Amarillo: Intermitente o con dificultades", colorTexto: "#a16207" },
+    rojo: { bg: "#ef4444", texto: "Rojo: Tendencias negativas / Incumplimientos", colorTexto: "#b91c1c" }
+  };
+  const actualTermometro = coloresTermometro[estadoHumanometro] || coloresTermometro.verde;
+
   contenedor.innerHTML = `
     <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 15px;">
       <div style="width: 70px; height: 70px; border-radius: 50%; overflow: hidden; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; font-weight: bold; flex-shrink: 0; border: 2px solid #38bdf8;">
@@ -277,6 +287,18 @@ function renderizarFichaVisual(contenedor) {
         <h3 style="margin: 0; color: #38bdf8; font-size: 1.2rem;">${datos.nombre_visible || "Sin nombre visible"}</h3>
         <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #94a3b8;">${datos.localidad ? `📍 ${datos.localidad}` : "Sin localidad especificada"}</p>
       </div>
+    </div>
+
+    <!-- TERMÓMETRO DEL HUMANÓMETRO -->
+    <div style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #334155;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <strong style="font-size: 0.9rem; color: #38bdf8;">Termómetro Humanómetro</strong>
+        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${actualTermometro.bg}; box-shadow: 0 0 8px ${actualTermometro.bg};"></span>
+      </div>
+      <p style="margin: 0; font-size: 0.85rem; color: #cbd5e1;">${actualTermometro.texto}</p>
+      <button id="btn-medicion-humanidad" class="boton-secundario" type="button" style="margin-top: 10px; width: 100%; font-size: 0.85rem; padding: 6px;">
+        MEDICIÓN DE HUMANIDAD
+      </button>
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; color: #cbd5e1; border-top: 1px solid #334155; padding-top: 12px;">
@@ -297,6 +319,16 @@ function renderizarFichaVisual(contenedor) {
   $("btn-activar-edicion")?.addEventListener("click", () => {
     modoEdicionPerfil = true;
     actualizarModoVisualizacion();
+  });
+
+  $("btn-medicion-humanidad")?.addEventListener("click", () => {
+    // Redirigir o abrir la vista del Humanómetro de Humanidad existente en la app
+    const botonHumanometroNav = $("btn-humanometro");
+    if (botonHumanometroNav) {
+      botonHumanometroNav.click();
+    } else {
+      alert("Sección Humanómetro de Humanidad disponible en el menú principal.");
+    }
   });
 }
 
@@ -554,7 +586,6 @@ async function cargarPerfil() {
       if ($("foto-perfil-inicial")) $("foto-perfil-inicial").hidden = true;
     }
 
-    // Si el usuario nunca creó perfil, lo mandamos directo a modo edición para que cargue sus datos
     if (!data) {
       modoEdicionPerfil = true;
     }
@@ -654,7 +685,7 @@ async function guardarPerfil(evento) {
     }
 
     perfilActual = data;
-    modoEdicionPerfil = false; // Volver automáticamente a modo ficha al guardar con éxito
+    modoEdicionPerfil = false;
     actualizarModoVisualizacion();
 
     if ($("foto-perfil-archivo")) $("foto-perfil-archivo").value = "";
