@@ -560,7 +560,6 @@ function configurarEvaluaciones() {
     const resultado = $("resultado-evaluacion")?.value || "";
     const detalle = $("detalle-evaluacion")?.value.trim() || "";
 
-    // Obtener el nombre del usuario actual para evitar autoevaluación
     const nombreUsuarioActual = getItem("hm_nombre_usuario", "").trim().toLowerCase();
 
     if (usuarioEvaluado && nombreUsuarioActual && usuarioEvaluado.toLowerCase() === nombreUsuarioActual) {
@@ -612,6 +611,65 @@ function configurarEvaluaciones() {
   });
 
   renderizar();
+}
+
+/* =========================
+   GESTIÓN DE PERFIL (CON FILTRO DE WHATSAPP OBLIGATORIO)
+========================= */
+
+function configurarPerfil() {
+  const formulario = $("form-perfil");
+  const inputNombre = $("nombre-usuario");
+  const inputWhatsapp = $("whatsapp-usuario");
+  const estadoPerfil = $("estado-perfil");
+
+  if (!formulario) return;
+
+  // Cargar datos existentes si los hay
+  if (inputNombre) {
+    inputNombre.value = getItem("hm_nombre_usuario", "");
+  }
+  if (inputWhatsapp) {
+    inputWhatsapp.value = getItem("hm_whatsapp_usuario", "");
+  }
+
+  formulario.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+
+    const nombre = inputNombre?.value.trim() || "";
+    const whatsapp = inputWhatsapp?.value.trim() || "";
+
+    // FILTRO DE SEGURIDAD OBLIGATORIO DE WHATSAPP
+    if (!whatsapp) {
+      mostrarNotificacion("El número de WhatsApp es obligatorio para crear o actualizar el perfil.");
+      if (estadoPerfil) {
+        estadoPerfil.textContent = "Error: El número de WhatsApp es obligatorio como filtro de seguridad.";
+      }
+      inputWhatsapp?.focus();
+      return;
+    }
+
+    if (!nombre) {
+      mostrarNotificacion("Ingresá tu nombre visible.");
+      inputNombre?.focus();
+      return;
+    }
+
+    // Guardar en almacenamiento local
+    const guardadoNombre = setItem("hm_nombre_usuario", nombre);
+    const guardadoWhatsapp = setItem("hm_whatsapp_usuario", whatsapp);
+
+    if (!guardadoNombre || !guardadoWhatsapp) {
+      mostrarNotificacion("No se pudieron guardar los datos del perfil en este dispositivo.");
+      return;
+    }
+
+    if (estadoPerfil) {
+      estadoPerfil.textContent = "¡Perfil guardado correctamente con validación de WhatsApp!";
+    }
+
+    mostrarNotificacion("Perfil guardado con éxito.");
+  });
 }
 
 /* =========================
@@ -848,6 +906,7 @@ async function iniciarAplicacion() {
   configurarBarrio();
   configurarAyuda();
   configurarEvaluaciones();
+  configurarPerfil(); // <-- Activada la validación estricta de perfil y WhatsApp
   configurarConectividadSolidaria();
 
   try {
