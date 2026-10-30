@@ -461,7 +461,7 @@ function configurarAyuda() {
 }
 
 /* =========================
-   EVALUACIONES DE INTERCAMBIOS (HUMANÓMETRO PROGRESIVO Y ANTI-AUTOEVALUACIÓN)
+   EVALUACIONES DE INTERCAMBIOS (HUMANÓMETRO PROGRESIVO Y FORZADO A 0%)
 ========================= */
 
 function configurarEvaluaciones() {
@@ -479,7 +479,8 @@ function configurarEvaluaciones() {
   }
 
   function calcularPorcentajeHumanidad(registros) {
-    if (!registros.length) return 0;
+    // Si no es un array válido o está vacío, fuerza categóricamente a 0%
+    if (!Array.isArray(registros) || registros.length === 0) return 0;
     
     let puntajeAcumulado = 0;
     registros.forEach(reg => {
@@ -625,7 +626,6 @@ function configurarPerfil() {
 
   if (!formulario) return;
 
-  // Cargar datos existentes si los hay
   if (inputNombre) {
     inputNombre.value = getItem("hm_nombre_usuario", "");
   }
@@ -639,7 +639,6 @@ function configurarPerfil() {
     const nombre = inputNombre?.value.trim() || "";
     const whatsapp = inputWhatsapp?.value.trim() || "";
 
-    // FILTRO DE SEGURIDAD OBLIGATORIO DE WHATSAPP
     if (!whatsapp) {
       mostrarNotificacion("El número de WhatsApp es obligatorio para crear o actualizar el perfil.");
       if (estadoPerfil) {
@@ -655,7 +654,6 @@ function configurarPerfil() {
       return;
     }
 
-    // Guardar en almacenamiento local
     const guardadoNombre = setItem("hm_nombre_usuario", nombre);
     const guardadoWhatsapp = setItem("hm_whatsapp_usuario", whatsapp);
 
@@ -906,7 +904,7 @@ async function iniciarAplicacion() {
   configurarBarrio();
   configurarAyuda();
   configurarEvaluaciones();
-  configurarPerfil(); // <-- Activada la validación estricta de perfil y WhatsApp
+  configurarPerfil();
   configurarConectividadSolidaria();
 
   try {
