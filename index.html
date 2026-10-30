@@ -60,7 +60,25 @@
     <section class="selector-barrio tarjeta">
       <h2>Tu comunidad</h2>
 
-      <label for="barrio">Barrio o localidad</label>
+      <!-- Selector de Modo de Visualización (Barrio vs Exploración) -->
+      <label for="modo-visualizacion">Modo de visualización</label>
+      <select id="modo-visualizacion" style="margin-bottom: 12px;">
+        <option value="barrio">🏠 Mi barrio / Zona de emergencia (Estricto)</option>
+        <option value="explorar">🗺️ Explorar otra localidad (Ej.: Esquel)</option>
+      </select>
+
+      <!-- Contenedor para elegir la zona a explorar cuando se activa el modo exploración -->
+      <div id="contenedor-explorar-zona" hidden style="margin-bottom: 12px;">
+        <label for="zona-explorar">Localidad a explorar</label>
+        <input
+          id="zona-explorar"
+          type="text"
+          maxlength="100"
+          placeholder="Escribí la localidad (ej: Esquel)"
+        >
+      </div>
+
+      <label for="barrio">Barrio o localidad actual</label>
 
       <div class="fila-barrio">
         <input
@@ -850,6 +868,20 @@
   <script type="module" src="./js/app.js"></script>
 
   <script>
+    // Control visual para alternar entre el modo barrio estricto y el modo exploración de otra localidad
+    const modoVisualizacion = document.getElementById("modo-visualizacion");
+    const contenedorExplorarZona = document.getElementById("contenedor-explorar-zona");
+
+    function actualizarModoVisualizacion() {
+      const esExplorar = modoVisualizacion?.value === "explorar";
+      if (contenedorExplorarZona) {
+        contenedorExplorarZona.hidden = !esExplorar;
+      }
+    }
+
+    modoVisualizacion?.addEventListener("change", actualizarModoVisualizacion);
+    actualizarModoVisualizacion();
+
     // Categoría personalizada
     const categoriaPublicacion = document.getElementById(
       "categoria-publicacion"
