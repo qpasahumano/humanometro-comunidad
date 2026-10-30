@@ -314,7 +314,6 @@ export function initCommunity({
           )
           .eq("estado", "activa");
 
-        // Si hay una zona definida (ya sea tu barrio o Esquel), filtramos por ella en Supabase
         if (zonaActualFiltro) {
           query = query.ilike("zona_aproximada", `%${zonaActualFiltro}%`);
         }
