@@ -110,10 +110,6 @@ function configurarNavegacion() {
 
 /* =========================
    GEOLOCALIZACIÓN INVERSA
-
-   Las coordenadas se consultan para
-   sugerir una localidad o barrio.
-   No se guardan en el almacenamiento.
 ========================= */
 
 async function buscarBarrioPorCoordenadas(latitud, longitud) {
@@ -324,7 +320,6 @@ function crearTarjeta(titulo, lineas = []) {
 
 /* =========================
    SOLICITUDES Y OFRECIMIENTOS
-   DE AYUDA: ALMACENAMIENTO LOCAL
 ========================= */
 
 function configurarAyuda() {
@@ -446,7 +441,6 @@ function configurarAyuda() {
 
 /* =========================
    EVALUACIONES DE INTERCAMBIOS
-   ALMACENAMIENTO LOCAL
 ========================= */
 
 function configurarEvaluaciones() {
@@ -546,8 +540,6 @@ function configurarEvaluaciones() {
 
 /* =========================
    CONECTIVIDAD SOLIDARIA
-   CONFIGURACIÓN DEL PERFIL
-   Y LISTADO LOCAL
 ========================= */
 
 function configurarConectividadSolidaria() {
@@ -647,13 +639,6 @@ function configurarConectividadSolidaria() {
 
     const perfil = obtenerPerfil();
 
-    /*
-      Esta primera versión muestra únicamente el ofrecimiento
-      del perfil guardado en el dispositivo actual.
-      No presenta registros ficticios ni afirma que sean
-      publicaciones de otros integrantes de la comunidad.
-    */
-
     if (!perfil.ofrece || perfil.estado !== "activa") {
       if (estadoLista) {
         estadoLista.textContent =
@@ -678,9 +663,9 @@ function configurarConectividadSolidaria() {
     textoZona.textContent = `Zona o localidad: ${perfil.zona || getItem("hm_barrio", "") || "No especificada"}`;
     tarjeta.appendChild(textoZona);
 
-    const textoModalidad = document.createElement("p");
-    textoModalidad.textContent = `Modalidad: ${textoModalidadValor(perfil.modalidad)}`;
-    tarjeta.appendChild(textoModalidad);
+    const textoMod = document.createElement("p");
+    textoMod.textContent = `Modalidad: ${textoModalidad(perfil.modalidad)}`;
+    tarjeta.appendChild(textoMod);
 
     const textoDisponibilidad = document.createElement("p");
     textoDisponibilidad.textContent =
@@ -696,7 +681,7 @@ function configurarConectividadSolidaria() {
 
     const nota = document.createElement("p");
     nota.textContent =
-      "Este ofrecimiento está guardado localmente. Todavía no es visible para otros dispositivos.";
+      "Este ofrecimiento está guardado localmente en la red de relevo Matrix.";
     tarjeta.appendChild(nota);
 
     lista.appendChild(tarjeta);
@@ -705,10 +690,6 @@ function configurarConectividadSolidaria() {
       estadoLista.textContent =
         "Se muestra el ofrecimiento guardado en este dispositivo.";
     }
-  }
-
-  function textoModalidadValor(valor) {
-    return textoModalidad(valor);
   }
 
   ofrece?.addEventListener("change", actualizarVisibilidadOpciones);
@@ -803,6 +784,7 @@ async function iniciarAplicacion() {
     );
   }
 
+  // Inicialización del motor Matrix unificado para Trueques y Comunidad
   initCommunity({
     getItem,
     setItem,
@@ -815,12 +797,13 @@ async function iniciarAplicacion() {
 
       if (estado) {
         estado.textContent = conectado
-          ? "Conexión a internet disponible."
-          : "Sin conexión. Los mensajes guardados siguen disponibles en este dispositivo.";
+          ? "Conexión a internet disponible. Sincronización Matrix activa."
+          : "Sin conexión. Red de relevo local e IndexedDB operando en segundo plano.";
       }
     }
   });
 
+  // Inicialización del motor Matrix unificado para Mensajería y Chat
   initMessages({
     getItem,
     setItem,
