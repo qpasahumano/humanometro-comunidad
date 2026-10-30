@@ -156,8 +156,13 @@ export function initCommunity({
     });
   }
 
+  // --- LÓGICA DE ZONA INTELIGENTE (BARRIO ESTRICTO VS EXPLORACIÓN) ---
   function obtenerZona() {
     try {
+      const modo = getItem("hm_modo_visualizacion", "barrio");
+      if (modo === "explorar") {
+        return normalizarTexto(getItem("hm_zona_explorar", ""));
+      }
       return normalizarTexto(getItem("hm_barrio", ""));
     } catch {
       return "";
@@ -283,9 +288,11 @@ export function initCommunity({
     cargando = true;
     const identificadorCarga = ++ultimaCarga;
 
+    const zonaActualFiltro = obtenerZona();
+
     try {
       if (navigator.onLine) {
-        const { data, error } = await supabase
+        let query = supabase
           .from("publicaciones")
           .select(
             [
@@ -305,10 +312,16 @@ export function initCommunity({
               "actualizado_en"
             ].join(",")
           )
-          .eq("estado", "activa")
-          .order("creado_en", {
-            ascending: false
-          });
+          .eq("estado", "activa");
+
+        // Si hay una zona definida (ya sea tu barrio o Esquel), filtramos por ella en Supabase
+        if (zonaActualFiltro) {
+          query = query.ilike("zona_aproximada", `%${zonaActualFiltro}%`);
+        }
+
+        const { data, error } = await query.order("creado_en", {
+          ascending: false
+        });
 
         if (destruido || identificadorCarga !== ultimaCarga) {
           return;
@@ -334,7 +347,13 @@ export function initCommunity({
 
     // Fallback Matrix Cache local
     const cacheLocal = await obtenerMatrixCache();
-    const remotasCache = cacheLocal.map(convertirRegistroRemoto);
+    let remotasCache = cacheLocal.map(convertirRegistroRemoto);
+
+    if (zonaActualFiltro) {
+      remotasCache = remotasCache.filter(p => 
+        p.zona_aproximada.toLowerCase().includes(zonaActualFiltro.toLowerCase())
+      );
+    }
     
     publicaciones = combinarPublicaciones(
       obtenerLocales(),
@@ -556,7 +575,7 @@ export function initCommunity({
       que_necesita_a_cambio: esIntercambio
         ? necesita
         : "",
-      zona_aproximada: obtenerZona()
+      zona_aproximada: normalizarTexto(getItem("hm_barrio", ""))
     };
   }
 
@@ -801,6 +820,11 @@ export function initCommunity({
     "submit",
     manejarSubmit
   );
+
+  // Escuchar cuando el usuario cambia el selector de zona en app.js para refrescar el feed al instante
+  window.addEventListener("cambioZonaComunidad", () => {
+    cargarPublicacionesRemotas();
+  });
 
   actualizarCampoOtraCategoria();
 
