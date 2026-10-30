@@ -192,7 +192,6 @@ function prepararFormularioPerfil() {
     else formulario.appendChild(bloque);
   }
 
-  // Crear contenedor de Ficha Visual si no existe
   let fichaVisual = $("hm-perfil-ficha");
   if (!fichaVisual) {
     fichaVisual = document.createElement("div");
@@ -201,7 +200,6 @@ function prepararFormularioPerfil() {
     formulario.parentNode.insertBefore(fichaVisual, formulario);
   }
 
-  // Asegurar estilos correctos en la vista previa de la foto
   const vistaFoto = $("foto-perfil-vista");
   if (vistaFoto) {
     vistaFoto.style.objectFit = "cover";
@@ -268,13 +266,12 @@ function renderizarFichaVisual(contenedor) {
   const fotoSrc = datos.foto_url || "";
   const inicial = datos.nombre_visible ? datos.nombre_visible.charAt(0).toUpperCase() : "H";
 
-  // Simulación o cálculo del estado del Humanómetro (Verde = Óptimo, Amarillo = Intermitente, Rojo = Negativo)
-  // Por defecto se asigna verde (aceptado y fluido) o el estado correspondiente registrado
+  // Estado dinámico calculado desde las evaluaciones de Supabase
   const estadoHumanometro = datos.estado_humanometro || "verde"; 
   const coloresTermometro = {
-    verde: { bg: "#22c55e", texto: "Verde: Todo bien y aceptado mayoritariamente", colorTexto: "#15803d" },
-    amarillo: { bg: "#eab308", texto: "Amarillo: Intermitente o con dificultades", colorTexto: "#a16207" },
-    rojo: { bg: "#ef4444", texto: "Rojo: Tendencias negativas / Incumplimientos", colorTexto: "#b91c1c" }
+    verde: { bg: "#22c55e", texto: "Verde: Todo bien y aceptado mayoritariamente" },
+    amarillo: { bg: "#eab308", texto: "Amarillo: Intermitente o con dificultades" },
+    rojo: { bg: "#ef4444", texto: "Rojo: Tendencias negativas / Incumplimientos" }
   };
   const actualTermometro = coloresTermometro[estadoHumanometro] || coloresTermometro.verde;
 
@@ -289,7 +286,7 @@ function renderizarFichaVisual(contenedor) {
       </div>
     </div>
 
-    <!-- TERMÓMETRO DEL HUMANÓMETRO -->
+    <!-- TERMÓMETRO DEL HUMANÓMETRO DINÁMICO -->
     <div style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #334155;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
         <strong style="font-size: 0.9rem; color: #38bdf8;">Termómetro Humanómetro</strong>
@@ -322,7 +319,6 @@ function renderizarFichaVisual(contenedor) {
   });
 
   $("btn-medicion-humanidad")?.addEventListener("click", () => {
-    // Redirigir o abrir la vista del Humanómetro de Humanidad existente en la app
     const botonHumanometroNav = $("btn-humanometro");
     if (botonHumanometroNav) {
       botonHumanometroNav.click();
@@ -542,6 +538,36 @@ async function cargarMisPublicaciones() {
   }
 }
 
+async function calcularEstadoHumanometro(perfilId) {
+  try {
+    const { data: evaluaciones, error } = await supabase
+      .from("evaluaciones")
+      .select("resultado")
+      .eq("evaluado_id", perfilId);
+
+    if (error || !evaluaciones || evaluaciones.length === 0) {
+      return "verde"; // Predeterminado si no hay calificaciones
+    }
+
+    let malas = 0;
+    let intermedias = 0;
+    let buenas = 0;
+
+    evaluaciones.forEach((ev) => {
+      if (ev.resultado === "mala") malas++;
+      else if (ev.resultado === "intermedia" || ev.resultado === "sin-acuerdo") intermedias++;
+      else if (ev.resultado === "buena") buenas++;
+    });
+
+    if (malas > buenas && malas >= intermedias) return "rojo";
+    if (intermedias > buenas && intermedias >= malas) return "amarillo";
+    return "verde";
+  } catch (e) {
+    console.error("Error calculando termómetro:", e);
+    return "verde";
+  }
+}
+
 async function cargarPerfil() {
   if (!usuarioActual || cargaPerfilEnCurso) return;
 
@@ -554,7 +580,7 @@ async function cargarPerfil() {
     const { data, error } = await supabase
       .from("perfiles")
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
+        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, estado_humanometro"
       )
       .eq("id", usuarioActual.id)
       .maybeSingle();
@@ -566,6 +592,11 @@ async function cargarPerfil() {
     }
 
     perfilActual = data || null;
+
+    if (perfilActual) {
+      // Calcular automáticamente el termómetro en base a las evaluaciones de Supabase
+      perfilActual.estado_humanometro = await calcularEstadoHumanometro(usuarioActual.id);
+    }
 
     if ($("nombre-usuario")) $("nombre-usuario").value = data?.nombre_visible || "";
     if ($("hm-profile-presentation")) $("hm-profile-presentation").value = data?.presentacion || "";
@@ -674,7 +705,7 @@ async function guardarPerfil(evento) {
       .from("perfiles")
       .upsert(registro, { onConflict: "id" })
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
+        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, estado_humanometro"
       )
       .single();
 
@@ -685,6 +716,7 @@ async function guardarPerfil(evento) {
     }
 
     perfilActual = data;
+    perfilActual.estado_humanometro = await calcularEstadoHumanometro(usuarioActual.id);
     modoEdicionPerfil = false;
     actualizarModoVisualizacion();
 
