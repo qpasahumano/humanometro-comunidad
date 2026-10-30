@@ -1,10 +1,17 @@
-Import { supabase } from "./supabase.js";
+import { supabase } from "./supabase.js";
 
 let usuarioActual = null;
 let perfilActual = null;
 let escuchadorAutenticacion = null;
 let cargaPerfilEnCurso = false;
 let modoEdicionPerfil = false;
+
+// ==========================================
+// CONSTANTES DE SEGURIDAD: ALTA CONFIANZA
+// ==========================================
+const REQUISITO_MIN_EVALUACIONES = 20;
+const REQUISITO_MIN_CALIDAD = 95;
+const CATEGORIAS_ALTA_CONFIANZA = ["hospedaje", "cuidado_mascotas_casa"];
 
 const $ = (id) => document.getElementById(id);
 
@@ -295,7 +302,7 @@ function renderizarFichaVisual(contenedor) {
       <div style="background: #1e293b; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #475569;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="width: 10px; height: 10px; border-radius: 50%; background: ${colorPct}; box-shadow: 0 0 6px ${colorPct}; display: inline-block;"></span>
-          <span style="font-size: 0.8rem; color: #e2e8f0; font-weight: bold;">Calidad Humana: ${pct}%</span>
+          <span style="font-size: 0.8rem; color: #e2e8f0; font-weight: bold;">Calidad Humana: ${pct}% (${infoHumanidad.total} ev.)</span>
         </div>
         <button id="btn-medicion-humanidad" class="boton-secundario" type="button" style="font-size: 0.75rem; padding: 4px 8px; margin: 0;">
           MEDIR HUMANIDAD
@@ -344,6 +351,40 @@ function renderizarFichaVisual(contenedor) {
       alert("Sección Humanómetro de Humanidad disponible en el menú principal.");
     }
   });
+}
+
+// ==========================================
+// NUEVO: VALIDACIÓN DE NIVEL DE ALTA CONFIANZA
+// ==========================================
+export function verificarAccesoAltaConfianza() {
+  const infoHumanidad = perfilActual?.indice_humanidad || { porcentaje: 100, total: 0 };
+  const totalEvals = infoHumanidad.total;
+  const porcentaje = infoHumanidad.porcentaje;
+
+  if (totalEvals < REQUISITO_MIN_EVALUACIONES || porcentaje < REQUISITO_MIN_CALIDAD) {
+    return {
+      permitido: false,
+      mensaje: `🔒 Zona de Alta Confianza\n\nPara ofrecer o solicitar estadías y cuidado de animales en propiedades, necesitás al menos ${REQUISITO_MIN_EVALUACIONES} evaluaciones comunitarias (tenés ${totalEvals}) y un ${REQUISITO_MIN_CALIDAD}% de Calidad Humana (tenés ${porcentaje}%).\n\nSumá reputación con intercambios cotidianos para desbloquear este nivel automáticamente.`
+    };
+  }
+
+  return { permitido: true };
+}
+
+// ==========================================
+// NUEVO: INTERCEPTOR DE CATEGORÍA AL PUBLICAR
+// ==========================================
+export function seleccionarCategoriaPublicacion(categoriaSeleccionada) {
+  if (CATEGORIAS_ALTA_CONFIANZA.includes(categoriaSeleccionada)) {
+    const verificacion = verificarAccesoAltaConfianza();
+    
+    if (!verificacion.permitido) {
+      alert(verificacion.mensaje);
+      return false; // Bloquea la selección y la publicación en esa categoría
+    }
+  }
+  
+  return true; // Permitido
 }
 
 function mostrarEstado(mensaje) {
@@ -686,7 +727,6 @@ async function guardarPerfil(evento) {
     const archivoFoto = $("foto-perfil-archivo")?.files?.[0];
     if (archivoFoto) {
       const extension = archivoFoto.type === "image/png" ? "png" : archivoFoto.type === "image/webp" ? "webp" : "jpg";
-      // Ruta plana optimizada para evitar conflictos de subcarpetas en Storage
       const rutaFoto = `${usuarioActual.id}-${Date.now()}.${extension}`;
       
       const { error: errorSubida } = await supabase.storage
