@@ -399,7 +399,6 @@ function configurarAyuda() {
       return;
     }
 
-    // Validación de seguridad sobre publicación de medicamentos
     if (!validarPublicacionSegura(detalle)) {
       mostrarNotificacion(
         "Por políticas de seguridad sanitaria no se permite publicar o solicitar medicamentos entre particulares. Consultá los Bancos de Medicamentos oficiales."
@@ -462,7 +461,7 @@ function configurarAyuda() {
 }
 
 /* =========================
-   EVALUACIONES DE INTERCAMBIOS (HUMANÓMETRO PROGRESIVO DESDE 0%)
+   EVALUACIONES DE INTERCAMBIOS (HUMANÓMETRO PROGRESIVO Y ALERTA DE RIESGO)
 ========================= */
 
 function configurarEvaluaciones() {
@@ -479,7 +478,6 @@ function configurarEvaluaciones() {
     return Array.isArray(registros) ? registros : [];
   }
 
-  // Cálculo progresivo: arranca en 0% por defecto y evoluciona según los registros
   function calcularPorcentajeHumanidad(registros) {
     if (!registros.length) return 0;
     
@@ -489,7 +487,6 @@ function configurarEvaluaciones() {
       else if (reg.resultado === "intermedia") puntajeAcumulado += 50;
       else if (reg.resultado === "cancelacion-mutua") puntajeAcumulado += 75;
       else if (reg.resultado === "sin-acuerdo") puntajeAcumulado += 40;
-      // Mala no suma puntos al desarrollo humanitario
     });
 
     const promedio = Math.round(puntajeAcumulado / registros.length);
@@ -504,22 +501,39 @@ function configurarEvaluaciones() {
     const porcentajeActual = calcularPorcentajeHumanidad(registros);
     const totalIntercambios = registros.length;
 
-    // Tarjeta visual principal del Humanómetro con desglose de cantidad de intercambios
+    // Validación de riesgo: se activa a partir de 3 intercambios si el promedio cae del 70%
+    const umbralMinimoIntercambiosParaRiesgo = 3;
+    const estaEnRiesgo = totalIntercambios >= umbralMinimoIntercambiosParaRiesgo && porcentajeActual < 70;
+
     const tarjetaProgreso = document.createElement("article");
     tarjetaProgreso.className = "tarjeta";
+    
+    let htmlAlertaRiesgo = "";
+    if (estaEnRiesgo) {
+      htmlAlertaRiesgo = `
+        <div style="background: #7f1d1d; border: 1px solid #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; color: #fca5a5;">
+          <strong>⚠️ ATENCIÓN: Perfil en zona de riesgo comunitario</strong>
+          <p style="font-size: 0.85rem; margin: 5px 0 0 0;">
+            Tu medidor se encuentra por debajo del 70% requerido tras ${totalIntercambios} intercambios. Para mantener la pertenencia y confianza en la red, debés mejorar el cumplimiento y respeto en tus próximas experiencias.
+          </p>
+        </div>
+      `;
+    }
+
     tarjetaProgreso.innerHTML = `
       <h3>Progreso del Humanómetro</h3>
-      <p style="font-size: 2rem; font-weight: bold; color: #38bdf8; margin: 5px 0;">${porcentajeActual}%</p>
+      <p style="font-size: 2rem; font-weight: bold; color: ${estaEnRiesgo ? '#f87171' : '#38bdf8'}; margin: 5px 0;">${porcentajeActual}%</p>
       <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 8px;">
         Medición basada en <strong>${totalIntercambios}</strong> ${totalIntercambios === 1 ? 'intercambio registrado' : 'intercambios registrados'}.
       </p>
-      <p class="texto-ayuda">El contador inicia por defecto en 0% y evoluciona de forma progresiva según el desarrollo y la valoración de tus experiencias comunitarias.</p>
+      ${htmlAlertaRiesgo}
+      <p class="texto-ayuda">El contador inicia por defecto en 0% y evoluciona de forma progresiva según el desarrollo y la valoración de tus experiencias comunitarias (requiere un mínimo de 70% para mantener estatus óptimo).</p>
     `;
     lista.appendChild(tarjetaProgreso);
 
     if (!registros.length) {
       lista.appendChild(
-        crearTarjeta("Todavía no hay evaluaciones guardadas. Tu medidor está en 0%.")
+        crearTarjeta("Todavía no hay evaluaciones guardadas. Tu medidor está en 0% (período inicial de adaptación).")
       );
       return;
     }
@@ -582,7 +596,7 @@ function configurarEvaluaciones() {
 
     if (estado) {
       estado.textContent =
-        "Evaluación guardada localmente. El medidor progresivo ha sido actualizado.";
+        "Evaluación guardada localmente. El medidor progresivo y la validación de pertenencia han sido actualizados.";
     }
 
     renderizar();
@@ -838,7 +852,6 @@ async function iniciarAplicacion() {
     );
   }
 
-  // Inicialización del motor Matrix unificado para Trueques y Comunidad
   initCommunity({
     getItem,
     setItem,
@@ -857,7 +870,6 @@ async function iniciarAplicacion() {
     }
   });
 
-  // Inicialización del motor Matrix unificado para Mensajería y Chat
   initMessages({
     getItem,
     setItem,
