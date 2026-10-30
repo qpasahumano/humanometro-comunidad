@@ -135,7 +135,7 @@ select:focus-visible {
 /* SEGUNDA INTERFAZ */
 
 .pantalla-comunidad {
-  padding: 20px 16px 30px;
+  padding: 16px 14px 24px;
   background-attachment: scroll;
 }
 
@@ -147,36 +147,36 @@ select:focus-visible {
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
-  padding: 10px 0 20px;
+  padding: 6px 0 14px;
   border-bottom: 1px solid var(--borde);
 }
 
 .marca {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .marca-titulo {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.09em;
 }
 
 .marca-subtitulo {
   color: var(--celeste);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 750;
   letter-spacing: 0.2em;
 }
 
 .boton-perfil {
-  padding: 10px 13px;
+  padding: 8px 12px;
   border: 1px solid var(--borde);
   border-radius: 999px;
   color: var(--blanco);
   background: rgba(7, 25, 44, 0.8);
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   font-weight: 700;
 }
 
@@ -193,37 +193,39 @@ select:focus-visible {
 }
 
 .bienvenida {
-  padding: 28px 4px 18px;
+  padding: 16px 4px 12px;
 }
 
 .etiqueta {
   color: var(--celeste);
-  font-size: 0.73rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.16em;
 }
 
 .bienvenida h1 {
-  margin: 10px 0;
-  font-size: clamp(1.7rem, 6vw, 2.4rem);
+  margin: 6px 0;
+  font-size: clamp(1.4rem, 5vw, 2.1rem);
   line-height: 1.15;
 }
 
 .bienvenida > p:last-child {
   max-width: 520px;
   color: var(--texto-suave);
-  line-height: 1.65;
+  line-height: 1.5;
+  font-size: 0.88rem;
 }
 
-/* TARJETAS Y CAMPOS */
+/* TARJETAS Y CAMPOS OPTIMIZADOS PARA MÓVIL (SIN SCROLL EXCESIVO) */
 
 .tarjeta {
-  padding: 18px;
+  padding: 12px !important;
   border: 1px solid var(--borde);
   border-radius: var(--radio);
   background: var(--panel);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(8px);
+  margin-bottom: 10px !important;
 }
 
 .tarjeta h2:first-child,
@@ -232,22 +234,22 @@ select:focus-visible {
 }
 
 .selector-barrio {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .selector-barrio label,
 .vista-interna label {
   display: block;
-  margin-bottom: 9px;
+  margin-bottom: 5px;
   color: var(--celeste);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 750;
 }
 
 .fila-barrio {
   display: flex;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 8px;
 }
 
 .fila-barrio input {
@@ -260,15 +262,18 @@ textarea,
 select {
   width: 100%;
   min-width: 0;
-  padding: 12px 13px;
+  padding: 9px 11px !important;
   border: 1px solid rgba(151, 194, 220, 0.3);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--blanco);
   background: rgba(3, 15, 30, 0.92);
+  font-size: 0.88rem !important;
+  margin-bottom: 6px !important;
 }
 
 textarea {
   resize: vertical;
+  min-height: 65px;
 }
 
 input::placeholder,
@@ -284,24 +289,24 @@ select option {
 .texto-ayuda {
   margin-bottom: 0;
   color: var(--texto-suave);
-  font-size: 0.83rem;
-  line-height: 1.5;
+  font-size: 0.78rem !important;
+  line-height: 1.4;
 }
 
 /* BOTONES PRINCIPALES */
 
 .acciones-principales {
   display: grid;
-  gap: 13px;
+  gap: 10px;
 }
 
 .boton-modulo {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  min-height: 94px;
-  padding: 17px;
+  min-height: 72px;
+  padding: 12px 14px;
   border: 1px solid var(--borde);
   border-radius: var(--radio);
   color: var(--blanco);
@@ -320,43 +325,43 @@ select option {
 
 .boton-gondola {
   border-color: rgba(139, 217, 238, 0.5);
-  box-shadow: 0 0 24px var(--brillo);
+  box-shadow: 0 0 20px var(--brillo);
 }
 
 .icono-modulo {
   display: grid;
   place-items: center;
-  flex: 0 0 43px;
-  width: 43px;
-  height: 43px;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
   border: 1px solid var(--borde);
   border-radius: 50%;
   color: var(--celeste);
-  font-size: 1.6rem;
+  font-size: 1.4rem;
 }
 
 .contenido-modulo {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   min-width: 0;
 }
 
 .contenido-modulo strong {
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font-size: 0.86rem;
+  line-height: 1.3;
 }
 
 .contenido-modulo small {
   color: var(--texto-suave);
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .flecha {
   color: var(--celeste);
-  font-size: 1.8rem;
+  font-size: 1.5rem;
 }
 
 /* HUMANÓMETRO DE HUMANIDAD */
@@ -364,89 +369,95 @@ select option {
 .humanometro {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-top: 22px;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px;
 }
 
 .humanometro-icono {
   display: grid;
   place-items: center;
-  flex: 0 0 48px;
-  width: 48px;
-  height: 48px;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
   border: 1px solid var(--borde);
   border-radius: 50%;
   color: var(--celeste);
   font-weight: 900;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
 }
 
 .humanometro h2 {
-  margin: 0 0 7px;
-  font-size: 1rem;
+  margin: 0 0 4px;
+  font-size: 0.95rem;
 }
 
 .humanometro p {
   margin: 0;
   color: var(--texto-suave);
-  font-size: 0.83rem;
-  line-height: 1.55;
+  font-size: 0.79rem;
+  line-height: 1.45;
 }
 
 /* VISTAS INTERNAS */
 
 .vista-interna {
-  margin-top: 24px;
+  margin-top: 14px;
 }
 
 .vista-interna h2 {
-  margin: 20px 0 10px;
-  font-size: 1.5rem;
-  line-height: 1.3;
+  margin: 12px 0 8px;
+  font-size: 1.3rem;
+  line-height: 1.2;
 }
 
 .vista-interna h3 {
-  margin-top: 25px;
+  margin-top: 16px;
+  font-size: 1rem;
 }
 
 .vista-interna > p,
 .vista-interna .tarjeta > p {
   color: var(--texto-suave);
-  line-height: 1.6;
+  line-height: 1.5;
+  font-size: 0.88rem;
 }
 
 .vista-interna form {
   display: grid;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .vista-interna form h3 {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .vista-interna ul {
-  padding-left: 22px;
+  padding-left: 20px;
   color: var(--texto-suave);
-  line-height: 1.7;
+  line-height: 1.6;
+  font-size: 0.86rem;
 }
 
 .boton-volver {
-  padding: 10px 0;
+  padding: 6px 0;
   border: 0;
   color: var(--celeste);
   background: transparent;
   font-weight: 700;
+  font-size: 0.85rem;
 }
 
 .boton-accion,
 .boton-secundario {
-  min-height: 44px;
-  padding: 11px 15px;
+  min-height: 38px;
+  padding: 8px 12px;
   border: 1px solid var(--borde);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--blanco);
   font-weight: 750;
+  font-size: 0.84rem;
 }
 
 .boton-accion {
@@ -459,13 +470,13 @@ select option {
 
 .boton-ancho {
   width: 100%;
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .filtros {
   display: grid;
-  gap: 12px;
-  margin-top: 18px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .filtros h3 {
@@ -476,29 +487,31 @@ select option {
 
 .lista-publicaciones {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .publicacion,
 .tarjeta-publicacion {
   min-width: 0;
-  padding: 15px;
+  padding: 12px;
   border: 1px solid var(--borde);
-  border-radius: 13px;
+  border-radius: 10px;
   background: var(--panel);
   overflow-wrap: anywhere;
 }
 
 .publicacion h4,
 .tarjeta-publicacion h3 {
-  margin: 0 0 8px;
-  line-height: 1.4;
+  margin: 0 0 6px;
+  line-height: 1.3;
+  font-size: 0.95rem;
 }
 
 .publicacion p,
 .tarjeta-publicacion p {
   color: var(--texto-suave);
-  line-height: 1.55;
+  line-height: 1.45;
+  font-size: 0.84rem;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -506,116 +519,48 @@ select option {
 .publicacion small,
 .tarjeta-publicacion small {
   display: block;
-  margin-top: 7px;
+  margin-top: 5px;
   color: var(--celeste);
-  line-height: 1.5;
+  line-height: 1.4;
+  font-size: 0.75rem;
 }
 
 .aviso-local {
-  padding: 12px;
+  padding: 10px;
   border-left: 3px solid var(--celeste);
   color: var(--texto-suave);
   background: rgba(5, 20, 37, 0.8);
-  font-size: 0.83rem;
-  line-height: 1.55;
+  font-size: 0.79rem;
+  line-height: 1.45;
 }
 
 /* PIE Y NOTIFICACIONES */
 
 .pie {
-  margin-top: 35px;
-  padding: 20px 0 0;
+  margin-top: 24px;
+  padding: 14px 0 0;
   border-top: 1px solid var(--borde);
   color: var(--texto-suave);
-  font-size: 0.75rem;
-  line-height: 1.6;
+  font-size: 0.72rem;
+  line-height: 1.5;
   text-align: center;
 }
 
 .notificacion {
   position: fixed;
   z-index: 1000;
-  right: 16px;
-  bottom: 18px;
-  left: 16px;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
   max-width: 480px;
   margin: auto;
-  padding: 14px 17px;
+  padding: 12px 15px;
   border: 1px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--blanco);
   background: #102b43;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
-}
-
-/* PANTALLAS PEQUEÑAS */
-
-@media (max-width: 380px) {
-  .pantalla-comunidad {
-    padding-right: 12px;
-    padding-left: 12px;
-  }
-
-  .tarjeta {
-    padding: 14px;
-  }
-
-  .boton-modulo {
-    gap: 10px;
-    padding: 13px;
-  }
-
-  .icono-modulo {
-    flex-basis: 36px;
-    width: 36px;
-    height: 36px;
-  }
-
-  .contenido-modulo strong {
-    font-size: 0.8rem;
-  }
-}
-
-@media (min-width: 700px) {
-  .pantalla-comunidad {
-    padding: 28px 28px 40px;
-  }
-
-  .boton-circular {
-    width: min(72vw, 430px);
-  }
-
-  .acciones-principales {
-    gap: 16px;
-  }
-
-  .boton-modulo {
-    min-height: 100px;
-  }
-}
-
-@media (max-height: 650px) {
-  .pantalla-inicial {
-    padding-top: 16px;
-    padding-bottom: 16px;
-  }
-
-  .boton-circular {
-    width: min(76vw, 340px);
-  }
-
-  .texto-inicial {
-    margin-top: 12px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition: none !important;
-  }
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-size: 0.84rem;
 }
 
 /* AJUSTES: BÚSQUEDA Y PERFIL COMUNITARIO */
@@ -623,25 +568,25 @@ select option {
 .acciones-busqueda {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .perfil-foto-bloque {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding: 16px;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px;
   border: 1px solid var(--borde);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--panel);
 }
 
 .perfil-foto-marco {
-  flex: 0 0 92px;
-  width: 92px;
-  height: 92px;
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -649,7 +594,7 @@ select option {
   border-radius: 50%;
   color: var(--blanco);
   background: rgba(75, 170, 220, 0.12);
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 700;
 }
 
@@ -666,9 +611,10 @@ select option {
 
 .perfil-foto-controles small {
   display: block;
-  margin-top: 8px;
+  margin-top: 5px;
   color: var(--texto-suave);
-  line-height: 1.45;
+  line-height: 1.35;
+  font-size: 0.75rem;
   overflow-wrap: anywhere;
 }
 
@@ -688,45 +634,47 @@ select option {
 /* CONECTIVIDAD SOLIDARIA: PERFIL */
 
 .perfil-conectividad {
-  margin-top: 18px;
+  margin-top: 12px;
   border-color: var(--borde);
 }
 
 .perfil-conectividad h3 {
   margin-top: 0;
   color: var(--celeste);
-  line-height: 1.4;
+  line-height: 1.3;
+  font-size: 0.95rem;
 }
 
 .perfil-conectividad > p {
   color: var(--texto-suave);
-  font-size: 0.88rem;
-  line-height: 1.55;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .perfil-conectividad label {
   display: block;
-  margin: 12px 0 8px;
+  margin: 8px 0 4px;
   color: var(--celeste);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 750;
 }
 
 .perfil-conectividad .control-check {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin: 12px 0;
+  gap: 8px;
+  margin: 8px 0;
   color: var(--blanco);
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.4;
+  font-size: 0.84rem;
 }
 
 .perfil-conectividad .control-check input {
   flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  margin: 3px 0 0;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
   accent-color: var(--celeste);
 }
 
@@ -736,111 +684,103 @@ select option {
 }
 
 .perfil-conectividad .texto-ayuda {
-  margin-top: 8px;
+  margin-top: 5px;
 }
 
 /* CONECTIVIDAD SOLIDARIA: LISTADO COMUNITARIO */
 
 .conectividad-solidaria {
-  margin-top: 18px;
+  margin-top: 12px;
   border-color: rgba(139, 217, 238, 0.4);
-  box-shadow: 0 0 22px rgba(83, 197, 235, 0.08);
+  box-shadow: 0 0 18px rgba(83, 197, 235, 0.08);
 }
 
 .conectividad-solidaria h2 {
   color: var(--celeste);
-  font-size: 1.2rem;
-  line-height: 1.4;
+  font-size: 1.1rem;
+  line-height: 1.3;
 }
 
 .conectividad-solidaria > p {
   color: var(--texto-suave);
-  font-size: 0.88rem;
-  line-height: 1.6;
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 #estado-lista-conectividad,
 #estado-perfil-conectividad {
   color: var(--texto-suave);
-  font-size: 0.83rem;
-  line-height: 1.5;
+  font-size: 0.79rem;
+  line-height: 1.4;
 }
 
 #lista-conectividad {
   display: grid;
-  gap: 12px;
-  margin-top: 14px;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .tarjeta-conectividad {
   min-width: 0;
-  padding: 15px;
+  padding: 12px;
   border: 1px solid var(--borde);
-  border-radius: 13px;
+  border-radius: 10px;
   background: rgba(5, 20, 37, 0.78);
   overflow-wrap: anywhere;
 }
 
 .tarjeta-conectividad h3 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: var(--celeste);
-  font-size: 1rem;
-  line-height: 1.4;
+  font-size: 0.95rem;
+  line-height: 1.3;
 }
 
 .tarjeta-conectividad p {
-  margin: 7px 0;
+  margin: 5px 0;
   color: var(--texto-suave);
-  font-size: 0.85rem;
-  line-height: 1.55;
+  font-size: 0.81rem;
+  line-height: 1.45;
 }
 
 .tarjeta-conectividad .boton-accion,
 .tarjeta-conectividad .boton-secundario {
   width: 100%;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .distintivo-conectividad {
   display: inline-block;
-  margin: 5px 0 8px;
-  padding: 5px 9px;
+  margin: 4px 0 6px;
+  padding: 4px 8px;
   border: 1px solid rgba(139, 217, 238, 0.35);
   border-radius: 999px;
   color: var(--celeste);
   background: rgba(83, 197, 235, 0.08);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 750;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
-@media (max-width: 380px) {
-  .perfil-conectividad,
-  .conectividad-solidaria {
-    padding: 14px;
-  }
-}
 /* =====================================================
    AJUSTE VISUAL DE ICONOS — HUMANÓMETRO COMUNIDAD
    SVG CELESTE LUMINOSO SOBRE FONDO OSCURO
    ===================================================== */
 
-/* Círculos de los cuatro accesos principales */
 .icono-modulo {
   color: #8bd9ee;
   border-color: rgba(139, 217, 238, 0.65);
   background: rgba(83, 197, 235, 0.08);
   box-shadow:
-    inset 0 0 10px rgba(83, 197, 235, 0.08),
-    0 0 12px rgba(83, 197, 235, 0.10);
+    inset 0 0 8px rgba(83, 197, 235, 0.08),
+    0 0 10px rgba(83, 197, 235, 0.10);
 }
 
-/* Trazos de los dibujos SVG */
 .icono-modulo svg,
 .humanometro-icono svg {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   overflow: visible;
   fill: none;
   stroke: #8bd9ee;
@@ -850,60 +790,121 @@ select option {
   filter: drop-shadow(0 0 3px rgba(83, 197, 235, 0.55));
 }
 
-/* Ícono de la Góndola Comunitaria */
 .icono-gondola svg {
   stroke: #8bd9ee;
 }
 
-/* Ícono de Comunicación */
 .icono-comunicacion svg {
   stroke: #8bd9ee;
 }
 
-/* Ícono de Red Humana */
 .icono-red-humana svg {
   stroke: #8bd9ee;
 }
 
-/* Ícono del Humanómetro de Humanidad */
 .icono-humanometro svg {
   stroke: #8bd9ee;
 }
 
-/* Resplandor al tocar o seleccionar un acceso */
 .boton-modulo:hover .icono-modulo,
 .boton-modulo:focus-visible .icono-modulo,
 .boton-modulo:active .icono-modulo {
   border-color: #8bd9ee;
   background: rgba(83, 197, 235, 0.15);
   box-shadow:
-    inset 0 0 12px rgba(83, 197, 235, 0.12),
-    0 0 18px rgba(83, 197, 235, 0.2);
+    inset 0 0 10px rgba(83, 197, 235, 0.12),
+    0 0 14px rgba(83, 197, 235, 0.2);
 }
 
-/* Ícono de la tarjeta de presentación */
 .humanometro-icono {
   color: #8bd9ee;
   border-color: rgba(139, 217, 238, 0.65);
   background: rgba(83, 197, 235, 0.08);
-  box-shadow: 0 0 14px rgba(83, 197, 235, 0.1);
+  box-shadow: 0 0 12px rgba(83, 197, 235, 0.1);
 }
 
 .humanometro-icono svg {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   stroke-width: 2.5;
 }
 
-/* Mantener proporciones en celulares pequeños */
+/* MEDIA QUERIES GENERALES */
+
 @media (max-width: 380px) {
+  .pantalla-comunidad {
+    padding: 12px 10px 20px;
+  }
+
+  .tarjeta {
+    padding: 10px !important;
+  }
+
+  .boton-modulo {
+    gap: 8px;
+    padding: 10px 12px;
+    min-height: 66px;
+  }
+
+  .icono-modulo {
+    flex-basis: 34px;
+    width: 34px;
+    height: 34px;
+  }
+
   .icono-modulo svg {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
   }
 
   .humanometro-icono svg {
-    width: 29px;
-    height: 29px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .contenido-modulo strong {
+    font-size: 0.8rem;
+  }
+}
+
+@media (min-width: 700px) {
+  .pantalla-comunidad {
+    padding: 24px 24px 32px;
+  }
+
+  .boton-circular {
+    width: min(72vw, 430px);
+  }
+
+  .acciones-principales {
+    gap: 12px;
+  }
+
+  .boton-modulo {
+    min-height: 80px;
+  }
+}
+
+@media (max-height: 650px) {
+  .pantalla-inicial {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .boton-circular {
+    width: min(76vw, 320px);
+  }
+
+  .texto-inicial {
+    margin-top: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
   }
 }
