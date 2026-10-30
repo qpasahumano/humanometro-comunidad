@@ -1,4 +1,4 @@
-import { supabase } from "./supabase.js";
+Import { supabase } from "./supabase.js";
 
 let usuarioActual = null;
 let perfilActual = null;
@@ -266,30 +266,22 @@ function renderizarFichaVisual(contenedor) {
   const fotoSrc = datos.foto_url || "";
   const inicial = datos.nombre_visible ? datos.nombre_visible.charAt(0).toUpperCase() : "H";
 
-  // Índice Porcentual de Calidad Humana calculado
   const infoHumanidad = datos.indice_humanidad || { porcentaje: 100, total: 0 };
   const pct = infoHumanidad.porcentaje;
 
-  // Color adaptativo según el porcentaje
-  let colorPct = "#22c55e"; // Verde óptimo
-  let etiquetaPct = "Óptimo / Confiable";
+  let colorPct = "#22c55e"; 
   if (pct < 60) {
-    colorPct = "#ef4444"; // Rojo
-    etiquetPct = "A revisar";
+    colorPct = "#ef4444"; 
   } else if (pct < 80) {
-    colorPct = "#eab308"; // Amarillo
-    etiquetPct = "Intermitente";
+    colorPct = "#eab308"; 
   }
 
-  // Enlace y formato limpio de WhatsApp
   const wppRaw = datos.whatsapp ? datos.whatsapp.replace(/\D/g, "") : "";
   const wppLink = wppRaw ? `https://wa.me/${wppRaw}` : "";
 
   contenedor.innerHTML = `
-    <!-- CREDENCIAL DIGITAL COMPACTA -->
     <div style="background: #0b0f19; border: 1px solid #334155; border-radius: 12px; padding: 12px; font-family: inherit;">
       
-      <!-- Cabecera: Foto y Datos Principales -->
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
         <div style="width: 55px; height: 55px; border-radius: 50%; overflow: hidden; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; font-weight: bold; flex-shrink: 0; border: 2px solid #38bdf8;">
           ${fotoSrc ? `<img src="${fotoSrc}" alt="Foto" style="width: 100%; height: 100%; object-fit: cover;">` : inicial}
@@ -300,7 +292,6 @@ function renderizarFichaVisual(contenedor) {
         </div>
       </div>
 
-      <!-- Fila de Estado: Índice Porcentual de Calidad Humana -->
       <div style="background: #1e293b; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #475569;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="width: 10px; height: 10px; border-radius: 50%; background: ${colorPct}; box-shadow: 0 0 6px ${colorPct}; display: inline-block;"></span>
@@ -311,7 +302,6 @@ function renderizarFichaVisual(contenedor) {
         </button>
       </div>
 
-      <!-- Presentación detallada y Contacto / Conectividad en bloque resumido -->
       <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
         <p style="margin: 0; font-style: italic; color: #94a3b8; font-size: 0.8rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
           "${datos.presentacion || "Sin condiciones o presentación detallada."}"
@@ -330,12 +320,10 @@ function renderizarFichaVisual(contenedor) {
         </div>
       </div>
 
-      <!-- Nota estratégica del Ecosistema -->
       <p style="margin: 0 0 10px 0; font-size: 0.7rem; color: #64748b; text-align: center;">
         💡 El nexo es aquí: acordá como quieras, pero medí la humanidad para cuidar la comunidad.
       </p>
 
-      <!-- Botón de Edición compacto -->
       <button id="btn-activar-edicion" class="boton-accion" type="button" style="width: 100%; font-size: 0.8rem; padding: 6px;">
         EDITAR MI PERFIL
       </button>
@@ -568,7 +556,6 @@ async function cargarMisPublicaciones() {
   }
 }
 
-// NUEVA FUNCIÓN: Calcula el porcentaje de calidad humana en base a las tildes de las evaluaciones
 async function calcularPorcentajeHumanidad(perfilId) {
   try {
     const { data: evaluaciones, error } = await supabase
@@ -577,11 +564,11 @@ async function calcularPorcentajeHumanidad(perfilId) {
       .eq("evaluado_id", perfilId);
 
     if (error || !evaluaciones || evaluaciones.length === 0) {
-      return { porcentaje: 100, total: 0 }; // Por defecto 100% si no tiene evaluaciones aún
+      return { porcentaje: 100, total: 0 }; 
     }
 
     let totalChecksPositivos = 0;
-    let totalCriteriosPosibles = evaluaciones.length * 4; // 4 ítems por cada evaluación
+    let totalCriteriosPosibles = evaluaciones.length * 4; 
 
     evaluaciones.forEach((ev) => {
       if (ev.respeta_condiciones) totalChecksPositivos++;
@@ -624,7 +611,6 @@ async function cargarPerfil() {
     perfilActual = data || null;
 
     if (perfilActual) {
-      // Calcular dinámicamente el porcentaje de calidad humana basado en ítems
       perfilActual.indice_humanidad = await calcularPorcentajeHumanidad(usuarioActual.id);
     }
 
@@ -700,7 +686,9 @@ async function guardarPerfil(evento) {
     const archivoFoto = $("foto-perfil-archivo")?.files?.[0];
     if (archivoFoto) {
       const extension = archivoFoto.type === "image/png" ? "png" : archivoFoto.type === "image/webp" ? "webp" : "jpg";
-      const rutaFoto = `${usuarioActual.id}/perfil-${Date.now()}.${extension}`;
+      // Ruta plana optimizada para evitar conflictos de subcarpetas en Storage
+      const rutaFoto = `${usuarioActual.id}-${Date.now()}.${extension}`;
+      
       const { error: errorSubida } = await supabase.storage
         .from("fotos-perfil")
         .upload(rutaFoto, archivoFoto, {
@@ -708,10 +696,13 @@ async function guardarPerfil(evento) {
           contentType: archivoFoto.type,
           cacheControl: "3600"
         });
+
       if (errorSubida) {
-        mostrarEstadoPerfil("No se pudo subir la foto: " + errorSubida.message);
+        console.error("Detalle del error de Storage:", errorSubida);
+        mostrarEstadoPerfil("No se pudo subir la foto: " + (errorSubida.message || errorSubida.error));
         return;
       }
+
       const { data: urlFoto } = supabase.storage.from("fotos-perfil").getPublicUrl(rutaFoto);
       fotoUrl = urlFoto?.publicUrl || null;
     }
@@ -740,7 +731,7 @@ async function guardarPerfil(evento) {
       .single();
 
     if (error) {
-      console.error("Error al guardar el perfil:", error);
+      console.error("Error al guardar el perfil en tabla:", error);
       mostrarEstadoPerfil("No se pudo guardar el perfil: " + error.message);
       return;
     }
@@ -757,8 +748,8 @@ async function guardarPerfil(evento) {
     mostrarEstado("Sesión activa: " + usuarioActual.email);
 
   } catch (error) {
-    console.error("Error inesperado al guardar el perfil:", error);
-    mostrarEstadoPerfil("Ocurrió un error al guardar el perfil.");
+    console.error("Error inesperado en guardado:", error);
+    mostrarEstadoPerfil("Error de red al guardar. Verificá tu conexión.");
   } finally {
     if (boton) {
       boton.disabled = false;
