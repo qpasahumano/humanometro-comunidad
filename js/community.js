@@ -367,6 +367,10 @@ export function initCommunity({
     const esIntercambio =
       String(publicacion.tipo).toLowerCase().includes("intercambio");
 
+    // Nombre de autor simulado o recuperado de perfil si viniera adjunto
+    const nombreAutor = escaparHTML(publicacion.perfil_nombre || "Vecino");
+    const autorId = publicacion.perfil_id || "";
+
     tarjeta.innerHTML = `
       <div class="publicacion-cabecera">
         <span class="publicacion-tipo">${tipo}</span>
@@ -410,10 +414,31 @@ export function initCommunity({
       }
 
       <small class="publicacion-fecha">${fecha}</small>
+
+      <button 
+        class="boton-secundario btn-contactar-trueque" 
+        data-id="${autorId}" 
+        data-nombre="${nombreAutor}"
+        style="margin-top: 10px; width: 100%; font-size: 0.85rem; cursor: pointer;"
+      >
+        Contactar por este trueque
+      </button>
     `;
 
     return tarjeta;
   }
+
+  // Event listener global para capturar clics en el botón de contacto de las tarjetas
+  document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("btn-contactar-trueque")) {
+      const destinatarioId = e.target.getAttribute("data-id");
+      const destinatarioNombre = e.target.getAttribute("data-nombre");
+
+      if (window.abrirChatConVecino) {
+        window.abrirChatConVecino(destinatarioNombre, destinatarioId);
+      }
+    }
+  });
 
   function renderizarPublicaciones() {
     if (!lista) return;
