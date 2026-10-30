@@ -462,7 +462,7 @@ function configurarAyuda() {
 }
 
 /* =========================
-   EVALUACIONES DE INTERCAMBIOS
+   EVALUACIONES DE INTERCAMBIOS (HUMANÓMETRO PROGRESIVO DESDE 0%)
 ========================= */
 
 function configurarEvaluaciones() {
@@ -479,15 +479,47 @@ function configurarEvaluaciones() {
     return Array.isArray(registros) ? registros : [];
   }
 
+  // Cálculo progresivo: arranca en 0% por defecto y evoluciona según los registros
+  function calcularPorcentajeHumanidad(registros) {
+    if (!registros.length) return 0;
+    
+    let puntajeAcumulado = 0;
+    registros.forEach(reg => {
+      if (reg.resultado === "buena") puntajeAcumulado += 100;
+      else if (reg.resultado === "intermedia") puntajeAcumulado += 50;
+      else if (reg.resultado === "cancelacion-mutua") puntajeAcumulado += 75;
+      else if (reg.resultado === "sin-acuerdo") puntajeAcumulado += 40;
+      // Mala no suma puntos al desarrollo humanitario
+    });
+
+    const promedio = Math.round(puntajeAcumulado / registros.length);
+    return Math.min(Math.max(promedio, 0), 100);
+  }
+
   function renderizar() {
     if (!lista) return;
 
     lista.replaceChildren();
     const registros = obtenerRegistros();
+    const porcentajeActual = calcularPorcentajeHumanidad(registros);
+    const totalIntercambios = registros.length;
+
+    // Tarjeta visual principal del Humanómetro con desglose de cantidad de intercambios
+    const tarjetaProgreso = document.createElement("article");
+    tarjetaProgreso.className = "tarjeta";
+    tarjetaProgreso.innerHTML = `
+      <h3>Progreso del Humanómetro</h3>
+      <p style="font-size: 2rem; font-weight: bold; color: #38bdf8; margin: 5px 0;">${porcentajeActual}%</p>
+      <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 8px;">
+        Medición basada en <strong>${totalIntercambios}</strong> ${totalIntercambios === 1 ? 'intercambio registrado' : 'intercambios registrados'}.
+      </p>
+      <p class="texto-ayuda">El contador inicia por defecto en 0% y evoluciona de forma progresiva según el desarrollo y la valoración de tus experiencias comunitarias.</p>
+    `;
+    lista.appendChild(tarjetaProgreso);
 
     if (!registros.length) {
       lista.appendChild(
-        crearTarjeta("Todavía no hay evaluaciones guardadas.")
+        crearTarjeta("Todavía no hay evaluaciones guardadas. Tu medidor está en 0%.")
       );
       return;
     }
@@ -550,7 +582,7 @@ function configurarEvaluaciones() {
 
     if (estado) {
       estado.textContent =
-        "Evaluación guardada localmente. No se publicó ni se envió a nadie.";
+        "Evaluación guardada localmente. El medidor progresivo ha sido actualizado.";
     }
 
     renderizar();
