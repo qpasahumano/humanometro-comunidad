@@ -782,7 +782,6 @@
         </div>
 
         <label for="nombre-usuario">Nombre visible</label>
-
         <input
           id="nombre-usuario"
           type="text"
@@ -790,6 +789,17 @@
           placeholder="Cómo querés aparecer en la comunidad"
           required
         >
+
+        <!-- CAMPO OBLIGATORIO DE WHATSAPP -->
+        <label for="whatsapp-usuario">Número de WhatsApp (Obligatorio)</label>
+        <input
+          id="whatsapp-usuario"
+          type="tel"
+          maxlength="30"
+          placeholder="Ej: +5491112345678"
+          required
+        >
+        <small class="texto-ayuda">Requerido para validar tu perfil y mantener la seguridad comunitaria.</small>
 
         <button
           id="btn-guardar-perfil"
