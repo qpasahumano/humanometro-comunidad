@@ -105,7 +105,7 @@ function prepararFormularioPerfil() {
       etiqueta: "Presentación",
       tipo: "textarea",
       max: 600,
-      placeholder: "Contá algo sobre vos, tus intereses o lo que ofrecés."
+      placeholder: "Contá detalladamente las condiciones reales de lo que ofrecés o buscás."
     },
     {
       id: "hm-profile-locality",
@@ -266,14 +266,20 @@ function renderizarFichaVisual(contenedor) {
   const fotoSrc = datos.foto_url || "";
   const inicial = datos.nombre_visible ? datos.nombre_visible.charAt(0).toUpperCase() : "H";
 
-  // Estado dinámico del Termómetro de Humanidad
-  const estadoHumanometro = datos.estado_humanometro || "verde"; 
-  const termometros = {
-    verde: { bg: "#22c55e", label: "Óptimo / Fluido" },
-    amarillo: { bg: "#eab308", label: "Intermitente" },
-    rojo: { bg: "#ef4444", label: "Con Incumplimientos" }
-  };
-  const tActual = termometros[estadoHumanometro] || termometros.verde;
+  // Índice Porcentual de Calidad Humana calculado
+  const infoHumanidad = datos.indice_humanidad || { porcentaje: 100, total: 0 };
+  const pct = infoHumanidad.porcentaje;
+
+  // Color adaptativo según el porcentaje
+  let colorPct = "#22c55e"; // Verde óptimo
+  let etiquetaPct = "Óptimo / Confiable";
+  if (pct < 60) {
+    colorPct = "#ef4444"; // Rojo
+    etiquetPct = "A revisar";
+  } else if (pct < 80) {
+    colorPct = "#eab308"; // Amarillo
+    etiquetPct = "Intermitente";
+  }
 
   // Enlace y formato limpio de WhatsApp
   const wppRaw = datos.whatsapp ? datos.whatsapp.replace(/\D/g, "") : "";
@@ -294,21 +300,21 @@ function renderizarFichaVisual(contenedor) {
         </div>
       </div>
 
-      <!-- Fila de Estado: Termómetro de Humanidad (Diferenciado) -->
+      <!-- Fila de Estado: Índice Porcentual de Calidad Humana -->
       <div style="background: #1e293b; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #475569;">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: ${tActual.bg}; box-shadow: 0 0 6px ${tActual.bg}; display: inline-block;"></span>
-          <span style="font-size: 0.8rem; color: #e2e8f0; font-weight: bold;">Humanómetro: ${tActual.label}</span>
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: ${colorPct}; box-shadow: 0 0 6px ${colorPct}; display: inline-block;"></span>
+          <span style="font-size: 0.8rem; color: #e2e8f0; font-weight: bold;">Calidad Humana: ${pct}%</span>
         </div>
         <button id="btn-medicion-humanidad" class="boton-secundario" type="button" style="font-size: 0.75rem; padding: 4px 8px; margin: 0;">
           MEDIR HUMANIDAD
         </button>
       </div>
 
-      <!-- Presentación corta y Contacto / Conectividad en bloque resumido -->
-      <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flexDirection: column; gap: 6px; margin-bottom: 10px;">
+      <!-- Presentación detallada y Contacto / Conectividad en bloque resumido -->
+      <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
         <p style="margin: 0; font-style: italic; color: #94a3b8; font-size: 0.8rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-          "${datos.presentacion || "Sin presentación cargada."}"
+          "${datos.presentacion || "Sin condiciones o presentación detallada."}"
         </p>
 
         <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
@@ -562,33 +568,33 @@ async function cargarMisPublicaciones() {
   }
 }
 
-async function calcularEstadoHumanometro(perfilId) {
+// NUEVA FUNCIÓN: Calcula el porcentaje de calidad humana en base a las tildes de las evaluaciones
+async function calcularPorcentajeHumanidad(perfilId) {
   try {
     const { data: evaluaciones, error } = await supabase
       .from("evaluaciones")
-      .select("resultado")
+      .select("respeta_condiciones, cordialidad, puntualidad, comunicacion_clara")
       .eq("evaluado_id", perfilId);
 
     if (error || !evaluaciones || evaluaciones.length === 0) {
-      return "verde"; 
+      return { porcentaje: 100, total: 0 }; // Por defecto 100% si no tiene evaluaciones aún
     }
 
-    let malas = 0;
-    let intermedias = 0;
-    let buenas = 0;
+    let totalChecksPositivos = 0;
+    let totalCriteriosPosibles = evaluaciones.length * 4; // 4 ítems por cada evaluación
 
     evaluaciones.forEach((ev) => {
-      if (ev.resultado === "mala") malas++;
-      else if (ev.resultado === "intermedia" || ev.resultado === "sin-acuerdo") intermedias++;
-      else if (ev.resultado === "buena") buenas++;
+      if (ev.respeta_condiciones) totalChecksPositivos++;
+      if (ev.cordialidad) totalChecksPositivos++;
+      if (ev.puntualidad) totalChecksPositivos++;
+      if (ev.comunicacion_clara) totalChecksPositivos++;
     });
 
-    if (malas > buenas && malas >= intermedias) return "rojo";
-    if (intermedias > buenas && intermedias >= malas) return "amarillo";
-    return "verde";
+    const porcentaje = Math.round((totalChecksPositivos / totalCriteriosPosibles) * 100);
+    return { porcentaje, total: evaluaciones.length };
   } catch (e) {
-    console.error("Error calculando termómetro:", e);
-    return "verde";
+    console.error("Error calculando porcentaje de humanidad:", e);
+    return { porcentaje: 100, total: 0 };
   }
 }
 
@@ -604,7 +610,7 @@ async function cargarPerfil() {
     const { data, error } = await supabase
       .from("perfiles")
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, estado_humanometro"
+        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
       )
       .eq("id", usuarioActual.id)
       .maybeSingle();
@@ -618,7 +624,8 @@ async function cargarPerfil() {
     perfilActual = data || null;
 
     if (perfilActual) {
-      perfilActual.estado_humanometro = await calcularEstadoHumanometro(usuarioActual.id);
+      // Calcular dinámicamente el porcentaje de calidad humana basado en ítems
+      perfilActual.indice_humanidad = await calcularPorcentajeHumanidad(usuarioActual.id);
     }
 
     if ($("nombre-usuario")) $("nombre-usuario").value = data?.nombre_visible || "";
@@ -728,7 +735,7 @@ async function guardarPerfil(evento) {
       .from("perfiles")
       .upsert(registro, { onConflict: "id" })
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, estado_humanometro"
+        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
       )
       .single();
 
@@ -739,7 +746,7 @@ async function guardarPerfil(evento) {
     }
 
     perfilActual = data;
-    perfilActual.estado_humanometro = await calcularEstadoHumanometro(usuarioActual.id);
+    perfilActual.indice_humanidad = await calcularPorcentajeHumanidad(usuarioActual.id);
     modoEdicionPerfil = false;
     actualizarModoVisualizacion();
 
