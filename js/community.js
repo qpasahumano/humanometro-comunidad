@@ -5,6 +5,11 @@ import {
 } from "./auth.js";
 
 const STORAGE_KEY = "hm_publicaciones";
+const MATRIX_CONFIG = {
+  DB_NAME: 'HumanometroComunidadDB',
+  DB_VERSION: 1,
+  STORE_PUBLICACIONES: 'publicaciones_cache'
+};
 
 export function initCommunity({
   getItem,
@@ -41,6 +46,53 @@ export function initCommunity({
   let destruido = false;
   let suscripcionAuth = null;
   let ultimaCarga = 0;
+  let dbMatrixInstance = null;
+
+  // --- NÚCLEO MATRIX: INDEXEDDB LOCAL ---
+  function abrirMatrixDB() {
+    return new Promise((resolve, reject) => {
+      if (dbMatrixInstance) return resolve(dbMatrixInstance);
+
+      const request = indexedDB.open(MATRIX_CONFIG.DB_NAME, MATRIX_CONFIG.DB_VERSION);
+      request.onerror = (e) => reject(e.target.error);
+      request.onsuccess = (e) => {
+        dbMatrixInstance = e.target.result;
+        resolve(dbMatrixInstance);
+      };
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(MATRIX_CONFIG.STORE_PUBLICACIONES)) {
+          db.createObjectStore(MATRIX_CONFIG.STORE_PUBLICACIONES, { keyPath: 'id' });
+        }
+      };
+    });
+  }
+
+  async function guardarMatrixCache(pubs) {
+    try {
+      const db = await abrirMatrixDB();
+      const tx = db.transaction([MATRIX_CONFIG.STORE_PUBLICACIONES], 'readwrite');
+      const store = tx.objectStore(MATRIX_CONFIG.STORE_PUBLICACIONES);
+      pubs.forEach(pub => store.put(pub));
+    } catch (err) {
+      console.warn("Matrix: No se pudo guardar caché en IndexedDB", err);
+    }
+  }
+
+  async function obtenerMatrixCache() {
+    try {
+      const db = await abrirMatrixDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction([MATRIX_CONFIG.STORE_PUBLICACIONES], 'readonly');
+        const store = tx.objectStore(MATRIX_CONFIG.STORE_PUBLICACIONES);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      });
+    } catch {
+      return [];
+    }
+  }
 
   const notificar = (mensaje, tipo = "info") => {
     if (typeof mostrarNotificacion === "function") {
@@ -232,75 +284,63 @@ export function initCommunity({
     const identificadorCarga = ++ultimaCarga;
 
     try {
-      const { data, error } = await supabase
-        .from("publicaciones")
-        .select(
-          [
-            "id",
-            "perfil_id",
-            "tipo",
-            "categoria",
-            "titulo",
-            "descripcion",
-            "modalidad",
-            "modalidad_intercambio",
-            "que_necesita_a_cambio",
-            "zona_aproximada",
-            "fotos",
-            "estado",
-            "creado_en",
-            "actualizado_en"
-          ].join(",")
-        )
-        .eq("estado", "activa")
-        .order("creado_en", {
-          ascending: false
-        });
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("publicaciones")
+          .select(
+            [
+              "id",
+              "perfil_id",
+              "tipo",
+              "categoria",
+              "titulo",
+              "descripcion",
+              "modalidad",
+              "modalidad_intercambio",
+              "que_necesita_a_cambio",
+              "zona_aproximada",
+              "fotos",
+              "estado",
+              "creado_en",
+              "actualizado_en"
+            ].join(",")
+          )
+          .eq("estado", "activa")
+          .order("creado_en", {
+            ascending: false
+          });
 
-      if (destruido || identificadorCarga !== ultimaCarga) {
-        return;
+        if (destruido || identificadorCarga !== ultimaCarga) {
+          return;
+        }
+
+        if (!error && data) {
+          const remotas = data.map(convertirRegistroRemoto);
+          await guardarMatrixCache(remotas);
+          
+          publicaciones = combinarPublicaciones(
+            obtenerLocales(),
+            remotas
+          );
+          renderizarPublicaciones();
+          return;
+        }
       }
-
-      if (error) {
-        console.error(
-          "No se pudieron cargar las publicaciones remotas:",
-          error
-        );
-
-        publicaciones = combinarPublicaciones(
-          obtenerLocales(),
-          []
-        );
-
-        renderizarPublicaciones();
-        return;
-      }
-
-      const remotas = (data ?? []).map(
-        convertirRegistroRemoto
-      );
-
-      publicaciones = combinarPublicaciones(
-        obtenerLocales(),
-        remotas
-      );
-
-      renderizarPublicaciones();
     } catch (error) {
-      console.error(
-        "Error cargando publicaciones:",
-        error
-      );
-
-      publicaciones = combinarPublicaciones(
-        obtenerLocales(),
-        []
-      );
-
-      renderizarPublicaciones();
+      console.warn("Red intermitente, cargando desde red de relevo local Matrix...", error);
     } finally {
       cargando = false;
     }
+
+    // Fallback Matrix Cache local
+    const cacheLocal = await obtenerMatrixCache();
+    const remotasCache = cacheLocal.map(convertirRegistroRemoto);
+    
+    publicaciones = combinarPublicaciones(
+      obtenerLocales(),
+      remotasCache
+    );
+    renderizarPublicaciones();
   }
 
   function crearTarjeta(publicacion) {
@@ -740,13 +780,23 @@ export function initCommunity({
 
   actualizarCampoOtraCategoria();
 
-  publicaciones = combinarPublicaciones(
-    obtenerLocales(),
-    []
-  );
+  // Sincronización automática de red Matrix online
+  window.addEventListener('online', () => {
+    cargarPublicacionesRemotas();
+  });
 
-  renderizarPublicaciones();
-  cargarPublicacionesRemotas();
+  abrirMatrixDB().then(() => {
+    obtenerMatrixCache().then(cacheLocal => {
+      const remotasCache = cacheLocal.map(convertirRegistroRemoto);
+      publicaciones = combinarPublicaciones(obtenerLocales(), remotasCache);
+      renderizarPublicaciones();
+      cargarPublicacionesRemotas();
+    });
+  }).catch(() => {
+    publicaciones = combinarPublicaciones(obtenerLocales(), []);
+    renderizarPublicaciones();
+    cargarPublicacionesRemotas();
+  });
 
   try {
     const resultado = supabase.auth.onAuthStateChange(() => {
