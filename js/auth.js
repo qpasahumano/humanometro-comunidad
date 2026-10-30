@@ -61,7 +61,6 @@ Ingresá o creá tu cuenta para participar y compartir publicaciones.
 <p id="hm-auth-status" class="texto-ayuda" role="status" aria-live="polite">
   Comprobando tu cuenta…
 </p>
-
 `;
 
 const encabezado = vista.querySelector("h2");
@@ -122,6 +121,14 @@ etiqueta: "Zona aproximada",
 tipo: "input",
 max: 120,
 placeholder: "Ej.: zona centro"
+},
+{
+id: "hm-profile-whatsapp",
+nombre: "WhatsApp",
+etiqueta: "Número de WhatsApp (para contacto con Wi-Fi)",
+tipo: "input",
+max: 30,
+placeholder: "Ej.: +5491112345678"
 }
 ];
 
@@ -154,10 +161,9 @@ if (boton) {
 } else {
   formulario.append(etiqueta, control);
 }
-
 });
 
-  // Conectividad Solidaria: oferta voluntaria, nunca obligatoria.
+  // Conectividad Solidaria y Emergencias
   if (!$("hm-connectivity-available")) {
     const bloque = document.createElement("fieldset");
     bloque.className = "perfil-conectividad tarjeta";
@@ -185,6 +191,13 @@ if (boton) {
     else formulario.appendChild(bloque);
   }
 
+  // Asegurar estilos correctos en la vista previa de la foto para evitar recortes indeseados
+  const vistaFoto = $("foto-perfil-vista");
+  if (vistaFoto) {
+    vistaFoto.style.objectFit = "cover";
+    vistaFoto.style.objectPosition = "center";
+  }
+
   const selectorFoto = $("foto-perfil-archivo");
   selectorFoto?.addEventListener("change", () => {
     const archivo = selectorFoto.files?.[0];
@@ -205,6 +218,8 @@ if (boton) {
     if (vista) {
       if (vista.dataset.previewUrl) URL.revokeObjectURL(vista.dataset.previewUrl);
       vista.src = urlTemporal;
+      vista.style.objectFit = "cover";
+      vista.style.objectPosition = "center";
       vista.dataset.previewUrl = urlTemporal;
       vista.hidden = false;
     }
@@ -367,6 +382,7 @@ const nombre = $("nombre-usuario");
 const presentacion = $("hm-profile-presentation");
 const localidad = $("hm-profile-locality");
 const zona = $("hm-profile-zone");
+const whatsapp = $("hm-profile-whatsapp");
 const conectividad = $("hm-connectivity-available");
 const modalidad = $("hm-connectivity-mode");
 const emergencia = $("hm-connectivity-emergency");
@@ -384,6 +400,7 @@ if (nombre) nombre.value = "";
 if (presentacion) presentacion.value = "";
 if (localidad) localidad.value = "";
 if (zona) zona.value = "";
+if (whatsapp) whatsapp.value = "";
 }
 
 async function cargarMisPublicaciones() {
@@ -439,7 +456,7 @@ mostrarEstadoPerfil("Buscando tu perfil…");
 const { data, error } = await supabase
   .from("perfiles")
   .select(
-    "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
+    "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
   )
   .eq("id", usuarioActual.id)
   .maybeSingle();
@@ -469,13 +486,22 @@ if ($("hm-profile-locality")) {
 if ($("hm-profile-zone")) {
   $("hm-profile-zone").value = data?.zona_aproximada || "";
 }
+
+if ($("hm-profile-whatsapp")) {
+  $("hm-profile-whatsapp").value = data?.whatsapp || "";
+}
+
 if ($("hm-connectivity-available")) $("hm-connectivity-available").checked = Boolean(data?.conectividad_disponible);
 if ($("hm-connectivity-mode")) $("hm-connectivity-mode").value = data?.conectividad_modalidad || "gratuito";
 if ($("hm-connectivity-emergency")) $("hm-connectivity-emergency").checked = Boolean(data?.conectividad_emergencias);
 if ($("hm-connectivity-zone")) $("hm-connectivity-zone").value = data?.conectividad_zona || "";
+
 if ($("foto-perfil-vista") && data?.foto_url) {
-  $("foto-perfil-vista").src = data.foto_url;
-  $("foto-perfil-vista").hidden = false;
+  const vistaFoto = $("foto-perfil-vista");
+  vistaFoto.src = data.foto_url;
+  vistaFoto.style.objectFit = "cover";
+  vistaFoto.style.objectPosition = "center";
+  vistaFoto.hidden = false;
   if ($("foto-perfil-inicial")) $("foto-perfil-inicial").hidden = true;
 }
 
@@ -507,6 +533,7 @@ const nombre = $("nombre-usuario")?.value.trim() || "";
 const presentacion = $("hm-profile-presentation")?.value.trim() || "";
 const localidad = $("hm-profile-locality")?.value.trim() || "";
 const zona = $("hm-profile-zone")?.value.trim() || "";
+const whatsapp = $("hm-profile-whatsapp")?.value.trim() || "";
 const conectividadDisponible = Boolean($("hm-connectivity-available")?.checked);
 const conectividadModalidad = $("hm-connectivity-mode")?.value || "gratuito";
 const conectividadEmergencias = Boolean($("hm-connectivity-emergency")?.checked);
@@ -553,6 +580,7 @@ nombre_visible: nombre,
 presentacion: presentacion || null,
 localidad: localidad || null,
 zona_aproximada: zona || null,
+whatsapp: whatsapp || null,
 foto_url: fotoUrl,
 conectividad_disponible: conectividadDisponible,
 conectividad_modalidad: conectividadModalidad,
@@ -565,7 +593,7 @@ const { data, error } = await supabase
   .from("perfiles")
   .upsert(registro, { onConflict: "id" })
   .select(
-    "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
+    "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
   )
   .single();
 
@@ -579,6 +607,8 @@ perfilActual = data;
 const vistaFoto = $("foto-perfil-vista");
 if (vistaFoto && data?.foto_url) {
   vistaFoto.src = data.foto_url;
+  vistaFoto.style.objectFit = "cover";
+  vistaFoto.style.objectPosition = "center";
   vistaFoto.hidden = false;
   if ($("foto-perfil-inicial")) $("foto-perfil-inicial").hidden = true;
 }
@@ -638,6 +668,5 @@ actualizarInterfazUsuario();
 });
 
 escuchadorAutenticacion = resultado.data.subscription;
-
 }
 }
