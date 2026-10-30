@@ -1,4 +1,4 @@
-import { initCommunity } from "./community.js";
+Import { initCommunity } from "./community.js";
 import { initConnectivity } from "./connectivity.js";
 import { initMessages } from "./messages.js";
 import { iniciarAutenticacion } from "./auth.js";
@@ -164,7 +164,7 @@ async function buscarBarrioPorCoordenadas(latitud, longitud) {
 }
 
 /* =========================
-   BARRIO O LOCALIDAD
+   BARRIO, LOCALIDAD Y EXPLORACIÓN
 ========================= */
 
 function configurarBarrio() {
@@ -175,10 +175,56 @@ function configurarBarrio() {
   const boton = $("btn-guardar-barrio");
   const estado = $("estado-barrio");
   const ubicacion = $("btn-ubicacion");
+  
+  // Elementos nuevos para el selector de exploración
+  const modoVisualizacion = $("modo-visualizacion");
+  const contenedorExplorarZona = $("contenedor-explorar-zona");
+  const inputZonaExplorar = $("zona-explorar");
 
   if (!input || !boton) return;
 
   input.value = getItem("hm_barrio", "");
+  
+  // Recuperar modo de visualización previo si existe
+  const modoGuardado = getItem("hm_modo_visualizacion", "barrio");
+  if (modoVisualizacion) {
+    modoVisualizacion.value = modoGuardado;
+  }
+
+  const zonaExplorarGuardada = getItem("hm_zona_explorar", "Esquel");
+  if (inputZonaExplorar) {
+    inputZonaExplorar.value = zonaExplorarGuardada;
+  }
+
+  function actualizarVisibilidadExploracion() {
+    const esExplorar = modoVisualizacion?.value === "explorar";
+    if (contenedorExplorarZona) {
+      contenedorExplorarZona.hidden = !esExplorar;
+    }
+  }
+
+  actualizarVisibilidadExploracion();
+
+  modoVisualizacion?.addEventListener("change", () => {
+    const modo = modoVisualizacion.value;
+    setItem("hm_modo_visualizacion", modo);
+    actualizarVisibilidadExploracion();
+    
+    if (modo === "barrio") {
+      mostrarNotificacion("Modo de emergencia y barrio estricto activado.");
+    } else {
+      mostrarNotificacion("Modo exploración de otra localidad activado.");
+    }
+    
+    // Disparar evento personalizado para que community.js u otros módulos recarguen el feed
+    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
+  });
+
+  inputZonaExplorar?.addEventListener("input", () => {
+    const zonaVal = inputZonaExplorar.value.trim();
+    setItem("hm_zona_explorar", zonaVal);
+    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
+  });
 
   if (input.value && estado) {
     estado.textContent = `Comunidad seleccionada: ${input.value}`;
@@ -205,6 +251,7 @@ function configurarBarrio() {
     }
 
     mostrarNotificacion("Barrio guardado en este dispositivo.");
+    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
   ubicacion?.addEventListener("click", () => {
@@ -479,7 +526,6 @@ function configurarEvaluaciones() {
   }
 
   function calcularPorcentajeHumanidad(registros) {
-    // Si no es un array válido o está vacío, fuerza categóricamente a 0%
     if (!Array.isArray(registros) || registros.length === 0) return 0;
     
     let puntajeAcumulado = 0;
