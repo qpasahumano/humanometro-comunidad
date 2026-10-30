@@ -461,7 +461,7 @@ function configurarAyuda() {
 }
 
 /* =========================
-   EVALUACIONES DE INTERCAMBIOS (HUMANÓMETRO PROGRESIVO Y ALERTA DE RIESGO)
+   EVALUACIONES DE INTERCAMBIOS (HUMANÓMETRO PROGRESIVO Y ANTI-AUTOEVALUACIÓN)
 ========================= */
 
 function configurarEvaluaciones() {
@@ -501,7 +501,6 @@ function configurarEvaluaciones() {
     const porcentajeActual = calcularPorcentajeHumanidad(registros);
     const totalIntercambios = registros.length;
 
-    // Validación de riesgo: se activa a partir de 3 intercambios si el promedio cae del 70%
     const umbralMinimoIntercambiosParaRiesgo = 3;
     const estaEnRiesgo = totalIntercambios >= umbralMinimoIntercambiosParaRiesgo && porcentajeActual < 70;
 
@@ -541,12 +540,13 @@ function configurarEvaluaciones() {
     registros.slice().reverse().forEach((registro) => {
       lista.appendChild(
         crearTarjeta(registro.referencia || "Intercambio", [
+          `Participante evaluado: ${registro.usuarioEvaluado || "No especificado"}`,
           `Resultado: ${registro.resultadoTexto || "Sin especificar"}`,
           registro.detalle || "",
           registro.fecha
             ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
             : "",
-          "Evaluación local, sin verificación independiente."
+          "Evaluación comunitaria registrada."
         ])
       );
     });
@@ -555,16 +555,24 @@ function configurarEvaluaciones() {
   formulario?.addEventListener("submit", (evento) => {
     evento.preventDefault();
 
-    const referencia =
-      $("referencia-evaluacion")?.value.trim() || "";
+    const usuarioEvaluado = $("usuario-evaluado")?.value.trim() || "";
+    const referencia = $("referencia-evaluacion")?.value.trim() || "";
     const resultado = $("resultado-evaluacion")?.value || "";
-    const detalle =
-      $("detalle-evaluacion")?.value.trim() || "";
+    const detalle = $("detalle-evaluacion")?.value.trim() || "";
 
-    if (!referencia || !detalle) {
-      mostrarNotificacion(
-        "Completá la referencia y la explicación."
-      );
+    // Obtener el nombre del usuario actual para evitar autoevaluación
+    const nombreUsuarioActual = getItem("hm_nombre_usuario", "").trim().toLowerCase();
+
+    if (usuarioEvaluado && nombreUsuarioActual && usuarioEvaluado.toLowerCase() === nombreUsuarioActual) {
+      mostrarNotificacion("No podés evaluarte a vos mismo. Las evaluaciones deben ser realizadas por la contraparte del intercambio.");
+      if (estado) {
+        estado.textContent = "Error: No está permitida la autoevaluación de perfiles.";
+      }
+      return;
+    }
+
+    if (!usuarioEvaluado || !referencia || !detalle) {
+      mostrarNotificacion("Completá el nombre de la contraparte, la referencia y la explicación.");
       return;
     }
 
@@ -580,6 +588,7 @@ function configurarEvaluaciones() {
 
     registros.push({
       id: crearId(),
+      usuarioEvaluado,
       referencia,
       resultado,
       resultadoTexto: textos[resultado] || resultado,
@@ -595,12 +604,11 @@ function configurarEvaluaciones() {
     formulario.reset();
 
     if (estado) {
-      estado.textContent =
-        "Evaluación guardada localmente. El medidor progresivo y la validación de pertenencia han sido actualizados.";
+      estado.textContent = "Evaluación guardada localmente. El medidor progresivo ha sido actualizado.";
     }
 
     renderizar();
-    mostrarNotificacion("Evaluación guardada en este dispositivo.");
+    mostrarNotificacion("Evaluación guardada con éxito.");
   });
 
   renderizar();
