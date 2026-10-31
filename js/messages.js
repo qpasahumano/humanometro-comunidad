@@ -236,13 +236,14 @@ export function initMessages({ getItem, setItem, mostrarNotificacion }) {
         destinatarioInput.setAttribute("data-destinatario-id", usuarioId);
       }
     }
-    const seccionForm = document.getElementById("form-mensaje") || document.getElementById("seccion-mensajes");
-    if (seccionForm) {
-      seccionForm.scrollIntoView({ behavior: "smooth" });
-    }
-    if (textoInput) {
-      textoInput.focus();
-    }
+
+    // La navegación debe abrir primero la vista de Comunicación; luego enfoca el mensaje.
+    window.dispatchEvent(new CustomEvent("abrirVistaComunicacion"));
+    window.setTimeout(() => {
+      const seccionForm = document.getElementById("form-mensaje") || document.getElementById("seccion-mensajes");
+      seccionForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+      textoInput?.focus();
+    }, 80);
   };
 
   function obtenerMensajesLocales() {
@@ -263,7 +264,7 @@ export function initMessages({ getItem, setItem, mostrarNotificacion }) {
       ? new Date(valorFecha).toLocaleString("es-AR")
       : "";
     tarjeta.append(encabezado, texto, fecha);
-    
+
     if (estadoTexto) {
       const estadoItem = document.createElement("small");
       estadoItem.style.display = "block";
@@ -391,7 +392,7 @@ export function initMessages({ getItem, setItem, mostrarNotificacion }) {
           .order("creado_en", { ascending: false })
           .limit(100);
         if (error) throw error;
-        
+
         lista.replaceChildren();
         if (!data?.length) {
           const aviso = document.createElement("p");
@@ -454,7 +455,7 @@ export function initMessages({ getItem, setItem, mostrarNotificacion }) {
 
     const usuario = await obtenerUsuarioActual();
     const perfil = await obtenerPerfilActual();
-    
+
     let destinatarioId = destinatarioInput.getAttribute("data-destinatario-id");
 
     if (!usuario || !perfil || !navigator.onLine) {
@@ -496,14 +497,14 @@ export function initMessages({ getItem, setItem, mostrarNotificacion }) {
         }
         destinatarioId = coincidencias[0].id;
       }
-      
+
       const { error } = await supabase.from("mensajes").insert({
         remitente_id: usuario.id,
         destinatario_id: destinatarioId,
         contenido: texto
       });
       if (error) throw error;
-      
+
       formulario.reset();
       destinatarioInput.removeAttribute("data-destinatario-id");
       if (estado) estado.textContent = `Mensaje enviado correctamente.`;
