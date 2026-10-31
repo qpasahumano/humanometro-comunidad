@@ -11,6 +11,9 @@ const MATRIX_CONFIG = {
   STORE_PUBLICACIONES: 'publicaciones_cache'
 };
 
+// Umbral de vigencia temporal para la caché local (ej. 48 horas en milisegundos)
+const UMBRAL_VIGENCIA_CACHE_MS = 48 * 60 * 60 * 1000;
+
 export function initCommunity({
   getItem,
   setItem,
@@ -40,6 +43,7 @@ export function initCommunity({
   const buscarPublicacionesBtn = document.getElementById(
     "btn-buscar-publicaciones"
   );
+  const actualizarRedBtn = document.getElementById("btn-actualizar-red");
   const estadoPublicacion = document.getElementById("estado-publicacion");
 
   let publicaciones = [];
@@ -339,6 +343,7 @@ export function initCommunity({
             remotas
           );
           renderizarPublicaciones();
+          cargando = false;
           return;
         }
       }
@@ -393,11 +398,29 @@ export function initCommunity({
     const autorId = publicacion.perfil_id || "";
     const offlineActivo = Boolean(publicacion.offline_activo);
 
+    // --- Control de Vigencia Temporal / Antienvejecimiento de Caché ---
+    let requiereRevalidar = false;
+    if (publicacion.creado_en) {
+      const tiempoCreacion = new Date(publicacion.creado_en).getTime();
+      const tiempoActual = Date.now();
+      if (!Number.isNaN(tiempoCreacion) && (tiempoActual - tiempoCreacion > UMBRAL_VIGENCIA_CACHE_MS)) {
+        requiereRevalidar = true;
+      }
+    }
+
     tarjeta.innerHTML = `
       <div class="publicacion-cabecera">
         <span class="publicacion-tipo">${tipo}</span>
         <span class="publicacion-categoria">${categoria}</span>
       </div>
+
+      ${
+        requiereRevalidar
+          ? `<div style="margin: 6px 0; background: #78350f; border: 1px solid #d97706; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; color: #fde68a; display: flex; align-items: center; gap: 6px;">
+               <span>⚠️</span> <strong>En caché local - Requiere revalidar:</strong> Esta publicación supera las 48h sin sincronizar.
+             </div>`
+          : ""
+      }
 
       <h3 class="publicacion-titulo">${titulo}</h3>
 
@@ -458,16 +481,42 @@ export function initCommunity({
     return tarjeta;
   }
 
-  // Event listener global para capturar clics en el botón de contacto directo
+  // --- LÓGICA DE DOBLE CONFIRMACIÓN PARA WHATSAPP / CONTACTO SEGURO ---
+  let contactoPendiente = null;
+
   document.addEventListener("click", (e) => {
     if (e.target.classList.contains("btn-contactar-trueque")) {
       const destinatarioId = e.target.getAttribute("data-id");
       const destinatarioNombre = e.target.getAttribute("data-nombre");
 
-      if (window.abrirChatConVecino) {
+      contactoPendiente = { destinatarioNombre, destinatarioId };
+
+      // Mostrar modal de doble confirmación preventiva
+      const modalWsp = document.getElementById("modal-whatsapp-seguro");
+      if (modalWsp) {
+        modalWsp.hidden = false;
+      } else if (window.abrirChatConVecino) {
         window.abrirChatConVecino(destinatarioNombre, destinatarioId);
       }
     }
+  });
+
+  // Manejadores del modal de seguridad para WhatsApp
+  const btnConfirmarWsp = document.getElementById("btn-confirmar-wsp");
+  const btnCancelarWsp = document.getElementById("btn-cancelar-wsp");
+  const modalWsp = document.getElementById("modal-whatsapp-seguro");
+
+  btnConfirmarWsp?.addEventListener("click", () => {
+    if (modalWsp) modalWsp.hidden = true;
+    if (contactoPendiente && window.abrirChatConVecino) {
+      window.abrirChatConVecino(contactoPendiente.destinatarioNombre, contactoPendiente.destinatarioId);
+    }
+    contactoPendiente = null;
+  });
+
+  btnCancelarWsp?.addEventListener("click", () => {
+    if (modalWsp) modalWsp.hidden = true;
+    contactoPendiente = null;
   });
 
   function renderizarPublicaciones() {
@@ -818,6 +867,13 @@ export function initCommunity({
     "click",
     manejarBusqueda
   );
+
+  // Botón de revalidación forzada de caché / estado de la red
+  actualizarRedBtn?.addEventListener("click", async () => {
+    notificar("Actualizando estado de la red...", "info");
+    await cargarPublicacionesRemotas();
+    notificar("¡Estado de la red actualizado con éxito!", "success");
+  });
 
   busquedaInput?.addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") {
