@@ -16,6 +16,7 @@ let barrioConfigurado = false;
 let ayudaConfigurada = false;
 let evaluacionesConfiguradas = false;
 let conectividadSolidariaConfigurada = false;
+let radarComunitarioConfigurado = false;
 
 /* =========================
    NOTIFICACIONES
@@ -57,13 +58,17 @@ function mostrarVista(nombre = null, opciones = {}) {
     "vista-comunicacion",
     "vista-ayuda",
     "vista-perfil",
-    "vista-humanometro"
+    "vista-humanometro",
+    "vista-radar"
   ];
 
   const requierePerfil = nombre !== "vista-perfil";
+
   if (requierePerfil && !opciones.forzar && !usuarioPuedeEntrar()) {
     nombre = "vista-perfil";
-    mostrarNotificacion("Ingresá a tu cuenta y completá tu perfil para acceder a la comunidad.");
+    mostrarNotificacion(
+      "Ingresá a tu cuenta y completá tu perfil para acceder a la comunidad."
+    );
   }
 
   vistas.forEach((id) => {
@@ -72,12 +77,17 @@ function mostrarVista(nombre = null, opciones = {}) {
   });
 
   const panelComunidad = $("panel-comunidad");
-  if (panelComunidad) panelComunidad.hidden = nombre !== null;
+
+  if (panelComunidad) {
+    panelComunidad.hidden = nombre !== null;
+  }
 
   if (nombre === "vista-perfil") {
     actualizarSolapaActiva("perfil");
   } else if (nombre === "vista-gondola") {
     actualizarSolapaActiva("gondola");
+  } else if (nombre === "vista-radar") {
+    actualizarSolapaActiva("radar");
   } else {
     actualizarSolapaActiva("comunidad");
   }
@@ -92,8 +102,28 @@ function entrarALaComunidad() {
   if (inicial) inicial.hidden = true;
   if (comunidad) comunidad.hidden = false;
 
-  // La primera pantalla funcional es Mi Perfil: ingreso o creación de cuenta.
   mostrarVista("vista-perfil", { forzar: true });
+}
+
+function abrirDirectorioComunidad() {
+  mostrarVista(null);
+
+  if (!usuarioPuedeEntrar()) return;
+
+  /*
+   * NUEVO:
+   * Solicita al módulo community.js mostrar el directorio general.
+   * El directorio debe incluir todos los perfiles y ordenarlos
+   * desde el ingreso más reciente al más antiguo.
+   */
+  window.dispatchEvent(
+    new CustomEvent("mostrarDirectorioComunidad", {
+      detail: {
+        modo: "comunidad",
+        destino: getItem("hm_radar_destino", null)
+      }
+    })
+  );
 }
 
 function configurarNavegacion() {
@@ -102,23 +132,62 @@ function configurarNavegacion() {
 
   $("btn-entrar")?.addEventListener("click", entrarALaComunidad);
 
-  $("tab-perfil")?.addEventListener("click", () => mostrarVista("vista-perfil", { forzar: true }));
-  $("tab-gondola")?.addEventListener("click", () => mostrarVista("vista-gondola"));
-  $("tab-comunidad")?.addEventListener("click", () => mostrarVista(null));
+  $("tab-perfil")?.addEventListener("click", () => {
+    mostrarVista("vista-perfil", { forzar: true });
+  });
 
-  $("btn-gondola")?.addEventListener("click", () => mostrarVista("vista-gondola"));
-  $("btn-comunicacion")?.addEventListener("click", () => mostrarVista("vista-comunicacion"));
-  $("btn-ayuda")?.addEventListener("click", () => mostrarVista("vista-ayuda"));
-  $("btn-humanometro")?.addEventListener("click", () => mostrarVista("vista-humanometro"));
-  $("btn-perfil")?.addEventListener("click", () => mostrarVista("vista-perfil", { forzar: true }));
+  $("tab-gondola")?.addEventListener("click", () => {
+    mostrarVista("vista-gondola");
+  });
+
+  $("tab-comunidad")?.addEventListener("click", () => {
+    abrirDirectorioComunidad();
+  });
+
+  /* NUEVA SOLAPA: RADAR COMUNITARIO */
+  $("tab-radar")?.addEventListener("click", () => {
+    mostrarVista("vista-radar");
+  });
+
+  $("btn-gondola")?.addEventListener("click", () => {
+    mostrarVista("vista-gondola");
+  });
+
+  $("btn-comunicacion")?.addEventListener("click", () => {
+    mostrarVista("vista-comunicacion");
+  });
+
+  $("btn-ayuda")?.addEventListener("click", () => {
+    mostrarVista("vista-ayuda");
+  });
+
+  $("btn-humanometro")?.addEventListener("click", () => {
+    mostrarVista("vista-humanometro");
+  });
+
+  $("btn-perfil")?.addEventListener("click", () => {
+    mostrarVista("vista-perfil", { forzar: true });
+  });
 
   document.querySelectorAll("[data-volver]").forEach((boton) => {
     boton.addEventListener("click", () => mostrarVista(null));
   });
 
-  window.addEventListener("abrirPanelPrincipal", () => mostrarVista(null));
-  window.addEventListener("abrirVistaComunicacion", () => mostrarVista("vista-comunicacion"));
-  window.addEventListener("abrirVistaGondola", () => mostrarVista("vista-gondola"));
+  window.addEventListener("abrirPanelPrincipal", () => {
+    abrirDirectorioComunidad();
+  });
+
+  window.addEventListener("abrirVistaComunicacion", () => {
+    mostrarVista("vista-comunicacion");
+  });
+
+  window.addEventListener("abrirVistaGondola", () => {
+    mostrarVista("vista-gondola");
+  });
+
+  window.addEventListener("abrirVistaRadar", () => {
+    mostrarVista("vista-radar");
+  });
 }
 
 /* =========================
@@ -177,7 +246,7 @@ async function buscarBarrioPorCoordenadas(latitud, longitud) {
 }
 
 /* =========================
-   BARRIO, LOCALIDAD Y EXPLORACIÓN
+   BARRIO Y LOCALIDAD ACTUAL
 ========================= */
 
 function configurarBarrio() {
@@ -198,17 +267,20 @@ function configurarBarrio() {
   input.value = getItem("hm_barrio", "");
 
   const modoGuardado = getItem("hm_modo_visualizacion", "barrio");
+
   if (modoVisualizacion) {
     modoVisualizacion.value = modoGuardado;
   }
 
-  const zonaExplorarGuardada = getItem("hm_zona_explorar", "Esquel");
+  const zonaExplorarGuardada = getItem("hm_zona_explorar", "");
+
   if (inputZonaExplorar) {
     inputZonaExplorar.value = zonaExplorarGuardada;
   }
 
   function actualizarVisibilidadExploracion() {
     const esExplorar = modoVisualizacion?.value === "explorar";
+
     if (contenedorExplorarZona) {
       contenedorExplorarZona.hidden = !esExplorar;
     }
@@ -218,6 +290,7 @@ function configurarBarrio() {
 
   modoVisualizacion?.addEventListener("change", () => {
     const modo = modoVisualizacion.value;
+
     setItem("hm_modo_visualizacion", modo);
     actualizarVisibilidadExploracion();
 
@@ -232,7 +305,9 @@ function configurarBarrio() {
 
   inputZonaExplorar?.addEventListener("input", () => {
     const zonaVal = inputZonaExplorar.value.trim();
+
     setItem("hm_zona_explorar", zonaVal);
+
     window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
@@ -261,14 +336,13 @@ function configurarBarrio() {
     }
 
     mostrarNotificacion("Barrio guardado en este dispositivo.");
+
     window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
   ubicacion?.addEventListener("click", () => {
     if (!navigator.geolocation) {
-      mostrarNotificacion(
-        "Este navegador no ofrece geolocalización."
-      );
+      mostrarNotificacion("Este navegador no ofrece geolocalización.");
       return;
     }
 
@@ -341,6 +415,7 @@ function configurarBarrio() {
         }
 
         if (estado) estado.textContent = mensaje;
+
         mostrarNotificacion(mensaje);
       },
       {
@@ -348,6 +423,112 @@ function configurarBarrio() {
         timeout: 15000,
         maximumAge: 300000
       }
+    );
+  });
+}
+
+/* =========================
+   RADAR COMUNITARIO
+========================= */
+
+function configurarRadarComunitario() {
+  if (radarComunitarioConfigurado) return;
+  radarComunitarioConfigurado = true;
+
+  const pais = $("radar-pais");
+  const provincia = $("radar-provincia");
+  const localidad = $("zona-explorar");
+  const boton = $("btn-buscar-radar");
+  const estado = $("estado-radar");
+
+  if (!boton) return;
+
+  /*
+   * Recupera el último destino buscado.
+   * No modifica el barrio actual ni la ubicación del dispositivo.
+   */
+  const destinoGuardado = getItem("hm_radar_destino", null);
+
+  if (destinoGuardado && typeof destinoGuardado === "object") {
+    if (pais) pais.value = destinoGuardado.pais || "";
+    if (provincia) provincia.value = destinoGuardado.provincia || "";
+    if (localidad) localidad.value = destinoGuardado.localidad || "";
+  }
+
+  boton.addEventListener("click", () => {
+    const destino = {
+      pais: pais?.value.trim() || "",
+      provincia: provincia?.value.trim() || "",
+      localidad: localidad?.value.trim() || ""
+    };
+
+    if (!destino.pais && !destino.provincia && !destino.localidad) {
+      mostrarNotificacion(
+        "Indicá al menos un país, provincia o localidad para buscar."
+      );
+
+      if (pais) pais.focus();
+      else localidad?.focus();
+
+      return;
+    }
+
+    /*
+     * Se guarda en una clave independiente.
+     * Nunca se sobrescribe hm_barrio ni la geolocalización actual.
+     */
+    if (!setItem("hm_radar_destino", destino)) {
+      mostrarNotificacion(
+        "No se pudo guardar el destino de búsqueda."
+      );
+      return;
+    }
+
+    if (estado) {
+      const partes = [
+        destino.localidad,
+        destino.provincia,
+        destino.pais
+      ].filter(Boolean);
+
+      estado.textContent =
+        `Buscando integrantes de la comunidad en: ${partes.join(", ")}.`;
+    }
+
+    /*
+     * El módulo community.js recibe el destino y realiza la consulta
+     * de perfiles y publicaciones correspondiente.
+     */
+    window.dispatchEvent(
+      new CustomEvent("buscarRadarComunitario", {
+        detail: {
+          destino,
+          ordenarPor: "ultimo_ingreso_desc",
+          incluirPerfilesAntiguos: true
+        }
+      })
+    );
+
+    /*
+     * La búsqueda lleva a la solapa Comunidad.
+     * El módulo community.js debe aplicar el destino como filtro
+     * geográfico sin modificar la ubicación propia del usuario.
+     */
+    mostrarVista(null);
+
+    window.dispatchEvent(
+      new CustomEvent("mostrarDirectorioComunidad", {
+        detail: {
+          modo: "radar",
+          destino,
+          ordenarPor: "ultimo_ingreso_desc",
+          incluirPerfilesAntiguos: true
+        }
+      })
+    );
+
+    mostrarNotificacion(
+      "Destino enviado al directorio de Comunidad."
     );
   });
 }
@@ -381,13 +562,33 @@ function crearTarjeta(titulo, lineas = []) {
 
 function validarPublicacionSegura(texto) {
   const terminosProhibidos = [
-    'medicamento', 'medicamentos', 'remedio', 'remedios', 'farmaco', 'fármaco', 
-    'farmacos', 'fármacos', 'pastilla', 'pastillas', 'droga', 'drogas', 'ampolla', 
-    'ampollas', 'comprimido', 'comprimidos', 'jarabe', 'jarabes', 'vacuna', 'vacunas'
+    "medicamento",
+    "medicamentos",
+    "remedio",
+    "remedios",
+    "farmaco",
+    "fármaco",
+    "farmacos",
+    "fármacos",
+    "pastilla",
+    "pastillas",
+    "droga",
+    "drogas",
+    "ampolla",
+    "ampollas",
+    "comprimido",
+    "comprimidos",
+    "jarabe",
+    "jarabes",
+    "vacuna",
+    "vacunas"
   ];
 
   const textoNormalizado = texto.toLowerCase();
-  return !terminosProhibidos.some(termino => textoNormalizado.includes(termino));
+
+  return !terminosProhibidos.some((termino) =>
+    textoNormalizado.includes(termino)
+  );
 }
 
 function configurarAyuda() {
@@ -408,6 +609,7 @@ function configurarAyuda() {
     if (!lista) return;
 
     lista.replaceChildren();
+
     const registros = obtenerRegistros();
 
     if (!registros.length) {
@@ -460,9 +662,12 @@ function configurarAyuda() {
       mostrarNotificacion(
         "Por políticas de seguridad sanitaria no se permite publicar o solicitar medicamentos entre particulares. Consultá los Bancos de Medicamentos oficiales."
       );
+
       if (estado) {
-        estado.textContent = "Prohibida la publicación de fármacos particulares. Acudí a los Bancos de Medicamentos oficiales.";
+        estado.textContent =
+          "Prohibida la publicación de fármacos particulares. Acudí a los Bancos de Medicamentos oficiales.";
       }
+
       return;
     }
 
@@ -539,14 +744,18 @@ function configurarEvaluaciones() {
     if (!Array.isArray(registros) || registros.length === 0) return 0;
 
     let puntajeAcumulado = 0;
-    registros.forEach(reg => {
+
+    registros.forEach((reg) => {
       if (reg.resultado === "buena") puntajeAcumulado += 100;
       else if (reg.resultado === "intermedia") puntajeAcumulado += 50;
       else if (reg.resultado === "cancelacion-mutua") puntajeAcumulado += 75;
       else if (reg.resultado === "sin-acuerdo") puntajeAcumulado += 40;
     });
 
-    const promedio = Math.round(puntajeAcumulado / registros.length);
+    const promedio = Math.round(
+      puntajeAcumulado / registros.length
+    );
+
     return Math.min(Math.max(promedio, 0), 100);
   }
 
@@ -554,17 +763,22 @@ function configurarEvaluaciones() {
     if (!lista) return;
 
     lista.replaceChildren();
+
     const registros = obtenerRegistros();
     const porcentajeActual = calcularPorcentajeHumanidad(registros);
     const totalIntercambios = registros.length;
 
     const umbralMinimoIntercambiosParaRiesgo = 3;
-    const estaEnRiesgo = totalIntercambios >= umbralMinimoIntercambiosParaRiesgo && porcentajeActual < 70;
+
+    const estaEnRiesgo =
+      totalIntercambios >= umbralMinimoIntercambiosParaRiesgo &&
+      porcentajeActual < 70;
 
     const tarjetaProgreso = document.createElement("article");
     tarjetaProgreso.className = "tarjeta";
 
     let htmlAlertaRiesgo = "";
+
     if (estaEnRiesgo) {
       htmlAlertaRiesgo = `
         <div style="background: #7f1d1d; border: 1px solid #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; color: #fca5a5;">
@@ -578,18 +792,21 @@ function configurarEvaluaciones() {
 
     tarjetaProgreso.innerHTML = `
       <h3>Progreso del Humanómetro</h3>
-      <p style="font-size: 2rem; font-weight: bold; color: ${estaEnRiesgo ? '#f87171' : '#38bdf8'}; margin: 5px 0;">${porcentajeActual}%</p>
+      <p style="font-size: 2rem; font-weight: bold; color: ${estaEnRiesgo ? "#f87171" : "#38bdf8"}; margin: 5px 0;">${porcentajeActual}%</p>
       <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 8px;">
-        Medición basada en <strong>${totalIntercambios}</strong> ${totalIntercambios === 1 ? 'intercambio registrado' : 'intercambios registrados'}.
+        Medición basada en <strong>${totalIntercambios}</strong> ${totalIntercambios === 1 ? "intercambio registrado" : "intercambios registrados"}.
       </p>
       ${htmlAlertaRiesgo}
       <p class="texto-ayuda">El contador inicia por defecto en 0% y evoluciona de forma progresiva según el desarrollo y la valoración de tus experiencias comunitarias (requiere un mínimo de 70% para mantener estatus óptimo).</p>
     `;
+
     lista.appendChild(tarjetaProgreso);
 
     if (!registros.length) {
       lista.appendChild(
-        crearTarjeta("Todavía no hay evaluaciones guardadas. Tu medidor está en 0% (período inicial de adaptación).")
+        crearTarjeta(
+          "Todavía no hay evaluaciones guardadas. Tu medidor está en 0% (período inicial de adaptación)."
+        )
       );
       return;
     }
@@ -612,23 +829,42 @@ function configurarEvaluaciones() {
   formulario?.addEventListener("submit", (evento) => {
     evento.preventDefault();
 
-    const usuarioEvaluado = $("usuario-evaluado")?.value.trim() || "";
-    const referencia = $("referencia-evaluacion")?.value.trim() || "";
-    const resultado = $("resultado-evaluacion")?.value || "";
-    const detalle = $("detalle-evaluacion")?.value.trim() || "";
+    const usuarioEvaluado =
+      $("usuario-evaluado")?.value.trim() || "";
 
-    const nombreUsuarioActual = getItem("hm_nombre_usuario", "").trim().toLowerCase();
+    const referencia =
+      $("referencia-evaluacion")?.value.trim() || "";
 
-    if (usuarioEvaluado && nombreUsuarioActual && usuarioEvaluado.toLowerCase() === nombreUsuarioActual) {
-      mostrarNotificacion("No podés evaluarte a vos mismo. Las evaluaciones deben ser realizadas por la contraparte del intercambio.");
+    const resultado =
+      $("resultado-evaluacion")?.value || "";
+
+    const detalle =
+      $("detalle-evaluacion")?.value.trim() || "";
+
+    const nombreUsuarioActual =
+      getItem("hm_nombre_usuario", "").trim().toLowerCase();
+
+    if (
+      usuarioEvaluado &&
+      nombreUsuarioActual &&
+      usuarioEvaluado.toLowerCase() === nombreUsuarioActual
+    ) {
+      mostrarNotificacion(
+        "No podés evaluarte a vos mismo. Las evaluaciones deben ser realizadas por la contraparte del intercambio."
+      );
+
       if (estado) {
-        estado.textContent = "Error: No está permitida la autoevaluación de perfiles.";
+        estado.textContent =
+          "Error: No está permitida la autoevaluación de perfiles.";
       }
+
       return;
     }
 
     if (!usuarioEvaluado || !referencia || !detalle) {
-      mostrarNotificacion("Completá el nombre de la contraparte, la referencia y la explicación.");
+      mostrarNotificacion(
+        "Completá el nombre de la contraparte, la referencia y la explicación."
+      );
       return;
     }
 
@@ -660,7 +896,8 @@ function configurarEvaluaciones() {
     formulario.reset();
 
     if (estado) {
-      estado.textContent = "Evaluación guardada localmente. El medidor progresivo ha sido actualizado.";
+      estado.textContent =
+        "Evaluación guardada localmente. El medidor progresivo ha sido actualizado.";
     }
 
     renderizar();
@@ -685,6 +922,7 @@ function configurarPerfil() {
   if (inputNombre) {
     inputNombre.value = getItem("hm_nombre_usuario", "");
   }
+
   if (inputWhatsapp) {
     inputWhatsapp.value = getItem("hm_whatsapp_usuario", "");
   }
@@ -696,10 +934,15 @@ function configurarPerfil() {
     const whatsapp = inputWhatsapp?.value.trim() || "";
 
     if (!whatsapp) {
-      mostrarNotificacion("El número de WhatsApp es obligatorio para crear o actualizar el perfil.");
+      mostrarNotificacion(
+        "El número de WhatsApp es obligatorio para crear o actualizar el perfil."
+      );
+
       if (estadoPerfil) {
-        estadoPerfil.textContent = "Error: El número de WhatsApp es obligatorio como filtro de seguridad.";
+        estadoPerfil.textContent =
+          "Error: El número de WhatsApp es obligatorio como filtro de seguridad.";
       }
+
       inputWhatsapp?.focus();
       return;
     }
@@ -714,12 +957,15 @@ function configurarPerfil() {
     const guardadoWhatsapp = setItem("hm_whatsapp_usuario", whatsapp);
 
     if (!guardadoNombre || !guardadoWhatsapp) {
-      mostrarNotificacion("No se pudieron guardar los datos del perfil en este dispositivo.");
+      mostrarNotificacion(
+        "No se pudieron guardar los datos del perfil en este dispositivo."
+      );
       return;
     }
 
     if (estadoPerfil) {
-      estadoPerfil.textContent = "¡Perfil guardado correctamente con validación de WhatsApp!";
+      estadoPerfil.textContent =
+        "¡Perfil guardado correctamente con validación de WhatsApp!";
     }
 
     mostrarNotificacion("Perfil guardado con éxito.");
@@ -832,6 +1078,7 @@ function configurarConectividadSolidaria() {
         estadoLista.textContent =
           "Todavía no hay ofrecimientos activos guardados en este dispositivo.";
       }
+
       return;
     }
 
@@ -848,11 +1095,13 @@ function configurarConectividadSolidaria() {
     tarjeta.appendChild(distintivo);
 
     const textoZona = document.createElement("p");
-    textoZona.textContent = `Zona o localidad: ${perfil.zona || getItem("hm_barrio", "") || "No especificada"}`;
+    textoZona.textContent =
+      `Zona o localidad: ${perfil.zona || getItem("hm_barrio", "") || "No especificada"}`;
     tarjeta.appendChild(textoZona);
 
     const textoMod = document.createElement("p");
-    textoMod.textContent = `Modalidad: ${textoModalidad(perfil.modalidad)}`;
+    textoMod.textContent =
+      `Modalidad: ${textoModalidad(perfil.modalidad)}`;
     tarjeta.appendChild(textoMod);
 
     const textoDisponibilidad = document.createElement("p");
@@ -905,6 +1154,7 @@ function configurarConectividadSolidaria() {
       mostrarNotificacion(
         "Indicá una zona o guardá primero tu barrio o localidad."
       );
+
       zona?.focus();
       return;
     }
@@ -958,6 +1208,7 @@ function crearId() {
 async function iniciarAplicacion() {
   configurarNavegacion();
   configurarBarrio();
+  configurarRadarComunitario();
   configurarAyuda();
   configurarEvaluaciones();
   configurarPerfil();
