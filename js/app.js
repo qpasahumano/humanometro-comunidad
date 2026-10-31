@@ -1,7 +1,12 @@
 import { initCommunity } from "./community.js";
 import { initConnectivity } from "./connectivity.js";
 import { initMessages } from "./messages.js";
-import { iniciarAutenticacion } from "./auth.js";
+import {
+  iniciarAutenticacion,
+  obtenerUsuarioActual,
+  obtenerPerfilActual,
+  perfilEstaCompleto
+} from "./auth.js";
 import { getItem, setItem } from "./storage.js";
 
 const $ = (id) => document.getElementById(id);
@@ -34,7 +39,19 @@ function mostrarNotificacion(mensaje) {
    NAVEGACIÓN ENTRE VISTAS
 ========================= */
 
-function mostrarVista(nombre = null) {
+function actualizarSolapaActiva(solapa) {
+  document.querySelectorAll("[data-tab]").forEach((boton) => {
+    const activa = boton.dataset.tab === solapa;
+    boton.classList.toggle("activa", activa);
+    boton.setAttribute("aria-selected", String(activa));
+  });
+}
+
+function usuarioPuedeEntrar() {
+  return Boolean(obtenerUsuarioActual() && perfilEstaCompleto());
+}
+
+function mostrarVista(nombre = null, opciones = {}) {
   const vistas = [
     "vista-gondola",
     "vista-comunicacion",
@@ -43,26 +60,29 @@ function mostrarVista(nombre = null) {
     "vista-humanometro"
   ];
 
+  const requierePerfil = nombre !== "vista-perfil";
+  if (requierePerfil && !opciones.forzar && !usuarioPuedeEntrar()) {
+    nombre = "vista-perfil";
+    mostrarNotificacion("Ingresá a tu cuenta y completá tu perfil para acceder a la comunidad.");
+  }
+
   vistas.forEach((id) => {
     const elemento = $(id);
     if (elemento) elemento.hidden = id !== nombre;
   });
 
-  const elementosInicio = [
-    document.querySelector(".bienvenida"),
-    document.querySelector(".selector-barrio"),
-    document.querySelector(".acciones-principales"),
-    document.querySelector(".humanometro")
-  ];
+  const panelComunidad = $("panel-comunidad");
+  if (panelComunidad) panelComunidad.hidden = nombre !== null;
 
-  elementosInicio.forEach((elemento) => {
-    if (elemento) elemento.hidden = Boolean(nombre);
-  });
+  if (nombre === "vista-perfil") {
+    actualizarSolapaActiva("perfil");
+  } else if (nombre === "vista-gondola") {
+    actualizarSolapaActiva("gondola");
+  } else {
+    actualizarSolapaActiva("comunidad");
+  }
 
-  window.scrollTo({
-    top: 0,
-    behavior: "auto"
-  });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function entrarALaComunidad() {
@@ -72,7 +92,8 @@ function entrarALaComunidad() {
   if (inicial) inicial.hidden = true;
   if (comunidad) comunidad.hidden = false;
 
-  mostrarVista(null);
+  // La primera pantalla funcional es Mi Perfil: ingreso o creación de cuenta.
+  mostrarVista("vista-perfil", { forzar: true });
 }
 
 function configurarNavegacion() {
@@ -81,31 +102,23 @@ function configurarNavegacion() {
 
   $("btn-entrar")?.addEventListener("click", entrarALaComunidad);
 
-  $("btn-gondola")?.addEventListener("click", () => {
-    mostrarVista("vista-gondola");
-  });
+  $("tab-perfil")?.addEventListener("click", () => mostrarVista("vista-perfil", { forzar: true }));
+  $("tab-gondola")?.addEventListener("click", () => mostrarVista("vista-gondola"));
+  $("tab-comunidad")?.addEventListener("click", () => mostrarVista(null));
 
-  $("btn-comunicacion")?.addEventListener("click", () => {
-    mostrarVista("vista-comunicacion");
-  });
-
-  $("btn-ayuda")?.addEventListener("click", () => {
-    mostrarVista("vista-ayuda");
-  });
-
-  $("btn-humanometro")?.addEventListener("click", () => {
-    mostrarVista("vista-humanometro");
-  });
-
-  $("btn-perfil")?.addEventListener("click", () => {
-    mostrarVista("vista-perfil");
-  });
+  $("btn-gondola")?.addEventListener("click", () => mostrarVista("vista-gondola"));
+  $("btn-comunicacion")?.addEventListener("click", () => mostrarVista("vista-comunicacion"));
+  $("btn-ayuda")?.addEventListener("click", () => mostrarVista("vista-ayuda"));
+  $("btn-humanometro")?.addEventListener("click", () => mostrarVista("vista-humanometro"));
+  $("btn-perfil")?.addEventListener("click", () => mostrarVista("vista-perfil", { forzar: true }));
 
   document.querySelectorAll("[data-volver]").forEach((boton) => {
-    boton.addEventListener("click", () => {
-      mostrarVista(null);
-    });
+    boton.addEventListener("click", () => mostrarVista(null));
   });
+
+  window.addEventListener("abrirPanelPrincipal", () => mostrarVista(null));
+  window.addEventListener("abrirVistaComunicacion", () => mostrarVista("vista-comunicacion"));
+  window.addEventListener("abrirVistaGondola", () => mostrarVista("vista-gondola"));
 }
 
 /* =========================
@@ -175,7 +188,7 @@ function configurarBarrio() {
   const boton = $("btn-guardar-barrio");
   const estado = $("estado-barrio");
   const ubicacion = $("btn-ubicacion");
-  
+
   const modoVisualizacion = $("modo-visualizacion");
   const contenedorExplorarZona = $("contenedor-explorar-zona");
   const inputZonaExplorar = $("zona-explorar");
@@ -183,7 +196,7 @@ function configurarBarrio() {
   if (!input || !boton) return;
 
   input.value = getItem("hm_barrio", "");
-  
+
   const modoGuardado = getItem("hm_modo_visualizacion", "barrio");
   if (modoVisualizacion) {
     modoVisualizacion.value = modoGuardado;
@@ -207,13 +220,13 @@ function configurarBarrio() {
     const modo = modoVisualizacion.value;
     setItem("hm_modo_visualizacion", modo);
     actualizarVisibilidadExploracion();
-    
+
     if (modo === "barrio") {
       mostrarNotificacion("Modo de emergencia y barrio estricto activado.");
     } else {
       mostrarNotificacion("Modo exploración de otra localidad activado.");
     }
-    
+
     window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
@@ -372,7 +385,7 @@ function validarPublicacionSegura(texto) {
     'farmacos', 'fármacos', 'pastilla', 'pastillas', 'droga', 'drogas', 'ampolla', 
     'ampollas', 'comprimido', 'comprimidos', 'jarabe', 'jarabes', 'vacuna', 'vacunas'
   ];
-  
+
   const textoNormalizado = texto.toLowerCase();
   return !terminosProhibidos.some(termino => textoNormalizado.includes(termino));
 }
@@ -524,7 +537,7 @@ function configurarEvaluaciones() {
 
   function calcularPorcentajeHumanidad(registros) {
     if (!Array.isArray(registros) || registros.length === 0) return 0;
-    
+
     let puntajeAcumulado = 0;
     registros.forEach(reg => {
       if (reg.resultado === "buena") puntajeAcumulado += 100;
@@ -550,7 +563,7 @@ function configurarEvaluaciones() {
 
     const tarjetaProgreso = document.createElement("article");
     tarjetaProgreso.className = "tarjeta";
-    
+
     let htmlAlertaRiesgo = "";
     if (estaEnRiesgo) {
       htmlAlertaRiesgo = `
