@@ -15,6 +15,27 @@ const CATEGORIAS_ALTA_CONFIANZA = ["hospedaje", "cuidado_mascotas_casa"];
 
 const $ = (id) => document.getElementById(id);
 
+function escaparHTML(valor) {
+  return String(valor ?? "").replace(/[&<>"']/g, (caracter) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[caracter]);
+}
+
+export function perfilEstaCompleto() {
+  if (!usuarioActual || !perfilActual?.id) return false;
+  return Boolean(
+    String(perfilActual.nombre_visible || "").trim() &&
+    String(perfilActual.whatsapp || "").trim() &&
+    String(perfilActual.presentacion || "").trim() &&
+    String(perfilActual.localidad || "").trim() &&
+    String(perfilActual.foto_url || "").trim()
+  );
+}
+
 function obtenerVistaPerfil() {
   return $("vista-perfil");
 }
@@ -129,18 +150,17 @@ function prepararFormularioPerfil() {
       tipo: "input",
       max: 120,
       placeholder: "Ej.: zona centro"
-    },
-    {
-      id: "hm-profile-whatsapp",
-      nombre: "WhatsApp",
-      etiqueta: "Número de WhatsApp (con código de país y área)",
-      tipo: "input",
-      max: 30,
-      placeholder: "Ej.: +5491112345678"
     }
   ];
 
   const boton = $("btn-guardar-perfil");
+  const campoWhatsApp = $("whatsapp-usuario");
+  if (campoWhatsApp) {
+    campoWhatsApp.required = true;
+    campoWhatsApp.autocomplete = "tel";
+    campoWhatsApp.placeholder = "Ej.: +5491112345678";
+  }
+  if ($("nombre-usuario")) $("nombre-usuario").required = true;
 
   campos.forEach((campo) => {
     if ($(campo.id)) return;
@@ -162,6 +182,9 @@ function prepararFormularioPerfil() {
     control.id = campo.id;
     control.maxLength = campo.max;
     control.placeholder = campo.placeholder;
+    if (campo.id === "hm-profile-presentation" || campo.id === "hm-profile-locality") {
+      control.required = true;
+    }
 
     if (boton) {
       formulario.insertBefore(etiqueta, boton);
@@ -229,16 +252,19 @@ function prepararFormularioPerfil() {
     }
     const vista = $("foto-perfil-vista");
     const inicial = $("foto-perfil-inicial");
-    const urlTemporal = URL.createObjectURL(archivo);
-    if (vista) {
-      if (vista.dataset.previewUrl) URL.revokeObjectURL(vista.dataset.previewUrl);
-      vista.src = urlTemporal;
-      vista.style.objectFit = "cover";
-      vista.style.objectPosition = "center";
-      vista.dataset.previewUrl = urlTemporal;
-      vista.hidden = false;
-    }
-    if (inicial) inicial.hidden = true;
+    const lector = new FileReader();
+    lector.onload = () => {
+      if (vista && typeof lector.result === "string") {
+        // Previsualización en Data URL (base64), sin alterar el archivo original.
+        vista.src = lector.result;
+        vista.style.objectFit = "cover";
+        vista.style.objectPosition = "center";
+        vista.hidden = false;
+      }
+      if (inicial) inicial.hidden = true;
+    };
+    lector.onerror = () => mostrarEstadoPerfil("No se pudo previsualizar la fotografía seleccionada.");
+    lector.readAsDataURL(archivo);
   });
 
   formulario.addEventListener("submit", guardarPerfil, true);
@@ -248,6 +274,7 @@ function prepararFormularioPerfil() {
 function actualizarModoVisualizacion() {
   const formulario = $("form-perfil");
   const ficha = $("hm-perfil-ficha");
+  const botonGuardar = $("btn-guardar-perfil");
   const autenticado = Boolean(usuarioActual);
 
   if (!autenticado) {
@@ -256,7 +283,10 @@ function actualizarModoVisualizacion() {
     return;
   }
 
+  if (!perfilEstaCompleto()) modoEdicionPerfil = true;
+
   if (modoEdicionPerfil) {
+    if (botonGuardar) botonGuardar.textContent = perfilActual?.id ? "GUARDAR CAMBIOS" : "GUARDAR / CREAR PERFIL";
     if (formulario) formulario.hidden = false;
     if (ficha) ficha.hidden = true;
   } else {
@@ -270,8 +300,13 @@ function actualizarModoVisualizacion() {
 
 function renderizarFichaVisual(contenedor) {
   const datos = perfilActual || {};
-  const fotoSrc = datos.foto_url || "";
-  const inicial = datos.nombre_visible ? datos.nombre_visible.charAt(0).toUpperCase() : "H";
+  const fotoSrc = escaparHTML(datos.foto_url || "");
+  const nombreVisible = escaparHTML(datos.nombre_visible || "Sin nombre");
+  const localidadVisible = escaparHTML(datos.localidad || "Sin localidad");
+  const zonaVisible = escaparHTML(datos.zona_aproximada || "");
+  const presentacionVisible = escaparHTML(datos.presentacion || "Sin presentación detallada.");
+  const modalidadVisible = escaparHTML(datos.conectividad_modalidad || "");
+  const inicial = nombreVisible !== "Sin nombre" ? nombreVisible.charAt(0).toUpperCase() : "H";
 
   const infoHumanidad = datos.indice_humanidad || { porcentaje: 100, total: 0 };
   const pct = infoHumanidad.porcentaje;
@@ -283,19 +318,19 @@ function renderizarFichaVisual(contenedor) {
     colorPct = "#eab308"; 
   }
 
-  const wppRaw = datos.whatsapp ? datos.whatsapp.replace(/\D/g, "") : "";
+  const wppRaw = datos.whatsapp ? String(datos.whatsapp).replace(/\D/g, "") : "";
   const wppLink = wppRaw ? `https://wa.me/${wppRaw}` : "";
 
   contenedor.innerHTML = `
     <div style="background: #0b0f19; border: 1px solid #334155; border-radius: 12px; padding: 12px; font-family: inherit;">
-      
+
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
         <div style="width: 55px; height: 55px; border-radius: 50%; overflow: hidden; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; font-weight: bold; flex-shrink: 0; border: 2px solid #38bdf8;">
           ${fotoSrc ? `<img src="${fotoSrc}" alt="Foto" style="width: 100%; height: 100%; object-fit: cover;">` : inicial}
         </div>
         <div style="overflow: hidden; flex-grow: 1;">
-          <h3 style="margin: 0; color: #38bdf8; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${datos.nombre_visible || "Sin nombre"}</h3>
-          <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #94a3b8;">📍 ${datos.localidad || "Sin localidad"} ${datos.zona_aproximada ? `(${datos.zona_aproximada})` : ""}</p>
+          <h3 style="margin: 0; color: #38bdf8; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nombreVisible}</h3>
+          <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #94a3b8;">📍 ${localidadVisible} ${zonaVisible ? `(${zonaVisible})` : ""}</p>
         </div>
       </div>
 
@@ -309,9 +344,14 @@ function renderizarFichaVisual(contenedor) {
         </button>
       </div>
 
+      <div style="background: #0f172a; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1e293b;">
+        <span style="font-size: 0.8rem; color: #e2e8f0;">Reputación comunitaria</span>
+        <strong style="font-size: 0.82rem; color: #8bd9ee;">${infoHumanidad.total} evaluaciones recibidas</strong>
+      </div>
+
       <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
         <p style="margin: 0; font-style: italic; color: #94a3b8; font-size: 0.8rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-          "${datos.presentacion || "Sin condiciones o presentación detallada."}"
+          "${presentacionVisible}"
         </p>
 
         <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
@@ -322,7 +362,7 @@ function renderizarFichaVisual(contenedor) {
         <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
           <span style="font-size: 0.8rem;">📡 Wi-Fi Solidario:</span>
           <span style="font-size: 0.8rem; color: ${datos.conectividad_disponible ? "#4ade80" : "#f87171"}; font-weight: bold;">
-            ${datos.conectividad_disponible ? `🟢 Activo (${datos.conectividad_modalidad})` : "🔴 Inactivo"}
+            ${datos.conectividad_disponible ? `🟢 Activo (${modalidadVisible})` : "🔴 Inactivo"}
           </span>
         </div>
       </div>
@@ -331,8 +371,11 @@ function renderizarFichaVisual(contenedor) {
         💡 El nexo es aquí: acordá como quieras, pero medí la humanidad para cuidar la comunidad.
       </p>
 
-      <button id="btn-activar-edicion" class="boton-accion" type="button" style="width: 100%; font-size: 0.8rem; padding: 6px;">
+      <button id="btn-activar-edicion" class="boton-secundario" type="button" style="width: 100%; font-size: 0.8rem; padding: 8px; margin-bottom: 8px;">
         EDITAR MI PERFIL
+      </button>
+      <button id="btn-entrar-aplicacion" class="boton-accion" type="button" style="width: 100%; font-size: 0.85rem; padding: 10px;">
+        INGRESAR A HUMANÓMETRO COMUNIDAD →
       </button>
 
     </div>
@@ -341,6 +384,16 @@ function renderizarFichaVisual(contenedor) {
   $("btn-activar-edicion")?.addEventListener("click", () => {
     modoEdicionPerfil = true;
     actualizarModoVisualizacion();
+  });
+
+  $("btn-entrar-aplicacion")?.addEventListener("click", () => {
+    if (!perfilEstaCompleto()) {
+      mostrarEstadoPerfil("Completá y guardá todos los datos obligatorios antes de ingresar.");
+      modoEdicionPerfil = true;
+      actualizarModoVisualizacion();
+      return;
+    }
+    window.dispatchEvent(new CustomEvent("abrirPanelPrincipal"));
   });
 
   $("btn-medicion-humanidad")?.addEventListener("click", () => {
@@ -377,13 +430,13 @@ export function verificarAccesoAltaConfianza() {
 export function seleccionarCategoriaPublicacion(categoriaSeleccionada) {
   if (CATEGORIAS_ALTA_CONFIANZA.includes(categoriaSeleccionada)) {
     const verificacion = verificarAccesoAltaConfianza();
-    
+
     if (!verificacion.permitido) {
       alert(verificacion.mensaje);
       return false; // Bloquea la selección y la publicación en esa categoría
     }
   }
-  
+
   return true; // Permitido
 }
 
@@ -535,7 +588,7 @@ function limpiarFormularioPerfil() {
   const presentacion = $("hm-profile-presentation");
   const localidad = $("hm-profile-locality");
   const zona = $("hm-profile-zone");
-  const whatsapp = $("hm-profile-whatsapp");
+  const whatsapp = $("whatsapp-usuario");
   const conectividad = $("hm-connectivity-available");
   const modalidad = $("hm-connectivity-mode");
   const emergencia = $("hm-connectivity-emergency");
@@ -572,11 +625,19 @@ async function cargarMisPublicaciones() {
       .from("publicaciones")
       .select("id, tipo, categoria, titulo, descripcion, estado, creado_en")
       .eq("perfil_id", perfilActual.id)
+      .eq("estado", "activa")
       .order("creado_en", { ascending: false });
     contenedor.replaceChildren();
     if (error) throw error;
+    const activas = (data || []).filter((publicacion) => publicacion.estado === "activa").length;
+    const contador = document.createElement("p");
+    contador.className = "texto-ayuda";
+    contador.textContent = `${activas} publicación${activas === 1 ? "" : "es"} activa${activas === 1 ? "" : "s"}`;
+    contenedor.appendChild(contador);
     if (!data?.length) {
-      contenedor.textContent = "Todavía no publicaste productos ni servicios desde esta cuenta.";
+      const vacio = document.createElement("p");
+      vacio.textContent = "Todavía no publicaste productos ni servicios desde esta cuenta.";
+      contenedor.appendChild(vacio);
       return;
     }
     data.forEach((publicacion) => {
@@ -599,27 +660,55 @@ async function cargarMisPublicaciones() {
 
 async function calcularPorcentajeHumanidad(perfilId) {
   try {
+    // Primera fuente: evaluaciones estructuradas que ya utiliza la matriz.
     const { data: evaluaciones, error } = await supabase
       .from("evaluaciones")
       .select("respeta_condiciones, cordialidad, puntualidad, comunicacion_clara")
       .eq("evaluado_id", perfilId);
 
-    if (error || !evaluaciones || evaluaciones.length === 0) {
-      return { porcentaje: 100, total: 0 }; 
+    if (!error && Array.isArray(evaluaciones) && evaluaciones.length > 0) {
+      let totalChecksPositivos = 0;
+      const totalCriteriosPosibles = evaluaciones.length * 4;
+      evaluaciones.forEach((ev) => {
+        if (ev.respeta_condiciones) totalChecksPositivos++;
+        if (ev.cordialidad) totalChecksPositivos++;
+        if (ev.puntualidad) totalChecksPositivos++;
+        if (ev.comunicacion_clara) totalChecksPositivos++;
+      });
+      return {
+        porcentaje: Math.round((totalChecksPositivos / totalCriteriosPosibles) * 100),
+        total: evaluaciones.length
+      };
     }
 
-    let totalChecksPositivos = 0;
-    let totalCriteriosPosibles = evaluaciones.length * 4; 
+    // Segunda fuente ya existente en messages.js: mediciones_humanidad.
+    // Los cierres sin acuerdo/cancelación mutua no penalizan ni suman puntos.
+    const { data: mediciones, error: errorMediciones } = await supabase
+      .from("mediciones_humanidad")
+      .select("resultado")
+      .eq("evaluado_id", perfilId);
 
-    evaluaciones.forEach((ev) => {
-      if (ev.respeta_condiciones) totalChecksPositivos++;
-      if (ev.cordialidad) totalChecksPositivos++;
-      if (ev.puntualidad) totalChecksPositivos++;
-      if (ev.comunicacion_clara) totalChecksPositivos++;
-    });
+    if (!errorMediciones && Array.isArray(mediciones)) {
+      const puntuaciones = mediciones
+        .map((medicion) => {
+          if (medicion.resultado === "excelente") return 100;
+          if (medicion.resultado === "neutral") return 60;
+          if (medicion.resultado === "deficiente") return 0;
+          return null;
+        })
+        .filter((valor) => valor !== null);
 
-    const porcentaje = Math.round((totalChecksPositivos / totalCriteriosPosibles) * 100);
-    return { porcentaje, total: evaluaciones.length };
+      if (puntuaciones.length) {
+        const promedio = Math.round(
+          puntuaciones.reduce((suma, valor) => suma + valor, 0) / puntuaciones.length
+        );
+        return { porcentaje: promedio, total: puntuaciones.length };
+      }
+      return { porcentaje: 100, total: 0 };
+    }
+
+    console.warn("No se pudieron consultar las fuentes de evaluaciones:", error || errorMediciones);
+    return { porcentaje: 100, total: 0 };
   } catch (e) {
     console.error("Error calculando porcentaje de humanidad:", e);
     return { porcentaje: 100, total: 0 };
@@ -659,7 +748,7 @@ async function cargarPerfil() {
     if ($("hm-profile-presentation")) $("hm-profile-presentation").value = data?.presentacion || "";
     if ($("hm-profile-locality")) $("hm-profile-locality").value = data?.localidad || "";
     if ($("hm-profile-zone")) $("hm-profile-zone").value = data?.zona_aproximada || "";
-    if ($("hm-profile-whatsapp")) $("hm-profile-whatsapp").value = data?.whatsapp || "";
+    if ($("whatsapp-usuario")) $("whatsapp-usuario").value = data?.whatsapp || "";
     if ($("hm-connectivity-available")) $("hm-connectivity-available").checked = Boolean(data?.conectividad_disponible);
     if ($("hm-connectivity-mode")) $("hm-connectivity-mode").value = data?.conectividad_modalidad || "gratuito";
     if ($("hm-connectivity-emergency")) $("hm-connectivity-emergency").checked = Boolean(data?.conectividad_emergencias);
@@ -674,9 +763,7 @@ async function cargarPerfil() {
       if ($("foto-perfil-inicial")) $("foto-perfil-inicial").hidden = true;
     }
 
-    if (!data) {
-      modoEdicionPerfil = true;
-    }
+    modoEdicionPerfil = !perfilEstaCompleto();
 
     actualizarModoVisualizacion();
     await cargarMisPublicaciones();
@@ -702,7 +789,8 @@ async function guardarPerfil(evento) {
   const presentacion = $("hm-profile-presentation")?.value.trim() || "";
   const localidad = $("hm-profile-locality")?.value.trim() || "";
   const zona = $("hm-profile-zone")?.value.trim() || "";
-  const whatsapp = $("hm-profile-whatsapp")?.value.trim() || "";
+  const whatsapp = $("whatsapp-usuario")?.value.trim() || "";
+  const archivoFotoSeleccionado = $("foto-perfil-archivo")?.files?.[0] || null;
   const conectividadDisponible = Boolean($("hm-connectivity-available")?.checked);
   const conectividadModalidad = $("hm-connectivity-mode")?.value || "gratuito";
   const conectividadEmergencias = Boolean($("hm-connectivity-emergency")?.checked);
@@ -712,6 +800,26 @@ async function guardarPerfil(evento) {
   if (!nombre) {
     mostrarEstadoPerfil("Escribí el nombre visible.");
     $("nombre-usuario")?.focus();
+    return;
+  }
+  if (!whatsapp) {
+    mostrarEstadoPerfil("El número de WhatsApp es obligatorio.");
+    $("whatsapp-usuario")?.focus();
+    return;
+  }
+  if (!presentacion) {
+    mostrarEstadoPerfil("Completá tu presentación comunitaria.");
+    $("hm-profile-presentation")?.focus();
+    return;
+  }
+  if (!localidad) {
+    mostrarEstadoPerfil("Indicá tu localidad para participar del radar vecinal.");
+    $("hm-profile-locality")?.focus();
+    return;
+  }
+  if (!perfilActual?.foto_url && !archivoFotoSeleccionado) {
+    mostrarEstadoPerfil("Subí una fotografía para completar tu perfil.");
+    $("foto-perfil-archivo")?.focus();
     return;
   }
 
@@ -724,11 +832,11 @@ async function guardarPerfil(evento) {
   mostrarEstadoPerfil("Guardando perfil en tu cuenta…");
 
   try {
-    const archivoFoto = $("foto-perfil-archivo")?.files?.[0];
+    const archivoFoto = archivoFotoSeleccionado;
     if (archivoFoto) {
       const extension = archivoFoto.type === "image/png" ? "png" : archivoFoto.type === "image/webp" ? "webp" : "jpg";
       const rutaFoto = `${usuarioActual.id}-${Date.now()}.${extension}`;
-      
+
       const { error: errorSubida } = await supabase.storage
         .from("fotos-perfil")
         .upload(rutaFoto, archivoFoto, {
@@ -783,6 +891,7 @@ async function guardarPerfil(evento) {
 
     if ($("foto-perfil-archivo")) $("foto-perfil-archivo").value = "";
     await cargarMisPublicaciones();
+    window.dispatchEvent(new CustomEvent("perfilComunidadActualizado"));
 
     mostrarEstadoPerfil("¡Perfil guardado correctamente!");
     mostrarEstado("Sesión activa: " + usuarioActual.email);
@@ -793,7 +902,7 @@ async function guardarPerfil(evento) {
   } finally {
     if (boton) {
       boton.disabled = false;
-      boton.textContent = "GUARDAR PERFIL";
+      boton.textContent = perfilActual?.id ? "GUARDAR CAMBIOS" : "GUARDAR / CREAR PERFIL";
     }
   }
 }
@@ -809,6 +918,7 @@ export function obtenerPerfilActual() {
 export async function iniciarAutenticacion() {
   crearInterfazAcceso();
   prepararFormularioPerfil();
+  window.addEventListener("publicacionComunidadActualizada", cargarMisPublicaciones);
 
   const { data, error } = await supabase.auth.getSession();
 
