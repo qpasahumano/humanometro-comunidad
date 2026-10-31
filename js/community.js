@@ -272,11 +272,17 @@ export function initCommunity({
         verPublicaciones.type = "button";
         verPublicaciones.className = "boton-secundario";
         verPublicaciones.textContent = "VER PUBLICACIONES";
+        
+        // =====================================================
+        // AJUSTE PUNTO 2: ACCIÓN DIRECTA DEL BOTÓN "VER PUBLICACIONES"
+        // =====================================================
         verPublicaciones.addEventListener("click", () => {
           perfilFiltroActivo = perfil.id;
           perfilFiltroNombre = perfil.nombre_visible || "Integrante";
           if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
           if (textoFiltroVecino) textoFiltroVecino.textContent = `Mostrando publicaciones de ${perfilFiltroNombre}`;
+          
+          // Aseguramos cargar las publicaciones específicas de este usuario y dirigirnos a su vista filtrada en Góndola
           cargarPublicacionesRemotas();
           window.dispatchEvent(new CustomEvent("abrirVistaGondola"));
         });
@@ -1031,6 +1037,7 @@ export function initCommunity({
       direccion.suburb ||
       direccion.quarter ||
       direccion.city_district ||
+      direccion.borough ||
       direccion.village ||
       direccion.town ||
       direccion.city ||
