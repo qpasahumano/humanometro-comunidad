@@ -264,10 +264,7 @@ function renderizarRadarVecinos() {
 
   contenedor.replaceChildren();
 
-  // 1. Obtener publicaciones vigentes desde almacenamiento
-  const publicaciones = getItem("hm_publicaciones", []);
-  
-  // 2. Obtener datos del perfil actual
+  // 1. Obtener datos del perfil actual
   const perfilActual = {
     nombre: getItem("hm_nombre_usuario", "Usuario Actual"),
     whatsapp: getItem("hm_whatsapp_usuario", "Sin WhatsApp"),
@@ -275,10 +272,18 @@ function renderizarRadarVecinos() {
     offline: getItem("hm_offline_activo", false)
   };
 
-  // 3. Contar cuántas publicaciones activas/vigentes tiene el usuario actual
-  const conteoPublicacionesUsuario = publicaciones.filter(p => p.estado !== "cerrado").length;
+  // 2. Determinar el conteo de publicaciones activas (Sistema Dual: Manual vs Automático)
+  let conteoFinalPublicaciones = 0;
+  const pubManualConfigurada = getItem("hm_pub_activas_manual", "");
 
-  // 4. Renderizar la ficha del usuario actual (Vos)
+  if (pubManualConfigurada !== "") {
+    conteoFinalPublicaciones = parseInt(pubManualConfigurada, 10) || 0;
+  } else {
+    const publicaciones = getItem("hm_publicaciones", []);
+    conteoFinalPublicaciones = publicaciones.filter(p => p.estado !== "cerrado").length;
+  }
+
+  // 3. Renderizar la ficha del usuario actual (Vos) en el radar
   const tarjetaPropia = document.createElement("article");
   tarjetaPropia.className = "tarjeta-publicacion";
   tarjetaPropia.style.border = "1px solid #38bdf8";
@@ -286,19 +291,19 @@ function renderizarRadarVecinos() {
     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
       <h3>👤 ${perfilActual.nombre} (Vos)</h3>
       <span class="badge-publicaciones-activas">
-        📦 ${conteoPublicacionesUsuario} ${conteoPublicacionesUsuario === 1 ? 'publicación activa' : 'publicaciones activas'}
+        📦 ${conteoFinalPublicaciones} ${conteoFinalPublicaciones === 1 ? 'publicación activa' : 'publicaciones activas'}
       </span>
     </div>
     <p>📍 Zona: ${perfilActual.barrio}</p>
     <p>📡 Comunicación offline: ${perfilActual.offline ? 'Activa (Emergencia)' : 'Inactiva'}</p>
     <p>💬 WhatsApp: ${perfilActual.whatsapp}</p>
     <small style="color: #cbd5e1; display: block; margin-top: 6px;">
-      ℹ️ Las publicaciones vigentes se descuentan automáticamente al cerrar y medir el intercambio.
+      ℹ️ Las publicaciones activas se reconocen automáticamente al publicar o se pueden ajustar de forma manual desde tu perfil.
     </small>
   `;
   contenedor.appendChild(tarjetaPropia);
 
-  // 5. Renderizar vecinos en el radar con su respectivo contador activo
+  // 4. Renderizar vecinos en el radar con su respectivo contador activo
   const vecinosSimulados = [
     { nombre: "Javier M. (Esquel)", barrio: "Esquel / Centro", offline: true, whatsapp: "+5492945000000", pubActivas: 2 },
     { nombre: "Lucía G. (Mendoza)", barrio: "Mendoza / Capital", offline: false, whatsapp: "+5492610000000", pubActivas: 1 }
@@ -411,9 +416,19 @@ window.confirmarConcretarIntercambio = function(id) {
 
   if (item.confirmado_a && item.confirmado_b) {
     item.estado = "finalizado";
-    mostrarNotificacion("¡Intercambio concretado por ambas partes!");
+    
+    // Al finalizar el intercambio, cerramos automáticamente la publicación asociada para bajar el contador
+    let publicaciones = getItem("hm_publicaciones", []);
+    publicaciones = publicaciones.map(p => {
+      if (p.estado !== "cerrado") { p.estado = "cerrado"; }
+      return p;
+    });
+    setItem("hm_publicaciones", publicaciones);
+
+    mostrarNotificacion("¡Intercambio concretado y publicación actualizada!");
     setItem("hm_intercambios_activos", regs);
     renderizarIntercambiosActivos();
+    renderizarRadarVecinos();
     abrirModalEvaluacionCruzada(item);
   } else {
     setItem("hm_intercambios_activos", regs);
@@ -505,17 +520,20 @@ function configurarPerfil() {
   const inputNombre = $("nombre-usuario");
   const inputWhatsapp = $("whatsapp-usuario");
   const inputOffline = $("offline-activo");
+  const inputPubManual = $("pub-activas-manual");
   const estadoPerfil = $("estado-perfil");
 
   if (inputNombre) inputNombre.value = getItem("hm_nombre_usuario", "");
   if (inputWhatsapp) inputWhatsapp.value = getItem("hm_whatsapp_usuario", "");
   if (inputOffline) inputOffline.checked = Boolean(getItem("hm_offline_activo", false));
+  if (inputPubManual) inputPubManual.value = getItem("hm_pub_activas_manual", "");
 
   formulario?.addEventListener("submit", (evento) => {
     evento.preventDefault();
     const nombre = inputNombre?.value.trim() || "";
     const whatsapp = inputWhatsapp?.value.trim() || "";
     const offlineActivo = Boolean(inputOffline?.checked);
+    const pubManualVal = inputPubManual?.value.trim() || "";
 
     if (!whatsapp || !nombre) {
       mostrarNotificacion("El nombre y el WhatsApp son obligatorios.");
@@ -525,6 +543,7 @@ function configurarPerfil() {
     setItem("hm_nombre_usuario", nombre);
     setItem("hm_whatsapp_usuario", whatsapp);
     setItem("hm_offline_activo", offlineActivo);
+    setItem("hm_pub_activas_manual", pubManualVal);
 
     if (estadoPerfil) estadoPerfil.textContent = "¡Perfil guardado correctamente!";
     mostrarNotificacion("Perfil guardado con éxito.");
@@ -556,6 +575,51 @@ function renderizarEstadoHumanidad() {
 }
 
 /* =========================
+   PUBLICACIONES (GÓNDOLA) CON RECONOCIMIENTO AUTOMÁTICO
+========================= */
+
+function configurarPublicaciones() {
+  const formPub = $("form-publicacion");
+  if (!formPub) return;
+
+  formPub.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const tipo = $("tipo-publicacion").value;
+    const categoria = $("categoria-publicacion").value;
+    const titulo = $("titulo-publicacion").value.trim();
+    const detalle = $("detalle-publicacion").value.trim();
+    const barrio = getItem("hm_barrio", "Balvanera");
+
+    if (!titulo || !detalle) {
+      mostrarNotificacion("Completá el título y la descripción de la publicación.");
+      return;
+    }
+
+    let publicaciones = getItem("hm_publicaciones", []);
+    const nuevaPub = {
+      id: crypto.randomUUID(),
+      tipo,
+      categoria,
+      titulo,
+      detalle,
+      barrio,
+      estado: "activo", // Nace activa, incrementando automáticamente el contador
+      fecha: new Date().toISOString()
+    };
+
+    publicaciones.push(nuevaPub);
+    setItem("hm_publicaciones", publicaciones);
+
+    mostrarNotificacion("¡Publicación guardada! El radar se ha actualizado.");
+    formPub.reset();
+
+    // Actualizar inmediatamente el radar para que el contador refleje la nueva publicación
+    renderizarRadarVecinos();
+  });
+}
+
+/* =========================
    INICIO DE APLICACIÓN
 ========================= */
 
@@ -564,6 +628,7 @@ async function iniciarAplicacion() {
   configurarBarrio();
   configurarPerfil();
   configurarIntercambios();
+  configurarPublicaciones();
 
   initCommunity({ getItem, setItem, mostrarNotificacion });
   initConnectivity({
