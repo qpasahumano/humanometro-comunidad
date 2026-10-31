@@ -264,6 +264,50 @@
         indicá su condición y qué necesitás a cambio.
       </p>
 
+      <!-- BÚSQUEDA Y FILTROS INTEGRADOS (ARRIBA EN LA GÓNDOLA) -->
+      <div class="tarjeta filtros" style="background: #17212b; border: 1px solid #2b3b4f; margin-bottom: 20px;">
+        <h3>🔍 Buscar publicaciones (Góndola integrada)</h3>
+
+        <label for="buscar-publicaciones">Palabra clave / Producto o servicio</label>
+        <input
+          id="buscar-publicaciones"
+          type="search"
+          placeholder="Buscá por servicio, título, detalle o categoría"
+        >
+
+        <label for="filtro-tipo">Tipo de publicación</label>
+        <select id="filtro-tipo">
+          <option value="todas">Todas las publicaciones</option>
+          <option value="necesidad">Solo lo que se busca (Busco)</option>
+          <option value="oferta">Solo lo que se ofrece (Ofrezco)</option>
+        </select>
+
+        <div style="margin-top: 10px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #38bdf8;">
+            <input type="checkbox" id="filtro-offline-activo" style="width: 18px; height: 18px;">
+            <span>📡 Filtrar solo vecinos con <strong>Comunicación Offline Activa</strong> (Emergencia)</span>
+          </label>
+        </div>
+
+        <div class="acciones-busqueda" style="margin-top: 15px;">
+          <button
+            id="btn-buscar-publicaciones"
+            class="boton-accion boton-ancho"
+            type="button"
+          >
+            BUSCAR EN ESTA ZONA
+          </button>
+
+          <button
+            id="btn-limpiar-filtros"
+            class="boton-secundario boton-ancho"
+            type="button"
+          >
+            LIMPIAR BÚSQUEDA
+          </button>
+        </div>
+      </div>
+
       <!-- POLÍTICA DE SEGURIDAD Y MÓDULO DE MEDICAMENTOS -->
       <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff; margin-bottom: 20px;">
         <h3 style="color: #38bdf8; margin-top: 0;">🛡️ Política de Seguridad y Medicamentos</h3>
@@ -392,46 +436,7 @@
 
       </form>
 
-      <!-- BÚSQUEDA Y FILTROS -->
-      <div class="tarjeta filtros">
-        <h3>Buscar publicaciones</h3>
-
-        <label for="buscar-publicaciones">Palabra clave</label>
-
-        <input
-          id="buscar-publicaciones"
-          type="search"
-          placeholder="Buscá por servicio, título, detalle o categoría"
-        >
-
-        <label for="filtro-tipo">Mostrar</label>
-
-        <select id="filtro-tipo">
-          <option value="todas">Todas las publicaciones</option>
-          <option value="necesidad">Solo lo que se busca</option>
-          <option value="oferta">Solo lo que se ofrece</option>
-        </select>
-
-        <div class="acciones-busqueda">
-          <button
-            id="btn-buscar-publicaciones"
-            class="boton-accion boton-ancho"
-            type="button"
-          >
-            BUSCAR PUBLICACIONES
-          </button>
-
-          <button
-            id="btn-limpiar-filtros"
-            class="boton-secundario boton-ancho"
-            type="button"
-          >
-            LIMPIAR BÚSQUEDA
-          </button>
-        </div>
-      </div>
-
-      <h3>Publicaciones</h3>
+      <h3>Publicaciones en esta zona</h3>
 
       <div
         id="lista-publicaciones"
@@ -517,7 +522,7 @@
         </div>
 
         <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 15px; text-align: center; border-top: 1px solid #334155; padding-top: 10px;">
-          💡 <em>Recomendación preventiva:</em> Conectate con tus vecinos de confianza, instalen alguna de estas herramientas y mantengan handies o radios analógicas preparadas en el hogar.
+          💡 <em>Recomendación preventiva de Humanómetro:</em> Tené siempre descargadas herramientas de comunicación alternativas por fuera de internet o wifi para asegurar una excelente experiencia comunitaria en momentos de contingencia.
         </p>
       </section>
 
@@ -818,6 +823,15 @@
           required
         >
         <small class="texto-ayuda">Requerido para validar tu perfil y mantener la seguridad comunitaria.</small>
+
+        <!-- SECCIÓN DE COMUNICACIÓN OFFLINE EN PERFIL -->
+        <div style="margin-top: 15px; border-top: 1px solid #334155; padding-top: 12px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #38bdf8; font-weight: bold;">
+            <input type="checkbox" id="offline-activo" style="width: 18px; height: 18px;">
+            <span>📡 ¿Disponés de comunicación offline (sin internet/wifi)?</span>
+          </label>
+          <small class="texto-ayuda">Marcá esta casilla si tenés instalada alguna app de emergencia mallada (Bridgefy, Briar, etc.) para que tus vecinos lo sepan ante un apagón.</small>
+        </div>
 
         <button
           id="btn-guardar-perfil"
