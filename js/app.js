@@ -179,6 +179,7 @@ function configurarBarrio() {
   const modoVisualizacion = $("modo-visualizacion");
   const contenedorExplorarZona = $("contenedor-explorar-zona");
   const inputZonaExplorar = $("zona-explorar");
+  const btnExplorarZona = $("btn-explorar-zona");
 
   if (!input || !boton) return;
 
@@ -217,10 +218,24 @@ function configurarBarrio() {
     window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
-  inputZonaExplorar?.addEventListener("input", () => {
-    const zonaVal = inputZonaExplorar.value.trim();
+  // Listener para el botón explícito de EXPLORAR
+  btnExplorarZona?.addEventListener("click", () => {
+    const zonaVal = inputZonaExplorar?.value.trim() || "";
+    if (!zonaVal) {
+      mostrarNotificacion("Escribí el nombre de la localidad que querés explorar.");
+      inputZonaExplorar?.focus();
+      return;
+    }
     setItem("hm_zona_explorar", zonaVal);
+    mostrarNotificacion(`Explorando publicaciones en: ${zonaVal}`);
     window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
+  });
+
+  inputZonaExplorar?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      btnExplorarZona?.click();
+    }
   });
 
   if (input.value && estado) {
