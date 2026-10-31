@@ -264,9 +264,9 @@
         indicá su condición y qué necesitás a cambio.
       </p>
 
-      <!-- BÚSQUEDA Y FILTROS INTEGRADOS (ARRIBA EN LA GÓNDOLA) -->
+      <!-- BÚSQUEDA, FILTROS INTEGRADOS Y BOTÓN DE ACTUALIZACIÓN FORZADA -->
       <div class="tarjeta filtros" style="background: #17212b; border: 1px solid #2b3b4f; margin-bottom: 20px;">
-        <h3>🔍 Buscar publicaciones (Góndola integrada)</h3>
+        <h3>🔍 Buscar publicaciones y Estado de Red</h3>
 
         <label for="buscar-publicaciones">Palabra clave / Producto o servicio</label>
         <input
@@ -289,13 +289,23 @@
           </label>
         </div>
 
-        <div class="acciones-busqueda" style="margin-top: 15px;">
+        <div class="acciones-busqueda" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
           <button
             id="btn-buscar-publicaciones"
             class="boton-accion boton-ancho"
             type="button"
           >
             BUSCAR EN ESTA ZONA
+          </button>
+
+          <!-- NUEVO BOTÓN DE REVALIDACIÓN Y ACTUALIZACIÓN DE CACHÉ -->
+          <button
+            id="btn-actualizar-red"
+            class="boton-secundario boton-ancho"
+            type="button"
+            style="background: #0284c7; color: #fff; border: none; font-weight: bold;"
+          >
+            🔄 Actualizar estado de la red (Refrescar caché)
           </button>
 
           <button
@@ -870,7 +880,7 @@
 
   </main>
 
-  <!-- NOTIFICACIONES -->
+  <!-- NOTIFICACIONES Y MODAL DE DOBLE CONFIRMACIÓN PARA WHATSAPP -->
   <div
     id="notificacion"
     class="notificacion"
@@ -878,6 +888,21 @@
     aria-live="polite"
     hidden
   ></div>
+
+  <!-- MODAL DE ADVERTENCIA DE CACHÉ / CONTACTO SEGURO -->
+  <div id="modal-whatsapp-seguro" class="pantalla" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 20, 38, 0.85); display: flex; justify-content: center; align-items: center; z-index: 9999;" hidden>
+    <div class="tarjeta" style="max-width: 400px; width: 90%; background: #17212b; border: 1px solid #38bdf8; text-align: center;">
+      <h3 style="color: #38bdf8; margin-top: 0;">⚠️ Aviso de Intercambio Seguro</h3>
+      <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px;">
+        Esta información puede provenir de la memoria guardada de tu dispositivo. Antes de coordinar, 
+        <strong>consultale al vecino si el recurso o producto sigue disponible</strong>.
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="btn-cancelar-wsp" class="boton-secundario" type="button" style="flex: 1;">Cancelar</button>
+        <button id="btn-confirmar-wsp" class="boton-accion" type="button" style="flex: 1; background: #25d366; color: #fff;">Continuar a WhatsApp</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="./js/app.js"></script>
 
