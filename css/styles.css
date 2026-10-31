@@ -687,6 +687,20 @@ select option {
   margin-top: 5px;
 }
 
+.perfil-mensajeria-offline {
+  margin-top: 12px;
+}
+
+.enlace-mensajeria-offline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 8px;
+  text-align: center;
+  text-decoration: none;
+}
+
 /* CONECTIVIDAD SOLIDARIA: LISTADO COMUNITARIO */
 
 .conectividad-solidaria {
@@ -1095,6 +1109,26 @@ select option {
 .vecino-indicadores .vecino-conectividad {
   color: #a7f3d0;
   border-color: rgba(52, 211, 153, 0.25);
+}
+
+.vecino-indicadores .vecino-mensajeria-offline {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 8px;
+  border: 1px solid rgba(139, 217, 238, 0.35);
+  border-radius: 999px;
+  color: var(--celeste);
+  background: rgba(83, 197, 235, 0.1);
+  font-size: 0.69rem;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.vecino-indicadores .vecino-mensajeria-offline:focus-visible,
+.vecino-indicadores .vecino-mensajeria-offline:hover {
+  border-color: var(--celeste);
+  background: rgba(83, 197, 235, 0.18);
+  text-decoration: underline;
 }
 
 .vecino-acciones {
