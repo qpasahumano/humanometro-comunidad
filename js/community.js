@@ -162,14 +162,12 @@ export function initCommunity({
     });
   }
 
-  // --- LÓGICA DE ZONA INTELIGENTE (INCORPORA BÚSQUEDA DESDE GÓNDOLA O EXPLORACIÓN) ---
+  // --- LÓGICA DE ZONA INTELIGENTE ---
   function obtenerZona() {
     try {
-      // 1. Si el usuario escribió algo en el campo de zona específico de la Góndola, priorizarlo
       const zonaGondola = normalizarTexto(filtroZonaGondola?.value);
       if (zonaGondola) return zonaGondola;
 
-      // 2. Si no, verificar el modo general (barrio estricto o explorar)
       const modo = getItem("hm_modo_visualizacion", "barrio");
       if (modo === "explorar") {
         return normalizarTexto(getItem("hm_zona_explorar", ""));
@@ -301,6 +299,12 @@ export function initCommunity({
     const identificadorCarga = ++ultimaCarga;
 
     const zonaActualFiltro = obtenerZona();
+    const palabraClave = normalizarTexto(busquedaInput?.value);
+
+    // Feedback visual instantáneo en pantalla
+    if (lista) {
+      lista.innerHTML = "<p class='texto-ayuda'>Buscando publicaciones en la red...</p>";
+    }
 
     try {
       if (navigator.onLine) {
@@ -327,9 +331,14 @@ export function initCommunity({
           )
           .eq("estado", "activa");
 
-        // Búsqueda flexible con ilike para encontrar localidades aun escribiendo parcial (ej. "Kel" -> "Esquel")
+        // Filtro flexible por zona con ilike
         if (zonaActualFiltro) {
           query = query.ilike("zona_aproximada", `%${zonaActualFiltro}%`);
+        }
+
+        // Filtro flexible por palabra clave (título o descripción) con ilike
+        if (palabraClave) {
+          query = query.or(`titulo.ilike.%${palabraClave}%,descripcion.ilike.%${palabraClave}%`);
         }
 
         const { data, error } = await query.order("creado_en", {
@@ -351,6 +360,8 @@ export function initCommunity({
           renderizarPublicaciones();
           cargando = false;
           return;
+        } else if (error) {
+          console.error("Error en consulta Supabase:", error);
         }
       }
     } catch (error) {
@@ -359,13 +370,20 @@ export function initCommunity({
       cargando = false;
     }
 
-    // Fallback Matrix Cache local con filtro flexible
+    // Fallback Matrix Cache local
     const cacheLocal = await obtenerMatrixCache();
     let remotasCache = cacheLocal.map(convertirRegistroRemoto);
 
     if (zonaActualFiltro) {
       remotasCache = remotasCache.filter(p => 
         p.zona_aproximada.toLowerCase().includes(zonaActualFiltro.toLowerCase())
+      );
+    }
+
+    if (palabraClave) {
+      const q = palabraClave.toLowerCase();
+      remotasCache = remotasCache.filter(p => 
+        p.titulo.toLowerCase().includes(q) || p.descripcion.toLowerCase().includes(q)
       );
     }
     
@@ -524,10 +542,6 @@ export function initCommunity({
   function renderizarPublicaciones() {
     if (!lista) return;
 
-    const textoBusqueda = normalizarTexto(
-      busquedaInput?.value
-    ).toLocaleLowerCase("es-AR");
-
     const tipoFiltro = normalizarTexto(
       filtroTipoInput?.value
     ).toLocaleLowerCase("es-AR");
@@ -544,19 +558,7 @@ export function initCommunity({
 
       const coincideOffline = !soloOffline || Boolean(publicacion.offline_activo);
 
-      const contenido = [
-        publicacion.titulo,
-        publicacion.descripcion,
-        publicacion.categoria,
-        publicacion.tipo,
-        publicacion.zona_aproximada,
-        publicacion.modalidad_intercambio,
-        publicacion.que_necesita_a_cambio
-      ]
-        .join(" ")
-        .toLocaleLowerCase("es-AR");
-
-      return coincideTipo && coincideOffline && contenido.includes(textoBusqueda);
+      return coincideTipo && coincideOffline;
     });
 
     lista.replaceChildren();
