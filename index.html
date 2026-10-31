@@ -41,22 +41,18 @@
         <span class="marca-titulo">HUMANÓMETRO</span>
         <span class="marca-subtitulo">COMUNIDAD</span>
       </div>
-
-      <button id="btn-perfil" class="boton-perfil" type="button" data-solapa="perfil">
-        MI PERFIL
-      </button>
     </header>
 
-    <!-- NAVEGACIÓN PRINCIPAL POR SOLAPAS -->
-    <nav class="navegacion-solapas" style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
-      <button id="tab-comunidad" class="boton-secundario boton-solapa activo" type="button" data-solapa="comunidad" style="flex: 1; white-space: nowrap;">
-        🗺️ Comunidad / Vecinos
+    <!-- NAVEGACIÓN PRINCIPAL POR SOLAPAS (FIJA Y ADAPTADA A CELULAR) -->
+    <nav class="navegacion-solapas">
+      <button id="tab-comunidad" class="boton-secundario boton-solapa activo" type="button" data-solapa="comunidad">
+        🗺️ Radar
       </button>
-      <button id="tab-intercambios" class="boton-secundario boton-solapa" type="button" data-solapa="intercambios" style="flex: 1; white-space: nowrap;">
-        🤝 Intercambios / Góndola
+      <button id="tab-intercambios" class="boton-secundario boton-solapa" type="button" data-solapa="intercambios">
+        🤝 Góndola
       </button>
-      <button id="tab-perfil" class="boton-secundario boton-solapa" type="button" data-solapa="perfil" style="flex: 1; white-space: nowrap;">
-        👤 Mi Perfil
+      <button id="tab-perfil" class="boton-secundario boton-solapa" type="button" data-solapa="perfil">
+        👤 Perfil
       </button>
     </nav>
 
@@ -69,83 +65,24 @@
       <section class="bienvenida">
         <p class="etiqueta">RED HUMANA LOCAL</p>
         <h1>Tu comunidad, más cerca.</h1>
-        <p>
-          Recursos, comunicación y ayuda mutua para las personas de tu barrio.
-        </p>
       </section>
 
-      <!-- COMUNIDAD Y UBICACIÓN APROXIMADA / RADAR -->
-      <section class="selector-barrio tarjeta">
-        <h2>Radar Vecinal y Ubicación</h2>
-
-        <!-- Selector de Modo de Visualización (Barrio vs Exploración) -->
-        <label for="modo-visualizacion">Modo de visualización</label>
-        <select id="modo-visualizacion" style="margin-bottom: 12px;">
-          <option value="barrio">🏠 Mi barrio / Zona de emergencia (Estricto)</option>
-          <option value="explorar">🗺️ Explorar otra localidad (Ej.: Mendoza, Esquel)</option>
-        </select>
-
-        <!-- Contenedor para elegir la zona a explorar cuando se activa el modo exploración -->
-        <div id="contenedor-explorar-zona" hidden style="margin-bottom: 12px;">
-          <label for="zona-explorar">Localidad a explorar</label>
-          <div class="fila-barrio" style="display: flex; gap: 8px;">
-            <input
-              id="zona-explorar"
-              type="text"
-              maxlength="100"
-              placeholder="Escribí la localidad (ej: Mendoza, Esquel)"
-              style="flex: 1;"
-            >
-            <button
-              id="btn-explorar-zona"
-              class="boton-secundario"
-              type="button"
-            >
-              EXPLORAR ZONA
-            </button>
-          </div>
-        </div>
-
-        <label for="barrio">Barrio o localidad actual</label>
-
-        <div class="fila-barrio">
-          <input
-            id="barrio"
-            type="text"
-            maxlength="100"
-            placeholder="Escribí el nombre de tu barrio"
-            autocomplete="address-level3"
-          >
-
-          <button
-            id="btn-guardar-barrio"
-            class="boton-secundario"
-            type="button"
-          >
-            GUARDAR
+      <!-- RADAR DE VECINOS ACTIVOS (FICHAS ÚNICAS SIN RELLENO FALSO) -->
+      <section class="tarjeta" style="margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 1rem;">📡 Radar Vecinal Activo</h3>
+          <button id="btn-ubicacion-rapida" class="boton-secundario" type="button" style="padding: 4px 8px; font-size: 0.75rem;">
+            📍 Actualizar GPS
           </button>
         </div>
-
-        <button
-          id="btn-ubicacion"
-          class="boton-secundario boton-ancho"
-          type="button"
-        >
-          USAR MI UBICACIÓN APROXIMADA
-        </button>
-
-        <p class="texto-ayuda">
-          La ubicación es opcional. Podés escribir tu barrio manualmente.
-          No publicamos tus coordenadas exactas.
-        </p>
-
-        <p id="estado-barrio" class="texto-ayuda" aria-live="polite">
-          Elegí tu barrio para organizar la actividad local.
-        </p>
+        <p class="texto-ayuda" style="margin-bottom: 12px;">Tu ficha y la de los vecinos conectados en la zona:</p>
+        <div id="lista-radar-vecinos" class="lista-publicaciones" aria-live="polite">
+          Cargando radar de vecinos...
+        </div>
       </section>
 
       <!-- ACCESOS RÁPIDOS A MÓDULOS DE COMUNICACIÓN Y AYUDA -->
-      <section class="acciones-principales">
+      <section class="acciones-principales" style="margin-top: 15px;">
 
         <!-- ICONO: COMUNICACIÓN -->
         <button
@@ -202,15 +139,6 @@
 
       </section>
 
-      <!-- RADAR DE VECINOS ACTIVOS (FICHAS ÚNICAS) -->
-      <section class="tarjeta" style="margin-top: 20px;">
-        <h3>📡 Radar Vecinal (Fichas por Actividad Reciente)</h3>
-        <p class="texto-ayuda" style="margin-bottom: 12px;">Visualización geolocalizada de vecinos activos en la zona seleccionada.</p>
-        <div id="lista-radar-vecinos" class="lista-publicaciones" aria-live="polite">
-          Cargando radar de vecinos...
-        </div>
-      </section>
-
     </section>
 
 
@@ -221,177 +149,98 @@
 
       <h2>Góndola y Gestión de Intercambios</h2>
 
-      <p>
-        Publicá lo que necesitás u ofrecés y gestioná las contraprestaciones activas entre el Usuario A y el Usuario B.
+      <p style="font-size: 0.85rem; color: var(--texto-suave); margin-bottom: 14px;">
+        Publicá lo que necesitás u ofrecés (servicios y productos por igual para ambos lados) y gestioná tus contraprestaciones activas.
       </p>
 
       <!-- GESTIÓN DE INTERCAMBIOS ACTIVOS Y CIRCUITOS (A/B) -->
-      <section class="tarjeta" style="background: #101d2d; border: 1px solid #38bdf8; margin-bottom: 20px;">
-        <h3 style="color: #38bdf8; margin-top: 0;">🔄 Mis Intercambios Activos y Cierres</h3>
-        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px;">
-          Cada trueque requiere la <strong>confirmación cruzada</strong> (ambas partes deben pulsar "Concretar Intercambio"). Tenés un plazo de 72 horas o una prórroga única de 48 horas por contingencia.
+      <section class="tarjeta" style="background: #101d2d; border: 1px solid #38bdf8; margin-bottom: 16px;">
+        <h3 style="color: #38bdf8; margin-top: 0; font-size: 0.95rem;">🔄 Mis Intercambios Activos y Cierres</h3>
+        <p style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 8px;">
+          Cada trueque requiere <strong>confirmación cruzada</strong> (ambas partes pulsan "Concretar"). Plazo de 72 horas con prórroga opcional.
         </p>
-        <!-- AVISO EXPLÍCITO DE OBLIGATORIEDAD DE MEDICIÓN -->
-        <p style="font-size: 0.82rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.3); margin-top: 8px;">
-          ⭐ <strong>Compromiso Comunitario:</strong> La medición y evaluación mutua al cerrar cada intercambio es <strong>obligatoria</strong>. Evaluar a tus vecinos protege el tiempo y la buena fe de la red, y es el pilar indispensable para sostenerte activamente dentro de la comunidad.
+        <p style="font-size: 0.8rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.3); margin-top: 8px;">
+          ⭐ <strong>Compromiso Comunitario:</strong> La medición y evaluación mutua al cerrar cada intercambio es <strong>obligatoria</strong>.
         </p>
-        <div id="lista-intercambios-activos" class="lista-publicaciones" aria-live="polite" style="margin-top: 12px;">
+        <div id="lista-intercambios-activos" class="lista-publicaciones" aria-live="polite" style="margin-top: 10px;">
           No hay intercambios activos en curso.
         </div>
       </section>
 
-      <!-- BÚSQUEDA Y FILTROS INTEGRADOS -->
-      <div class="tarjeta filtros" style="background: #17212b; border: 1px solid #2b3b4f; margin-bottom: 20px;">
-        <h3>🔍 Buscar publicaciones en la Góndola</h3>
-
-        <label for="filtro-zona-gondola">📍 Zona / Localidad de búsqueda</label>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <input
-            id="filtro-zona-gondola"
-            type="text"
-            placeholder="Ej.: Esquel, Mendoza, Balvanera"
-            style="flex: 1;"
-          >
-        </div>
-
-        <label for="buscar-publicaciones">Palabra clave / Producto o servicio</label>
-        <input
-          id="buscar-publicaciones"
-          type="search"
-          placeholder="Buscá por servicio, título, detalle o categoría"
-        >
-
-        <label for="filtro-tipo">Tipo de publicación</label>
-        <select id="filtro-tipo">
-          <option value="todas">Todas las publicaciones</option>
-          <option value="necesidad">Solo lo que se busca (Busco)</option>
-          <option value="oferta">Solo lo que se ofrece (Ofrezco)</option>
-        </select>
-
-        <div style="margin-top: 10px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #38bdf8;">
-            <input type="checkbox" id="filtro-offline-activo" style="width: 18px; height: 18px;">
-            <span>📡 Filtrar solo vecinos con <strong>Comunicación Offline Activa</strong> (Emergencia)</span>
-          </label>
-        </div>
-
-        <div class="acciones-busqueda" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-          <button
-            id="btn-buscar-publicaciones"
-            class="boton-accion boton-ancho"
-            type="button"
-          >
-            BUSCAR EN ESTA ZONA
-          </button>
-
-          <button
-            id="btn-actualizar-red"
-            class="boton-secundario boton-ancho"
-            type="button"
-            style="background: #0284c7; color: #fff; border: none; font-weight: bold;"
-          >
-            🔄 Actualizar estado de la red (Refrescar caché)
-          </button>
-
-          <button
-            id="btn-limpiar-filtros"
-            class="boton-secundario boton-ancho"
-            type="button"
-          >
-            LIMPIAR BÚSQUEDA
-          </button>
-        </div>
-      </div>
-
       <!-- FORMULARIO DE NUEVA PUBLICACIÓN EN GÓNDOLA -->
-      <form id="form-publicacion" class="tarjeta">
-        <h3>Publicar en la Góndola</h3>
+      <form id="form-publicacion" class="tarjeta" style="margin-bottom: 16px;">
+        <h3 style="margin-top: 0; font-size: 0.95rem;">📦 Publicar en la Góndola</h3>
 
         <label for="tipo-publicacion">¿Qué querés publicar?</label>
         <select id="tipo-publicacion" required>
-          <option value="necesidad">BUSCO: necesito algo</option>
-          <option value="oferta">OFREZCO: tengo algo para compartir</option>
+          <option value="oferta">OFREZCO: tengo algo para compartir (Servicio u Objeto)</option>
+          <option value="necesidad">BUSCO: necesito algo (Servicio u Objeto)</option>
         </select>
 
         <label for="categoria-publicacion">Categoría</label>
         <select id="categoria-publicacion" required>
-          <option value="productos">Productos y objetos</option>
-          <option value="alimentos">Alimentos</option>
-          <option value="ropa">Ropa y calzado</option>
-          <option value="herramientas">Herramientas</option>
-          <option value="servicios">Servicios y oficios</option>
-          <option value="transporte">Traslados y transporte</option>
-          <option value="energia">Energía y carga de dispositivos</option>
-          <option value="recursos">Recursos comunitarios</option>
-          <option value="ayuda">Ayuda mutua</option>
-          <option value="bancos_salud_oficial">💊 Bancos de Medicamentos y Redes de Salud (Directorio oficial)</option>
-          <option value="otros">Otros</option>
-          <option value="otra">Otra categoría</option>
+          <option value="servicios">🛠️ Servicios y oficios</option>
+          <option value="productos">📦 Productos y objetos</option>
+          <option value="alimentos">🍎 Alimentos</option>
+          <option value="ropa">👕 Ropa y calzado</option>
+          <option value="herramientas">🔧 Herramientas</option>
+          <option value="transporte">🚗 Traslados y transporte</option>
+          <option value="energia">⚡ Energía y carga de dispositivos</option>
+          <option value="recursos">🌐 Recursos comunitarios</option>
+          <option value="otros">💬 Otros</option>
         </select>
-
-        <div id="contenedor-otra-categoria" hidden>
-          <label for="otra-categoria">Especificá la categoría</label>
-          <input
-            id="otra-categoria"
-            type="text"
-            maxlength="80"
-            placeholder="Ej.: Cantante, Paseador de perros, etc."
-          >
-        </div>
 
         <label for="titulo-publicacion">Título</label>
         <input
           id="titulo-publicacion"
           type="text"
           maxlength="100"
-          placeholder="¿Qué necesitás u ofrecés?"
+          placeholder="Ej: Clases de apoyo / Reparación de PC / Vendo abrigo"
           required
         >
 
         <label for="detalle-publicacion">Descripción</label>
         <textarea
           id="detalle-publicacion"
-          rows="4"
+          rows="3"
           maxlength="1000"
-          placeholder="Describí el producto, servicio o necesidad (prohibido publicar fármacos o medicamentos particulares)."
+          placeholder="Describí los detalles del servicio o producto..."
           required
         ></textarea>
 
-        <label for="condicion-publicacion">Condición del producto (si corresponde)</label>
-        <select id="condicion-publicacion">
-          <option value="">No corresponde / no especificada</option>
-          <option value="nuevo">Nuevo</option>
-          <option value="usado-buen-estado">Usado en buen estado</option>
-          <option value="usado-con-detalles">Usado con detalles informados</option>
-        </select>
-
-        <label for="modalidad-intercambio">Modalidad de intercambio</label>
-        <select id="modalidad-intercambio">
-          <option value="">👇 Seleccioná una modalidad</option>
-          <option value="trueque-productos">🤝 📦 Trueque de productos — Producto por producto</option>
-          <option value="trueque-servicios">🛠️ 🔧 Intercambio de servicios — Servicio por servicio</option>
-          <option value="intercambio-mixto">🌱 🔄 Intercambio mixto — Producto por servicio o servicio por producto</option>
-          <option value="gratuito">💚 🎁 Gratuito / solidario — Sin exigir nada a cambio</option>
-          <option value="colaboracion">🫂 🌻 Colaboración comunitaria — Ayuda y cooperación entre personas</option>
-        </select>
-
-        <label for="que-necesita-a-cambio">¿Qué necesitás a cambio?</label>
-        <textarea
-          id="que-necesita-a-cambio"
-          rows="3"
-          maxlength="500"
-          placeholder="Ej.: un producto, un servicio, alimentos, colaboración o nada."
-        ></textarea>
-
-        <button class="boton-accion" type="submit">
+        <button class="boton-accion boton-ancho" type="submit">
           GUARDAR PUBLICACIÓN
         </button>
 
         <p id="estado-publicacion" class="texto-ayuda" aria-live="polite"></p>
       </form>
 
-      <h3>Publicaciones en esta zona</h3>
-      <div id="lista-publicaciones" class="lista-publicaciones" aria-live="polite"></div>
+      <!-- BÚSQUEDA Y LISTADO DE PUBLICACIONES EN LA GÓNDOLA -->
+      <div class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f;">
+        <h3 style="margin-top: 0; font-size: 0.95rem;">🔍 Góndola de la Comunidad</h3>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+          <input
+            id="buscar-publicaciones"
+            type="search"
+            placeholder="Buscá por servicio, producto o palabra clave..."
+            style="margin-bottom: 0;"
+          >
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <select id="filtro-tipo" style="margin-bottom: 0; flex: 1;">
+            <option value="todas">Todas</option>
+            <option value="oferta">Solo Ofrezco</option>
+            <option value="necesidad">Solo Busco</option>
+          </select>
+          <button id="btn-buscar-publicaciones" class="boton-secundario" type="button">FILTRAR</button>
+        </div>
+
+        <div id="lista-publicaciones" class="lista-publicaciones" aria-live="polite">
+          Cargando publicaciones de la góndola...
+        </div>
+      </div>
 
     </section>
 
@@ -401,33 +250,24 @@
          ===================================================== -->
     <section id="vista-solapa-perfil" class="vista-solapa" hidden>
 
-      <h2>Mi perfil comunitario y Reputación</h2>
+      <h2>Mi perfil y configuración</h2>
 
       <form id="form-perfil" class="tarjeta">
-        <div class="perfil-foto-bloque">
-          <div class="perfil-foto-marco">
-            <img id="foto-perfil-vista" alt="Foto de perfil" hidden>
-            <span id="foto-perfil-inicial" aria-hidden="true">H</span>
-          </div>
-
-          <div class="perfil-foto-controles">
-            <label for="foto-perfil-archivo">Foto de perfil</label>
-            <input
-              id="foto-perfil-archivo"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-            >
-            <small>JPG, PNG o WebP. La foto se compartirá según la configuración del perfil.</small>
-          </div>
-        </div>
-
         <label for="nombre-usuario">Nombre visible</label>
         <input
           id="nombre-usuario"
           type="text"
           maxlength="60"
-          placeholder="Cómo querés aparecer en la comunidad"
+          placeholder="Tu nombre en la red"
           required
+        >
+
+        <label for="barrio">Barrio o localidad actual</label>
+        <input
+          id="barrio"
+          type="text"
+          maxlength="100"
+          placeholder="Ej: Balvanera, Esquel, Mendoza"
         >
 
         <label for="whatsapp-usuario">Número de WhatsApp (Obligatorio)</label>
@@ -438,20 +278,32 @@
           placeholder="Ej: +5491112345678"
           required
         >
-        <small class="texto-ayuda">Requerido para validar tu perfil y mantener la seguridad comunitaria.</small>
 
-        <div style="margin-top: 15px; border-top: 1px solid #334155; padding-top: 12px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #38bdf8; font-weight: bold;">
+        <!-- CONTROL MANUAL DE PUBLICACIONES ACTIVAS (DOBLE MECANISMO) -->
+        <div style="margin-top: 12px; border-top: 1px solid #334155; padding-top: 12px;">
+          <label for="pub-activas-manual" style="color: var(--celeste);">📦 Conteo manual de publicaciones activas (Opcional)</label>
+          <input
+            id="pub-activas-manual"
+            type="number"
+            min="0"
+            max="50"
+            placeholder="Dejar en blanco para cálculo automático"
+          >
+          <small class="texto-ayuda">Si preferís no depender de la red o querés fijarlo a mano, indicá tus publicaciones vigentes.</small>
+        </div>
+
+        <div style="margin-top: 12px; border-top: 1px solid #334155; padding-top: 12px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #38bdf8;">
             <input type="checkbox" id="offline-activo" style="width: 18px; height: 18px;">
-            <span>📡 ¿Disponés de comunicación offline (sin internet/wifi)?</span>
+            <span>📡 Comunicación offline activa (Emergencia)</span>
           </label>
-          <small class="texto-ayuda">Marcá esta casilla si tenés instalada alguna app de emergencia mallada (Bridgefy, Briar, etc.).</small>
         </div>
 
         <button
           id="btn-guardar-perfil"
-          class="boton-accion"
+          class="boton-accion boton-ancho"
           type="submit"
+          style="margin-top: 15px;"
         >
           GUARDAR PERFIL
         </button>
@@ -461,20 +313,19 @@
 
       <!-- ESTADO DE HUMANIDAD Y MÉTRICAS DE INTERCAMBIO -->
       <section class="tarjeta" style="background: #17212b; border: 1px solid #38bdf8;">
-        <h3>Porcentaje de Humanidad y Reputación</h3>
-        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px;">
-          Tu medidor refleja el cumplimiento de tus tratos. <strong>La medición y evaluación obligatoria de cada intercambio</strong> es el cimiento indispensable para sostenerte y mantener la confianza dentro de la comunidad.
+        <h3 style="margin-top: 0; font-size: 0.95rem;">Porcentaje de Humanidad y Reputación</h3>
+        <p style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 10px;">
+          Tu medidor refleja el cumplimiento de tus tratos basados en las evaluaciones cruzadas.
         </p>
         <div id="contenedor-estado-humanidad">
           <!-- Se renderiza dinámicamente desde JS -->
         </div>
       </section>
 
-      <section class="tarjeta" aria-labelledby="titulo-mis-publicaciones">
-        <h3 id="titulo-mis-publicaciones">Mis publicaciones</h3>
-        <p class="texto-ayuda">Acá vas a encontrar los productos y servicios publicados desde tu cuenta.</p>
+      <section class="tarjeta">
+        <h3 style="margin-top: 0; font-size: 0.95rem;">Mis publicaciones en la Góndola</h3>
         <div id="lista-mis-publicaciones" class="lista-publicaciones" aria-live="polite">
-          Iniciá sesión para consultar tus publicaciones.
+          Iniciá sesión o guardá tu perfil para ver tus publicaciones.
         </div>
       </section>
 
@@ -486,7 +337,7 @@
          ===================================================== -->
     <section id="vista-comunicacion" class="vista-interna" hidden>
       <button class="boton-volver" data-volver-comunidad type="button">
-        ← Volver a la comunidad
+        ← Volver al radar
       </button>
       <h2>No pierdas la comunicación</h2>
       <div class="tarjeta">
@@ -499,7 +350,7 @@
         <input id="destinatario-mensaje" type="text" maxlength="100" placeholder="Nombre visible exacto">
         <label for="texto-mensaje">Mensaje</label>
         <textarea id="texto-mensaje" rows="4" maxlength="2000" placeholder="Escribí lo que necesitás comunicar..." required></textarea>
-        <button class="boton-accion" type="submit">ENVIAR MENSAJE</button>
+        <button class="boton-accion boton-ancho" type="submit">ENVIAR MENSAJE</button>
         <p id="estado-mensaje" class="texto-ayuda" aria-live="polite"></p>
       </form>
       <h3>Mensajes guardados en este dispositivo</h3>
@@ -508,7 +359,7 @@
 
     <section id="vista-ayuda" class="vista-interna" hidden>
       <button class="boton-volver" data-volver-comunidad type="button">
-        ← Volver a la comunidad
+        ← Volver al radar
       </button>
       <h2>Red Humana</h2>
       <form id="form-ayuda" class="tarjeta">
@@ -530,7 +381,7 @@
         </select>
         <label for="detalle-ayuda">Contanos qué necesitás u ofrecés</label>
         <textarea id="detalle-ayuda" rows="4" maxlength="1200" placeholder="Describí la situación..." required></textarea>
-        <button class="boton-accion" type="submit">GUARDAR EN RED HUMANA</button>
+        <button class="boton-accion boton-ancho" type="submit">GUARDAR EN RED HUMANA</button>
         <p id="estado-ayuda" class="texto-ayuda" aria-live="polite"></p>
       </form>
       <h3>Solicitudes y ofrecimientos</h3>
@@ -543,11 +394,9 @@
       <div class="tarjeta" style="max-width: 450px; width: 90%; background: #17212b; border: 2px solid #f87171; text-align: center;">
         <h3 style="color: #f87171; margin-top: 0;">⚠️ Bloqueo por Intercambio Vencido</h3>
         <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px;">
-          Tenés operaciones pendientes que superaron el plazo límite sin concretarse o solicitar prórroga. Para continuar usando la comunidad, debés cerrar el intercambio y completar la <strong>evaluación obligatoria</strong>.
+          Tenés operaciones pendientes que superaron el plazo límite. Debés cerrar el intercambio y completar la <strong>evaluación obligatoria</strong>.
         </p>
-        <div id="contenido-soft-lock-intercambios">
-          <!-- Listado de intercambios vencidos con botones de acción -->
-        </div>
+        <div id="contenido-soft-lock-intercambios"></div>
       </div>
     </div>
 
@@ -566,23 +415,22 @@
     <div class="tarjeta" style="max-width: 450px; width: 90%; background: #17212b; border: 1px solid #38bdf8;">
       <h3 style="color: #38bdf8; margin-top: 0;">🌟 Evaluación Cruzada Obligatoria</h3>
       <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px;">
-        Valorá la experiencia con <strong id="eval-contraparte-nombre">Vecino</strong>. 
-        <em>Recordá que realizar esta medición es obligatoria</em> para sostener la confianza, proteger al barrio y mantener tu pertenencia activa en la red.
+        Valorá la experiencia con <strong id="eval-contraparte-nombre">Vecino</strong>. Esta medición es obligatoria para sostener la confianza en la red.
       </p>
       <form id="form-evaluacion-cruzada-modal">
         <input type="hidden" id="eval-intercambio-id">
         <label for="eval-resultado">Resultado general</label>
         <select id="eval-resultado" required>
           <option value="buena">BUENA: se respetó lo acordado</option>
-          <option value="intermedia">INTERMEDIA: hubo dificultades o cumplimiento parcial</option>
-          <option value="mala">MALA: hubo incumplimientos concretos</option>
+          <option value="intermedia">INTERMEDIA: cumplimiento parcial</option>
+          <option value="mala">MALA: incumplimientos concretos</option>
           <option value="sin-acuerdo">No llegamos a un acuerdo</option>
           <option value="cancelacion-mutua">Cancelamos de común acuerdo</option>
         </select>
         <label for="eval-detalle">Explicación de la experiencia</label>
         <textarea id="eval-detalle" rows="3" maxlength="500" placeholder="Describí hechos concretos..." required></textarea>
         <div style="display: flex; gap: 10px; margin-top: 12px;">
-          <button type="submit" class="boton-accion" style="flex: 1;">GUARDAR Y CERRAR OPERACIÓN</button>
+          <button type="submit" class="boton-accion boton-ancho">GUARDAR Y CERRAR</button>
         </div>
       </form>
     </div>
