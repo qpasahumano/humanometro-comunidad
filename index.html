@@ -33,7 +33,7 @@
     </div>
   </main>
 
-  <!-- CENTRO DE LA COMUNIDAD (ESTRUCTURA DE SOLAPAS Y VISTAS) -->
+  <!-- CENTRO DE LA COMUNIDAD -->
   <main id="pantalla-comunidad" class="pantalla pantalla-comunidad" hidden>
 
     <header class="encabezado">
@@ -41,28 +41,747 @@
         <span class="marca-titulo">HUMANÓMETRO</span>
         <span class="marca-subtitulo">COMUNIDAD</span>
       </div>
+
+      <button id="btn-perfil" class="boton-perfil" type="button">
+        MI PERFIL
+      </button>
     </header>
 
-    <!-- NAVEGACIÓN PRINCIPAL DE SOLAPAS (FIJA Y LIMPIA ARRIBA PARA CELULAR) -->
-    <nav class="navegacion-solapas">
-      <button id="tab-perfil" class="boton-secundario boton-solapa" type="button" data-solapa="perfil">
-        👤 Mi Perfil
+    <!-- BIENVENIDA -->
+    <section class="bienvenida">
+      <p class="etiqueta">RED HUMANA LOCAL</p>
+      <h1>Tu comunidad, más cerca.</h1>
+      <p>
+        Recursos, comunicación y ayuda mutua para las personas de tu barrio.
+      </p>
+    </section>
+
+    <!-- COMUNIDAD Y UBICACIÓN APROXIMADA -->
+    <section class="selector-barrio tarjeta">
+      <h2>Tu comunidad</h2>
+
+      <!-- Selector de Modo de Visualización (Barrio vs Exploración) -->
+      <label for="modo-visualizacion">Modo de visualización</label>
+      <select id="modo-visualizacion" style="margin-bottom: 12px;">
+        <option value="barrio">🏠 Mi barrio / Zona de emergencia (Estricto)</option>
+        <option value="explorar">🗺️ Explorar otra localidad (Ej.: Esquel)</option>
+      </select>
+
+      <!-- Contenedor para elegir la zona a explorar cuando se activa el modo exploración -->
+      <div id="contenedor-explorar-zona" hidden style="margin-bottom: 12px;">
+        <label for="zona-explorar">Localidad a explorar</label>
+        <input
+          id="zona-explorar"
+          type="text"
+          maxlength="100"
+          placeholder="Escribí la localidad (ej: Esquel)"
+        >
+      </div>
+
+      <label for="barrio">Barrio o localidad actual</label>
+
+      <div class="fila-barrio">
+        <input
+          id="barrio"
+          type="text"
+          maxlength="100"
+          placeholder="Escribí el nombre de tu barrio"
+          autocomplete="address-level3"
+        >
+
+        <button
+          id="btn-guardar-barrio"
+          class="boton-secundario"
+          type="button"
+        >
+          GUARDAR
+        </button>
+      </div>
+
+      <button
+        id="btn-ubicacion"
+        class="boton-secundario boton-ancho"
+        type="button"
+      >
+        USAR MI UBICACIÓN APROXIMADA
       </button>
-      <button id="tab-intercambios" class="boton-secundario boton-solapa" type="button" data-solapa="intercambios">
-        🤝 Intercambios
+
+      <p class="texto-ayuda">
+        La ubicación es opcional. Podés escribir tu barrio manualmente.
+        No publicamos tus coordenadas exactas.
+      </p>
+
+      <p class="texto-ayuda">
+        Identificación geográfica: datos de OpenStreetMap contributors.
+      </p>
+
+      <p
+        id="estado-barrio"
+        class="texto-ayuda"
+        aria-live="polite"
+      >
+        Elegí tu barrio para organizar la actividad local.
+      </p>
+    </section>
+
+    <!-- ACCESOS PRINCIPALES -->
+    <section class="acciones-principales">
+
+      <!-- ICONO: GÓNDOLA COMUNITARIA -->
+      <button
+        id="btn-gondola"
+        class="boton-modulo boton-gondola"
+        type="button"
+      >
+        <span class="icono-modulo icono-gondola" aria-hidden="true">
+          <svg viewBox="0 0 64 64" focusable="false">
+            <path d="M12 25h40l-4 28H16z"/>
+            <path d="M9 20h46l-3 7H12z"/>
+            <path d="M17 20l4-9h8l3 9"/>
+            <path d="M33 20l3-9h8l4 9"/>
+            <path d="M23 32v13M32 32v13M41 32v13"/>
+            <path d="M20 53v4M44 53v4"/>
+          </svg>
+        </span>
+
+        <span class="contenido-modulo">
+          <strong>GÓNDOLA COMUNITARIA</strong>
+          <small>Productos, alimentos, servicios y recursos.</small>
+        </span>
+
+        <span class="flecha" aria-hidden="true">›</span>
       </button>
-      <button id="tab-comunidad" class="boton-secundario boton-solapa activo" type="button" data-solapa="comunidad">
-        🗺️ Comunidad
+
+      <!-- ICONO: COMUNICACIÓN -->
+      <button
+        id="btn-comunicacion"
+        class="boton-modulo"
+        type="button"
+      >
+        <span class="icono-modulo icono-comunicacion" aria-hidden="true">
+          <svg viewBox="0 0 64 64" focusable="false">
+            <path d="M7 12h32v23H22l-9 8v-8H7z"/>
+            <path d="M25 29h32v22H46l-9 8v-8h-5"/>
+            <path d="M14 20h18M14 26h12"/>
+            <path d="M34 37h15M34 43h10"/>
+            <path d="M44 15l7 5-7 5"/>
+          </svg>
+        </span>
+
+        <span class="contenido-modulo">
+          <strong>NO PIERDAS LA COMUNICACIÓN</strong>
+          <small>Prepará mensajes, chat y kit de emergencia.</small>
+        </span>
+
+        <span class="flecha" aria-hidden="true">›</span>
       </button>
-    </nav>
+
+      <!-- ICONO: RED HUMANA -->
+      <button
+        id="btn-ayuda"
+        class="boton-modulo"
+        type="button"
+      >
+        <span class="icono-modulo icono-red-humana" aria-hidden="true">
+          <svg viewBox="0 0 64 64" focusable="false">
+            <circle cx="32" cy="12" r="7"/>
+            <circle cx="13" cy="25" r="6"/>
+            <circle cx="51" cy="25" r="6"/>
+            <circle cx="19" cy="48" r="6"/>
+            <circle cx="45" cy="48" r="6"/>
+            <path d="M27 18l-9 4M37 18l9 4"/>
+            <path d="M16 31l2 11M48 31l-2 11"/>
+            <path d="M25 47h14"/>
+            <path d="M25 26l7 8 7-8"/>
+            <path d="M24 38l8 5 8-5"/>
+          </svg>
+        </span>
+
+        <span class="contenido-modulo">
+          <strong>RED HUMANA</strong>
+          <small>Pedí ayuda u ofrecé lo que esté a tu alcance.</small>
+        </span>
+
+        <span class="flecha" aria-hidden="true">›</span>
+      </button>
+
+      <!-- ICONO: HUMANÓMETRO DE HUMANIDAD -->
+      <button
+        id="btn-humanometro"
+        class="boton-modulo"
+        type="button"
+      >
+        <span class="icono-modulo icono-humanometro" aria-hidden="true">
+          <svg viewBox="0 0 64 64" focusable="false">
+            <path d="M32 55S9 42 9 25c0-8 5-13 12-13 5 0 9 3 11 8 2-5 6-8 11-8 7 0 12 5 12 13 0 17-23 30-23 30z"/>
+            <path d="M13 34h10l5-11 8 22 5-11h10"/>
+            <circle cx="32" cy="32" r="26"/>
+          </svg>
+        </span>
+
+        <span class="contenido-modulo">
+          <strong>HUMANÓMETRO DE HUMANIDAD</strong>
+          <small>Registrá cómo se desarrollan los intercambios.</small>
+        </span>
+
+        <span class="flecha" aria-hidden="true">›</span>
+      </button>
+
+    </section>
+
+    <!-- PRESENTACIÓN DEL PROYECTO -->
+    <section class="humanometro tarjeta">
+      <div class="humanometro-icono" aria-hidden="true">
+        <svg viewBox="0 0 64 64" focusable="false">
+          <circle cx="32" cy="32" r="28"/>
+          <path d="M18 17v30M46 17v30M18 32h28"/>
+          <path d="M24 17h16M24 47h16"/>
+        </svg>
+      </div>
+
+      <div>
+        <h2>Una red de personas para las personas</h2>
+        <p>
+          La cooperación, la responsabilidad y el respeto son el centro
+          de esta comunidad.
+        </p>
+      </div>
+    </section>
 
     <!-- =====================================================
-         SOLAPA 1: MI PERFIL (GESTIÓN PERSONAL Y REPUTACIÓN)
+         GÓNDOLA COMUNITARIA
          ===================================================== -->
-    <section id="vista-solapa-perfil" class="vista-solapa" hidden>
-      <h2>Mi Perfil Comunitario</h2>
+    <section id="vista-gondola" class="vista-interna" hidden>
+
+      <button class="boton-volver" data-volver type="button">
+        ← Volver a la comunidad
+      </button>
+
+      <h2>Góndola comunitaria</h2>
+
+      <p>
+        Publicá lo que necesitás o lo que podés ofrecer. Cuando corresponda,
+        indicá su condición y qué necesitás a cambio.
+      </p>
+
+      <!-- POLÍTICA DE SEGURIDAD Y MÓDULO DE MEDICAMENTOS -->
+      <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff; margin-bottom: 20px;">
+        <h3 style="color: #38bdf8; margin-top: 0;">🛡️ Política de Seguridad y Medicamentos</h3>
+        <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+          Por razones de salud pública, seguridad sanitaria y normativas legales, 
+          <strong>Humanómetro prohíbe terminantemente la publicación, oferta, donación, trueque o comercialización de medicamentos</strong>, 
+          fármacos o productos farmacéuticos entre particulares.
+        </p>
+        <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+          Para la gestión segura de fármacos, te sugerimos acudir exclusivamente a entidades oficiales y especializadas a través del directorio de 
+          <strong>Bancos de Medicamentos y Redes de Salud</strong>.
+        </p>
+      </section>
+
+      <form id="form-publicacion" class="tarjeta">
+
+        <label for="tipo-publicacion">¿Qué querés publicar?</label>
+
+        <select id="tipo-publicacion" required>
+          <option value="necesidad">BUSCO: necesito algo</option>
+          <option value="oferta">OFREZCO: tengo algo para compartir</option>
+        </select>
+
+        <label for="categoria-publicacion">Categoría</label>
+
+        <select id="categoria-publicacion" required>
+          <option value="productos">Productos y objetos</option>
+          <option value="alimentos">Alimentos</option>
+          <option value="ropa">Ropa y calzado</option>
+          <option value="herramientas">Herramientas</option>
+          <option value="servicios">Servicios y oficios</option>
+          <option value="transporte">Traslados y transporte</option>
+          <option value="energia">Energía y carga de dispositivos</option>
+          <option value="recursos">Recursos comunitarios</option>
+          <option value="ayuda">Ayuda mutua</option>
+          <option value="bancos_salud_oficial">💊 Bancos de Medicamentos y Redes de Salud (Directorio oficial)</option>
+          <option value="otros">Otros</option>
+          <option value="otra">Otra categoría</option>
+        </select>
+
+        <div id="contenedor-otra-categoria" hidden>
+          <label for="otra-categoria">Especificá la categoría</label>
+          <input
+            id="otra-categoria"
+            type="text"
+            maxlength="80"
+            placeholder="Ej.: Cantante, Paseador de perros, etc."
+          >
+        </div>
+
+        <label for="titulo-publicacion">Título</label>
+
+        <input
+          id="titulo-publicacion"
+          type="text"
+          maxlength="100"
+          placeholder="¿Qué necesitás u ofrecés?"
+          required
+        >
+
+        <label for="detalle-publicacion">Descripción</label>
+
+        <textarea
+          id="detalle-publicacion"
+          rows="4"
+          maxlength="1000"
+          placeholder="Describí el producto, servicio o necesidad (prohibido publicar fármacos o medicamentos particulares)."
+          required
+        ></textarea>
+
+        <label for="condicion-publicacion">
+          Condición del producto (si corresponde)
+        </label>
+
+        <select id="condicion-publicacion">
+          <option value="">No corresponde / no especificada</option>
+          <option value="nuevo">Nuevo</option>
+          <option value="usado-buen-estado">Usado en buen estado</option>
+          <option value="usado-con-detalles">Usado con detalles informados</option>
+        </select>
+
+        <!-- MODALIDADES DE INTERCAMBIO HUMANITARIO -->
+        <label for="modalidad-intercambio">
+          🌎 Modalidad de intercambio
+        </label>
+
+        <select id="modalidad-intercambio">
+          <option value="">👇 Seleccioná una modalidad</option>
+          <option value="trueque-productos">
+            🤝 📦 Trueque de productos — Producto por producto
+          </option>
+          <option value="trueque-servicios">
+            🛠️ 🔧 Intercambio de servicios — Servicio por servicio
+          </option>
+          <option value="intercambio-mixto">
+            🌱 🔄 Intercambio mixto — Producto por servicio o servicio por producto
+          </option>
+          <option value="gratuito">
+            💚 🎁 Gratuito / solidario — Sin exigir nada a cambio
+          </option>
+          <option value="colaboracion">
+            🫂 🌻 Colaboración comunitaria — Ayuda y cooperación entre personas
+          </option>
+        </select>
+
+        <label for="que-necesita-a-cambio">
+          ¿Qué necesitás a cambio?
+        </label>
+
+        <textarea
+          id="que-necesita-a-cambio"
+          rows="3"
+          maxlength="500"
+          placeholder="Ej.: un producto, un servicio, alimentos, colaboración o nada."
+        ></textarea>
+
+        <button class="boton-accion" type="submit">
+          GUARDAR PUBLICACIÓN
+        </button>
+
+        <p
+          id="estado-publicacion"
+          class="texto-ayuda"
+          aria-live="polite"
+        ></p>
+
+      </form>
+
+      <!-- BÚSQUEDA Y FILTROS -->
+      <div class="tarjeta filtros">
+        <h3>Buscar publicaciones</h3>
+
+        <label for="buscar-publicaciones">Palabra clave</label>
+
+        <input
+          id="buscar-publicaciones"
+          type="search"
+          placeholder="Buscá por servicio, título, detalle o categoría"
+        >
+
+        <label for="filtro-tipo">Mostrar</label>
+
+        <select id="filtro-tipo">
+          <option value="todas">Todas las publicaciones</option>
+          <option value="necesidad">Solo lo que se busca</option>
+          <option value="oferta">Solo lo que se ofrece</option>
+        </select>
+
+        <div class="acciones-busqueda">
+          <button
+            id="btn-buscar-publicaciones"
+            class="boton-accion boton-ancho"
+            type="button"
+          >
+            BUSCAR PUBLICACIONES
+          </button>
+
+          <button
+            id="btn-limpiar-filtros"
+            class="boton-secundario boton-ancho"
+            type="button"
+          >
+            LIMPIAR BÚSQUEDA
+          </button>
+        </div>
+      </div>
+
+      <h3>Publicaciones</h3>
+
+      <div
+        id="lista-publicaciones"
+        class="lista-publicaciones"
+        aria-live="polite"
+      ></div>
+
+      <p class="aviso-local">
+        La disponibilidad de las publicaciones compartidas depende de la
+        conexión, la autenticación y el funcionamiento del servicio.
+      </p>
+
+    </section>
+
+    <!-- =====================================================
+         COMUNICACIÓN
+         ===================================================== -->
+    <section id="vista-comunicacion" class="vista-interna" hidden>
+
+      <button class="boton-volver" data-volver type="button">
+        ← Volver a la comunidad
+      </button>
+
+      <h2>No pierdas la comunicación</h2>
+
+      <div class="tarjeta">
+        <h3>Estado de conexión</h3>
+
+        <p id="estado-conexion" aria-live="polite">
+          Comprobando conexión...
+        </p>
+
+        <p>
+          Si estás sin internet, podés preparar un mensaje y guardarlo
+          en este dispositivo para consultarlo después.
+        </p>
+
+        <p class="aviso-local">
+          Para enviar mensajes necesitás iniciar sesión y completar tu perfil.
+          Escribí el nombre visible exacto de la otra persona. Si no hay conexión,
+          el mensaje queda guardado localmente en la red de relevo y se envía al restablecerse la red.
+        </p>
+      </div>
+
+      <!-- =====================================================
+           RESILIENCIA TÁCTICA: KIT DE COMUNICACIÓN PREVENTIVO
+           ===================================================== -->
+      <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff;">
+        <h3 style="color: #38bdf8; margin-top: 0;">📡 Kit de Comunicación Táctico (Sin Internet)</h3>
+        
+        <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+          <strong>Aviso importante:</strong> Las aplicaciones web requieren conectividad de red para operar de forma centralizada. 
+          Ante cortes totales de energía o caídas de internet que dejen los dispositivos sin señal Wi-Fi, 
+          <strong>los navegadores no pueden transmitir datos por el aire</strong>. 
+        </p>
+        <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+          Para garantizar que una emergencia o contingencia no te agarre desprovisto/a, te recomendamos firmemente tener instaladas 
+          <strong>ahora mismo</strong> (mientras hay conexión) aplicaciones de red de malla (*mesh*) o mensajería descentralizada por Bluetooth:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+          <!-- Bridgefy -->
+          <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+            <strong style="color: #38bdf8; font-size: 0.95rem;">Bridgefy (Red Mesh por Bluetooth)</strong>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 8px 0;">
+              Permite chatear de celular a celular saltando de dispositivo en dispositivo sin internet ni red celular en tu zona.
+            </p>
+            <a href="https://play.google.com/store/apps/details?id=com.bridgefy.android" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
+              Descargar Bridgefy (Android / iOS)
+            </a>
+          </div>
+
+          <!-- Briar -->
+          <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+            <strong style="color: #38bdf8; font-size: 0.95rem;">Briar (Mensajería P2P Segura)</strong>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 8px 0;">
+              Diseñado para crisis y zonas incomunicadas. Sincroniza mensajes vía Bluetooth, Wi-Fi local o redes de relevo punto a punto.
+            </p>
+            <a href="https://briarproject.org/" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
+              Sitio oficial y descarga de Briar
+            </a>
+          </div>
+        </div>
+
+        <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 15px; text-align: center; border-top: 1px solid #334155; padding-top: 10px;">
+          💡 <em>Recomendación preventiva:</em> Conectate con tus vecinos de confianza, instalen alguna de estas herramientas y mantengan handies o radios analógicas preparadas en el hogar.
+        </p>
+      </section>
+
+      <form id="form-mensaje" class="tarjeta">
+
+        <h3>Preparar mensaje</h3>
+
+        <label for="destinatario-mensaje">
+          Nombre visible exacto del destinatario
+        </label>
+
+        <input
+          id="destinatario-mensaje"
+          type="text"
+          maxlength="100"
+          placeholder="Nombre visible exacto de la persona"
+        >
+
+        <label for="texto-mensaje">Mensaje</label>
+
+        <textarea
+          id="texto-mensaje"
+          rows="4"
+          maxlength="2000"
+          placeholder="Escribí lo que necesitás comunicar..."
+          required
+        ></textarea>
+
+        <button class="boton-accion" type="submit">
+          ENVIAR MENSAJE
+        </button>
+
+        <p
+          id="estado-mensaje"
+          class="texto-ayuda"
+          aria-live="polite"
+        ></p>
+
+      </form>
+
+      <h3>Mensajes guardados en este dispositivo</h3>
+
+      <div
+        id="lista-mensajes"
+        class="lista-publicaciones"
+        aria-live="polite"
+      ></div>
+
+    </section>
+
+    <!-- =====================================================
+         RED HUMANA
+         ===================================================== -->
+    <section id="vista-ayuda" class="vista-interna" hidden>
+
+      <button class="boton-volver" data-volver type="button">
+        ← Volver a la comunidad
+      </button>
+
+      <h2>Red Humana</h2>
+
+      <p>
+        Pedí ayuda para vos o para otra persona, u ofrecé lo que esté
+        a tu alcance.
+      </p>
+
+      <div class="tarjeta">
+        <h3>Una iniciativa para mantenernos conectados</h3>
+
+        <p>
+          Si contás con energía renovable y podés ofrecer un punto de carga
+          para celulares, podés ayudar a personas que no tienen electricidad
+          y corren el riesgo de quedarse sin batería y sin comunicación.
+        </p>
+
+        <p>
+          La colaboración debe ser voluntaria y realizarse en un lugar seguro.
+          No publiques direcciones particulares ni datos sensibles.
+        </p>
+      </div>
+
+      <form id="form-ayuda" class="tarjeta">
+
+        <label for="tipo-ayuda">Quiero...</label>
+
+        <select id="tipo-ayuda" required>
+          <option value="solicitud">Solicitar ayuda</option>
+          <option value="oferta">Ofrecer ayuda</option>
+          <option value="carga">
+            Ofrecer o solicitar un punto de carga para celulares
+          </option>
+        </select>
+
+        <label for="categoria-ayuda">Tipo de ayuda</label>
+
+        <select id="categoria-ayuda" required>
+          <option value="alimentos">Alimentos</option>
+          <option value="ropa">Ropa y calzado</option>
+          <option value="transporte">Traslado</option>
+          <option value="energia">Electricidad o carga de celular</option>
+          <option value="herramientas">Herramientas o materiales</option>
+          <option value="acompanamiento">Acompañamiento o colaboración</option>
+          <option value="otra">Otra necesidad u oferta</option>
+        </select>
+
+        <label for="detalle-ayuda">
+          Contanos qué necesitás u ofrecés
+        </label>
+
+        <textarea
+          id="detalle-ayuda"
+          rows="4"
+          maxlength="1200"
+          placeholder="Describí la situación sin incluir datos privados."
+          required
+        ></textarea>
+
+        <label for="disponibilidad-ayuda">
+          Disponibilidad (opcional)
+        </label>
+
+        <input
+          id="disponibilidad-ayuda"
+          type="text"
+          maxlength="120"
+          placeholder="Ej.: tardes, fines de semana"
+        >
+
+        <button class="boton-accion" type="submit">
+          GUARDAR EN RED HUMANA
+        </button>
+
+        <p
+          id="estado-ayuda"
+          class="texto-ayuda"
+          aria-live="polite"
+        ></p>
+
+      </form>
+
+      <h3>Solicitudes y ofrecimientos</h3>
+
+      <div
+        id="lista-ayuda"
+        class="lista-publicaciones"
+        aria-live="polite"
+      ></div>
+
+    </section>
+
+    <!-- =====================================================
+         HUMANÓMETRO DE HUMANIDAD
+         ===================================================== -->
+    <section id="vista-humanometro" class="vista-interna" hidden>
+
+      <button class="boton-volver" data-volver type="button">
+        ← Volver a la comunidad
+      </button>
+
+      <h2>Humanómetro de Humanidad</h2>
+
+      <p>
+        Registrá cómo se desarrolló un intercambio concreto. La valoración
+        describe una experiencia; no determina cuánto vale una persona.
+      </p>
+
+      <div class="tarjeta">
+        <h3>Principios de evaluación</h3>
+
+        <ul>
+          <li>Honestidad: ¿la información brindada fue sincera?</li>
+          <li>Respeto: ¿hubo un trato respetuoso?</li>
+          <li>Responsabilidad: ¿se cumplió lo acordado?</li>
+          <li>Comunicación: ¿se avisaron cambios o dificultades?</li>
+          <li>Producto o servicio: ¿coincidió con lo informado y acordado?</li>
+        </ul>
+
+        <p class="aviso-local">
+          No llegar a un acuerdo no es una conducta negativa. Si ambas partes
+          cancelan de común acuerdo, no corresponde convertirlo
+          automáticamente en una mala valoración.
+        </p>
+      </div>
+
+      <form id="form-evaluacion" class="tarjeta">
+
+        <label for="referencia-evaluacion">
+          Referencia del intercambio
+        </label>
+
+        <input
+          id="referencia-evaluacion"
+          type="text"
+          maxlength="120"
+          placeholder="Ej.: intercambio de herramientas"
+          required
+        >
+
+        <label for="resultado-evaluacion">Resultado general</label>
+
+        <select id="resultado-evaluacion" required>
+          <option value="buena">BUENA: se respetó lo acordado</option>
+          <option value="intermedia">
+            INTERMEDIA: hubo dificultades o cumplimiento parcial
+          </option>
+          <option value="mala">
+            MALA: hubo incumplimientos o faltas de respeto concretas
+          </option>
+          <option value="sin-acuerdo">No llegamos a un acuerdo</option>
+          <option value="cancelacion-mutua">
+            Cancelamos de común acuerdo
+          </option>
+        </select>
+
+        <label for="detalle-evaluacion">
+          Explicación de la experiencia
+        </label>
+
+        <textarea
+          id="detalle-evaluacion"
+          rows="4"
+          maxlength="1200"
+          placeholder="Describí hechos concretos, sin insultos ni datos privados."
+          required
+        ></textarea>
+
+        <button class="boton-accion" type="submit">
+          GUARDAR EVALUACIÓN LOCAL
+        </button>
+
+        <p
+          id="estado-evaluacion"
+          class="texto-ayuda"
+          aria-live="polite"
+        ></p>
+
+      </form>
+
+      <h3>Historial de este dispositivo</h3>
+
+      <div
+        id="lista-evaluaciones"
+        class="lista-publicaciones"
+        aria-live="polite"
+      ></div>
+
+      <p class="aviso-local">
+        Este historial es privado de este dispositivo en la versión actual.
+        No es una reputación pública ni una verificación de identidad.
+      </p>
+
+    </section>
+
+    <!-- PERFIL -->
+    <section id="vista-perfil" class="vista-interna" hidden>
+
+      <button class="boton-volver" data-volver type="button">
+        ← Volver a la comunidad
+      </button>
+
+      <h2>Mi perfil comunitario</h2>
 
       <form id="form-perfil" class="tarjeta">
+
         <div class="perfil-foto-bloque">
           <div class="perfil-foto-marco">
             <img id="foto-perfil-vista" alt="Foto de perfil" hidden>
@@ -76,7 +795,7 @@
               type="file"
               accept="image/jpeg,image/png,image/webp"
             >
-            <small>JPG, PNG o WebP.</small>
+            <small>JPG, PNG o WebP. La foto se compartirá según la configuración del perfil.</small>
           </div>
         </div>
 
@@ -85,10 +804,11 @@
           id="nombre-usuario"
           type="text"
           maxlength="60"
-          placeholder="Tu nombre en la comunidad"
+          placeholder="Cómo querés aparecer en la comunidad"
           required
         >
 
+        <!-- CAMPO OBLIGATORIO DE WHATSAPP -->
         <label for="whatsapp-usuario">Número de WhatsApp (Obligatorio)</label>
         <input
           id="whatsapp-usuario"
@@ -97,297 +817,101 @@
           placeholder="Ej: +5491112345678"
           required
         >
-
-        <div style="margin-top: 15px; border-top: 1px solid #334155; padding-top: 12px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #38bdf8; font-weight: bold;">
-            <input type="checkbox" id="offline-activo" style="width: 18px; height: 18px;">
-            <span>📡 Comunicación offline activa (Emergencia)</span>
-          </label>
-        </div>
+        <small class="texto-ayuda">Requerido para validar tu perfil y mantener la seguridad comunitaria.</small>
 
         <button
           id="btn-guardar-perfil"
-          class="boton-accion boton-ancho"
+          class="boton-accion"
           type="submit"
-          style="margin-top: 15px;"
         >
           GUARDAR PERFIL
         </button>
 
-        <p id="estado-perfil" class="texto-ayuda" aria-live="polite"></p>
+        <p
+          id="estado-perfil"
+          class="texto-ayuda"
+          aria-live="polite"
+        ></p>
+
       </form>
 
-      <!-- PORCENTAJE DE HUMANIDAD Y REPUTACIÓN -->
-      <section class="tarjeta" style="background: #17212b; border: 1px solid #38bdf8;">
-        <h3>Porcentaje de Humanidad y Reputación</h3>
-        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px;">
-          Tu medidor refleja el cumplimiento de tus tratos basado en las evaluaciones cruzadas obligatorias.
-        </p>
-        <div id="contenedor-estado-humanidad">
-          <!-- Dinámico desde JS -->
-        </div>
-      </section>
-
-      <section class="tarjeta">
-        <h3>Mis publicaciones activas</h3>
+      <section class="tarjeta" aria-labelledby="titulo-mis-publicaciones">
+        <h3 id="titulo-mis-publicaciones">Mis publicaciones</h3>
+        <p class="texto-ayuda">Acá vas a encontrar los productos y servicios publicados desde tu cuenta.</p>
         <div id="lista-mis-publicaciones" class="lista-publicaciones" aria-live="polite">
-          Iniciá sesión para ver tus publicaciones.
+          Iniciá sesión para consultar tus publicaciones.
         </div>
       </section>
-    </section>
 
-
-    <!-- =====================================================
-         SOLAPA 2: INTERCAMBIOS (GÓNDOLA Y GESTIÓN A-B)
-         ===================================================== -->
-    <section id="vista-solapa-intercambios" class="vista-solapa" hidden>
-      <h2>Góndola y Gestión de Intercambios</h2>
-
-      <p style="font-size: 0.88rem; color: var(--texto-suave); margin-bottom: 12px;">
-        Mercado de trueque y contraprestación entre Usuario A y Usuario B. Gestioná tus operaciones y publicaciones.
+      <p class="aviso-local">
+        Completá tu perfil para identificarte dentro de la comunidad.
+        El estado de guardado se informa desde la aplicación.
       </p>
 
-      <!-- GESTIÓN DE INTERCAMBIOS ACTIVOS Y CIRCUITOS (A/B) -->
-      <section class="tarjeta" style="background: #101d2d; border: 1px solid #38bdf8; margin-bottom: 16px;">
-        <h3 style="color: #38bdf8; margin-top: 0; font-size: 0.95rem;">🔄 Intercambios Activos y Cierres</h3>
-        <p style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 8px;">
-          Cada trueque requiere <strong>confirmación cruzada</strong> (ambas partes pulsan "Concretar"). Plazo límite de 72 horas con prórroga opcional de 48h por contingencia.
-        </p>
-        <p style="font-size: 0.8rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.3); margin-top: 8px;">
-          ⭐ <strong>Compromiso Comunitario:</strong> La evaluación mutua al cerrar cada intercambio es <strong>obligatoria</strong>.
-        </p>
-        <div id="lista-intercambios-activos" class="lista-publicaciones" aria-live="polite" style="margin-top: 10px;">
-          No hay intercambios activos en curso.
-        </div>
-      </section>
-
-      <!-- BÚSQUEDA Y FILTROS EN GÓNDOLA -->
-      <div class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; margin-bottom: 16px;">
-        <h3 style="margin-top: 0; font-size: 0.95rem;">🔍 Buscar en la Góndola</h3>
-        
-        <input
-          id="buscar-publicaciones"
-          type="search"
-          placeholder="Buscá por producto, servicio o palabra clave..."
-        >
-
-        <div style="display: flex; gap: 8px; margin-top: 8px;">
-          <select id="filtro-tipo" style="margin-bottom: 0; flex: 1;">
-            <option value="todas">Todas las publicaciones</option>
-            <option value="oferta">Solo Ofrezco</option>
-            <option value="necesidad">Solo Busco</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- FORMULARIO DE NUEVA PUBLICACIÓN -->
-      <form id="form-publicacion" class="tarjeta" style="margin-bottom: 16px;">
-        <h3 style="margin-top: 0; font-size: 0.95rem;">📦 Publicar en la Góndola</h3>
-
-        <label for="tipo-publicacion">¿Qué querés publicar?</label>
-        <select id="tipo-publicacion" required>
-          <option value="oferta">OFREZCO: tengo algo para compartir</option>
-          <option value="necesidad">BUSCO: necesito algo</option>
-        </select>
-
-        <label for="categoria-publicacion">Categoría</label>
-        <select id="categoria-publicacion" required>
-          <option value="servicios">🛠️ Servicios y oficios</option>
-          <option value="productos">📦 Productos y objetos</option>
-          <option value="alimentos">🍎 Alimentos</option>
-          <option value="ropa">👕 Ropa y calzado</option>
-          <option value="herramientas">🔧 Herramientas</option>
-          <option value="transporte">🚗 Traslados y transporte</option>
-          <option value="energia">⚡ Energía y carga de dispositivos</option>
-          <option value="recursos">🌐 Recursos comunitarios</option>
-          <option value="otros">💬 Otros</option>
-        </select>
-
-        <label for="titulo-publicacion">Título</label>
-        <input
-          id="titulo-publicacion"
-          type="text"
-          maxlength="100"
-          placeholder="Ej: Clases de apoyo / Reparación de PC"
-          required
-        >
-
-        <label for="detalle-publicacion">Descripción</label>
-        <textarea
-          id="detalle-publicacion"
-          rows="3"
-          maxlength="1000"
-          placeholder="Describí los detalles..."
-          required
-        ></textarea>
-
-        <button class="boton-accion boton-ancho" type="submit">
-          GUARDAR PUBLICACIÓN
-        </button>
-
-        <p id="estado-publicacion" class="texto-ayuda" aria-live="polite"></p>
-      </form>
-
-      <h3>Catálogo de la Góndola</h3>
-      <div id="lista-publicaciones" class="lista-publicaciones" aria-live="polite"></div>
     </section>
-
-
-    <!-- =====================================================
-         SOLAPA 3: COMUNIDAD / VECINOS (RADAR GEOLOCALIZADO)
-         ===================================================== -->
-    <section id="vista-solapa-comunidad-principal" class="vista-solapa">
-
-      <section class="bienvenida">
-        <p class="etiqueta">RED HUMANA LOCAL</p>
-        <h1>Tu comunidad, más cerca.</h1>
-      </section>
-
-      <!-- RADAR Y UBICACIÓN -->
-      <section class="selector-barrio tarjeta">
-        <h2>Radar Vecinal y Ubicación</h2>
-
-        <label for="modo-visualizacion">Modo de visualización</label>
-        <select id="modo-visualizacion" style="margin-bottom: 12px;">
-          <option value="barrio">🏠 Mi barrio / Zona de emergencia (Estricto)</option>
-          <option value="explorar">🗺️ Explorar otra localidad (Ej.: Mendoza, Esquel)</option>
-        </select>
-
-        <div id="contenedor-explorar-zona" hidden style="margin-bottom: 12px;">
-          <label for="zona-explorar">Localidad a explorar</label>
-          <div style="display: flex; gap: 8px;">
-            <input
-              id="zona-explorar"
-              type="text"
-              maxlength="100"
-              placeholder="Ej: Mendoza, Esquel"
-              style="flex: 1; margin-bottom: 0;"
-            >
-            <button id="btn-explorar-zona" class="boton-secundario" type="button">EXPLORAR</button>
-          </div>
-        </div>
-
-        <label for="barrio">Barrio o localidad actual</label>
-        <div style="display: flex; gap: 8px;">
-          <input
-            id="barrio"
-            type="text"
-            maxlength="100"
-            placeholder="Escribí tu barrio"
-            style="flex: 1; margin-bottom: 0;"
-          >
-          <button id="btn-guardar-barrio" class="boton-secundario" type="button">GUARDAR</button>
-        </div>
-
-        <button id="btn-ubicacion" class="boton-secundario boton-ancho" type="button" style="margin-top: 10px;">
-          📍 USAR MI UBICACIÓN GPS
-        </button>
-
-        <p id="estado-barrio" class="texto-ayuda" style="margin-top: 8px;" aria-live="polite">
-          Elegí tu barrio para organizar la actividad local.
-        </p>
-      </section>
-
-      <!-- ACCESOS RÁPIDOS -->
-      <section class="acciones-principales">
-        <button id="btn-comunicacion" class="boton-modulo" type="button">
-          <span class="icono-modulo" aria-hidden="true">💬</span>
-          <span class="contenido-modulo">
-            <strong>NO PIERDAS LA COMUNICACIÓN</strong>
-            <small>Prepará mensajes y kit de emergencia.</small>
-          </span>
-          <span class="flecha" aria-hidden="true">›</span>
-        </button>
-
-        <button id="btn-ayuda" class="boton-modulo" type="button">
-          <span class="icono-modulo" aria-hidden="true">🤝</span>
-          <span class="contenido-modulo">
-            <strong>RED HUMANA</strong>
-            <small>Pedí ayuda u ofrecé lo que esté a tu alcance.</small>
-          </span>
-          <span class="flecha" aria-hidden="true">›</span>
-        </button>
-      </section>
-
-      <!-- RADAR DE VECINOS ACTIVOS -->
-      <section class="tarjeta" style="margin-top: 15px;">
-        <h3>📡 Radar Vecinal Activo (Estilo Fichas)</h3>
-        <p class="texto-ayuda" style="margin-bottom: 12px;">Tu ficha y la de los vecinos conectados ordenados por actividad reciente:</p>
-        <div id="lista-radar-vecinos" class="lista-publicaciones" aria-live="polite">
-          Cargando radar...
-        </div>
-      </section>
-    </section>
-
-
-    <!-- VISTAS SECUNDARIAS -->
-    <section id="vista-comunicacion" class="vista-interna" hidden>
-      <button class="boton-volver" data-volver-comunidad type="button">← Volver al radar</button>
-      <h2>No pierdas la comunicación</h2>
-      <div class="tarjeta">
-        <p id="estado-conexion" aria-live="polite">Comprobando conexión...</p>
-      </div>
-      <form id="form-mensaje" class="tarjeta">
-        <label for="destinatario-mensaje">Destinatario exacto</label>
-        <input id="destinatario-mensaje" type="text" placeholder="Nombre visible">
-        <label for="texto-mensaje">Mensaje</label>
-        <textarea id="texto-mensaje" rows="3" required></textarea>
-        <button class="boton-accion boton-ancho" type="submit">ENVIAR MENSAJE</button>
-      </form>
-    </section>
-
-    <section id="vista-ayuda" class="vista-interna" hidden>
-      <button class="boton-volver" data-volver-comunidad type="button">← Volver al radar</button>
-      <h2>Red Humana</h2>
-      <form id="form-ayuda" class="tarjeta">
-        <label for="tipo-ayuda">Quiero...</label>
-        <select id="tipo-ayuda" required>
-          <option value="solicitud">Solicitar ayuda</option>
-          <option value="oferta">Ofrecer ayuda</option>
-        </select>
-        <button class="boton-accion boton-ancho" type="submit">GUARDAR</button>
-      </form>
-    </section>
-
-    <!-- MODAL SOFT LOCK VENCIDOS -->
-    <div id="modal-soft-lock" class="pantalla" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 20, 38, 0.95); display: flex; justify-content: center; align-items: center; z-index: 99999;" hidden>
-      <div class="tarjeta" style="max-width: 450px; width: 90%; background: #17212b; border: 2px solid #f87171; text-align: center;">
-        <h3 style="color: #f87171; margin-top: 0;">⚠️ Bloqueo por Intercambio Vencido</h3>
-        <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 15px;">
-          Tenés operaciones pendientes que superaron el plazo límite. Debés cerrar el intercambio y completar la evaluación obligatoria.
-        </p>
-        <div id="contenido-soft-lock-intercambios"></div>
-      </div>
-    </div>
-
-    <!-- MODAL EVALUACIÓN CRUZADA -->
-    <div id="modal-evaluacion-cruzada" class="pantalla" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 20, 38, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999;" hidden>
-      <div class="tarjeta" style="max-width: 450px; width: 90%; background: #17212b; border: 1px solid #38bdf8;">
-        <h3 style="color: #38bdf8; margin-top: 0;">🌟 Evaluación Cruzada Obligatoria</h3>
-        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px;">
-          Valorá la experiencia con <strong id="eval-contraparte-nombre">Vecino</strong>.
-        </p>
-        <form id="form-evaluacion-cruzada-modal">
-          <input type="hidden" id="eval-intercambio-id">
-          <label for="eval-resultado">Resultado</label>
-          <select id="eval-resultado" required>
-            <option value="buena">BUENA: se respetó lo acordado</option>
-            <option value="intermedia">INTERMEDIA: cumplimiento parcial</option>
-            <option value="mala">MALA: incumplimientos concretos</option>
-          </select>
-          <label for="eval-detalle">Detalle</label>
-          <textarea id="eval-detalle" rows="3" required></textarea>
-          <button type="submit" class="boton-accion boton-ancho" style="margin-top: 10px;">GUARDAR Y CERRAR</button>
-        </form>
-      </div>
-    </div>
 
     <footer class="pie">
       HUMANÓMETRO COMUNIDAD · Ayuda mutua y responsabilidad.
     </footer>
+
   </main>
 
-  <div id="notificacion" class="notificacion" role="status" aria-live="polite" hidden></div>
+  <!-- NOTIFICACIONES -->
+  <div
+    id="notificacion"
+    class="notificacion"
+    role="status"
+    aria-live="polite"
+    hidden
+  ></div>
+
   <script type="module" src="./js/app.js"></script>
+
+  <script>
+    // Control visual para alternar entre el modo barrio estricto y el modo exploración de otra localidad
+    const modoVisualizacion = document.getElementById("modo-visualizacion");
+    const contenedorExplorarZona = document.getElementById("contenedor-explorar-zona");
+
+    function actualizarModoVisualizacion() {
+      const esExplorar = modoVisualizacion?.value === "explorar";
+      if (contenedorExplorarZona) {
+        contenedorExplorarZona.hidden = !esExplorar;
+      }
+    }
+
+    modoVisualizacion?.addEventListener("change", actualizarModoVisualizacion);
+    actualizarModoVisualizacion();
+
+    // Categoría personalizada
+    const categoriaPublicacion = document.getElementById(
+      "categoria-publicacion"
+    );
+
+    const contenedorOtraCategoria = document.getElementById(
+      "contenedor-otra-categoria"
+    );
+
+    const otraCategoria = document.getElementById("otra-categoria");
+
+    function actualizarCategoriaPersonalizada() {
+      const mostrar = categoriaPublicacion?.value === "otra";
+
+      if (contenedorOtraCategoria) {
+        contenedorOtraCategoria.hidden = !mostrar;
+      }
+
+      if (otraCategoria) {
+        otraCategoria.required = mostrar;
+      }
+    }
+
+    categoriaPublicacion?.addEventListener(
+      "change",
+      actualizarCategoriaPersonalizada
+    );
+
+    actualizarCategoriaPersonalizada();
+  </script>
+
 </body>
 </html>
