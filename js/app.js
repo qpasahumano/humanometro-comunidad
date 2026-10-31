@@ -246,7 +246,7 @@ async function buscarBarrioPorCoordenadas(latitud, longitud) {
 }
 
 /* =========================
-   BARRIO Y LOCALIDAD ACTUAL
+   BARRIO Y LOCALIDAD ACTUAL (UNIFICADO EN RADAR / LOCALIDAD)
 ========================= */
 
 function configurarBarrio() {
@@ -260,7 +260,7 @@ function configurarBarrio() {
 
   const modoVisualizacion = $("modo-visualizacion");
   const contenedorExplorarZona = $("contenedor-explorar-zona");
-  const inputZonaExplorar = $("zona-explorar");
+  const inputZonaExplorar = $("zona-explorar-compatibilidad");
 
   if (!input || !boton) return;
 
