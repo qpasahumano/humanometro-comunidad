@@ -7,11 +7,9 @@ import { getItem, setItem } from "./storage.js";
 const $ = (id) => document.getElementById(id);
 
 let navegacionConfigurada = false;
-let barrioConfigurado = false;
 let ayudaConfigurada = false;
 let evaluacionesConfiguradas = false;
 let perfilConfigurado = false;
-let conectividadSolidariaConfigurada = false;
 let intercambiosConfigurados = false;
 
 /* =========================
@@ -100,10 +98,6 @@ function configurarNavegacion() {
     });
   });
 
-  $("btn-perfil")?.addEventListener("click", () => {
-    mostrarSolapa("perfil");
-  });
-
   $("btn-comunicacion")?.addEventListener("click", () => {
     mostrarVistaSecundaria("vista-comunicacion");
   });
@@ -120,7 +114,7 @@ function configurarNavegacion() {
 }
 
 /* =========================
-   GEOLOCALIZACIÓN INVERSA
+   GEOLOCALIZACIÓN INVERSA RÁPIDA
 ========================= */
 
 async function buscarBarrioPorCoordenadas(latitud, longitud) {
@@ -165,95 +159,34 @@ async function buscarBarrioPorCoordenadas(latitud, longitud) {
 }
 
 /* =========================
-   BARRIO, LOCALIDAD Y RADAR DE VECINOS
+   RADAR DE VECINOS Y GESTIÓN DE UBICACIÓN LIMPIA
 ========================= */
 
-function configurarBarrio() {
-  if (barrioConfigurado) return;
-  barrioConfigurado = true;
-
-  const input = $("barrio");
-  const boton = $("btn-guardar-barrio");
-  const estado = $("estado-barrio");
-  const ubicacion = $("btn-ubicacion");
-  
-  const modoVisualizacion = $("modo-visualizacion");
-  const contenedorExplorarZona = $("contenedor-explorar-zona");
-  const inputZonaExplorar = $("zona-explorar");
-  const btnExplorarZona = $("btn-explorar-zona");
-
-  if (!input || !boton) return;
-
-  input.value = getItem("hm_barrio", "");
-  const modoGuardado = getItem("hm_modo_visualizacion", "barrio");
-  if (modoVisualizacion) modoVisualizacion.value = modoGuardado;
-
-  const zonaExplorarGuardada = getItem("hm_zona_explorar", "Mendoza");
-  if (inputZonaExplorar) inputZonaExplorar.value = zonaExplorarGuardada;
-
-  function actualizarVisibilidadExploracion() {
-    const esExplorar = modoVisualizacion?.value === "explorar";
-    if (contenedorExplorarZona) contenedorExplorarZona.hidden = !esExplorar;
-  }
-
-  actualizarVisibilidadExploracion();
-
-  modoVisualizacion?.addEventListener("change", () => {
-    const modo = modoVisualizacion.value;
-    setItem("hm_modo_visualizacion", modo);
-    actualizarVisibilidadExploracion();
-    renderizarRadarVecinos();
-    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
-  });
-
-  btnExplorarZona?.addEventListener("click", () => {
-    const zonaVal = inputZonaExplorar?.value.trim() || "";
-    if (!zonaVal) {
-      mostrarNotificacion("Escribí el nombre de la localidad que querés explorar.");
-      return;
-    }
-    setItem("hm_zona_explorar", zonaVal);
-    mostrarNotificacion(`Explorando zona: ${zonaVal}`);
-    renderizarRadarVecinos();
-    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
-  });
-
-  if (input.value && estado) {
-    estado.textContent = `Comunidad seleccionada: ${input.value}`;
-  }
-
-  boton.addEventListener("click", () => {
-    const barrio = input.value.trim();
-    if (!barrio) {
-      mostrarNotificacion("Escribí el nombre de tu barrio.");
-      input.focus();
-      return;
-    }
-    setItem("hm_barrio", barrio);
-    if (estado) estado.textContent = `Comunidad seleccionada: ${barrio}`;
-    mostrarNotificacion("Barrio guardado.");
-    renderizarRadarVecinos();
-    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
-  });
-
-  ubicacion?.addEventListener("click", () => {
-    if (!navigator.geolocation) {
-      mostrarNotificacion("El navegador no ofrece geolocalización.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      try {
-        const barrio = await buscarBarrioPorCoordenadas(pos.coords.latitude, pos.coords.longitude);
-        input.value = barrio;
-        if (estado) estado.textContent = `Barrio sugerido: ${barrio}. Verificá y guardá.`;
-        mostrarNotificacion("Ubicación identificada.");
-      } catch (e) {
-        mostrarNotificacion("No se pudo identificar el barrio automáticamente.");
+function configurarRadarUbicacion() {
+  const btnUbicacionRapida = $("btn-ubicacion-rapida");
+  if (btnUbicacionRapida) {
+    btnUbicacionRapida.addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        mostrarNotificacion("El navegador no ofrece geolocalización.");
+        return;
       }
-    }, () => {
-      mostrarNotificacion("Error al obtener geolocalización.");
+      mostrarNotificacion("Obteniendo ubicación GPS...");
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+          const barrioEncontrado = await buscarBarrioPorCoordenadas(pos.coords.latitude, pos.coords.longitude);
+          setItem("hm_barrio", barrioEncontrado);
+          const inputBarrio = $("barrio");
+          if (inputBarrio) inputBarrio.value = barrioEncontrado;
+          mostrarNotificacion(`Ubicación actualizada: ${barrioEncontrado}`);
+          renderizarRadarVecinos();
+        } catch (e) {
+          mostrarNotificacion("No se pudo identificar el barrio automáticamente.");
+        }
+      }, () => {
+        mostrarNotificacion("Error al obtener geolocalización.");
+      });
     });
-  });
+  }
 
   renderizarRadarVecinos();
 }
@@ -289,46 +222,158 @@ function renderizarRadarVecinos() {
   tarjetaPropia.style.border = "1px solid #38bdf8";
   tarjetaPropia.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-      <h3>👤 ${perfilActual.nombre} (Vos)</h3>
+      <h3 style="margin: 0 0 4px 0;">👤 ${perfilActual.nombre} (Vos)</h3>
       <span class="badge-publicaciones-activas">
-        📦 ${conteoFinalPublicaciones} ${conteoFinalPublicaciones === 1 ? 'publicación activa' : 'publicaciones activas'}
+        📦 ${conteoFinalPublicaciones} ${conteoFinalPublicaciones === 1 ? 'activa' : 'activas'}
       </span>
     </div>
-    <p>📍 Zona: ${perfilActual.barrio}</p>
-    <p>📡 Comunicación offline: ${perfilActual.offline ? 'Activa (Emergencia)' : 'Inactiva'}</p>
-    <p>💬 WhatsApp: ${perfilActual.whatsapp}</p>
-    <small style="color: #cbd5e1; display: block; margin-top: 6px;">
-      ℹ️ Las publicaciones activas se reconocen automáticamente al publicar o se pueden ajustar de forma manual desde tu perfil.
-    </small>
+    <p style="margin: 4px 0; font-size: 0.85rem;">📍 Zona: ${perfilActual.barrio}</p>
+    <p style="margin: 4px 0; font-size: 0.85rem;">📡 Comunicación offline: ${perfilActual.offline ? 'Activa' : 'Inactiva'}</p>
+    <p style="margin: 4px 0; font-size: 0.85rem;">💬 WhatsApp: ${perfilActual.whatsapp}</p>
   `;
   contenedor.appendChild(tarjetaPropia);
 
-  // 4. Renderizar vecinos en el radar con su respectivo contador activo
-  const vecinosSimulados = [
-    { nombre: "Javier M. (Esquel)", barrio: "Esquel / Centro", offline: true, whatsapp: "+5492945000000", pubActivas: 2 },
-    { nombre: "Lucía G. (Mendoza)", barrio: "Mendoza / Capital", offline: false, whatsapp: "+5492610000000", pubActivas: 1 }
-  ];
-
-  vecinosSimulados.forEach(v => {
-    const tarjeta = document.createElement("article");
-    tarjeta.className = "tarjeta-publicacion";
-    tarjeta.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-        <h3>👤 ${v.nombre}</h3>
-        <span class="badge-publicaciones-activas">
-          📦 ${v.pubActivas} ${v.pubActivas === 1 ? 'publicación activa' : 'publicaciones activas'}
-        </span>
-      </div>
-      <p>📍 Zona: ${v.barrio}</p>
-      <p>📡 Comunicación offline: ${v.offline ? 'Activa (Emergencia)' : 'Inactiva'}</p>
-      <p>💬 WhatsApp: ${v.whatsapp}</p>
-    `;
-    contenedor.appendChild(tarjeta);
-  });
+  // NOTA: Se eliminaron los perfiles falsos/de relleno. Solo se listan vecinos reales registrados en la red local.
+  const vecinosReales = getItem("hm_vecinos_red", []);
+  if (vecinosReales.length === 0) {
+    const aviso = document.createElement("p");
+    aviso.className = "texto-ayuda";
+    aviso.style.margin = "8px 0 0 0";
+    aviso.textContent = "Estás conectado en tu zona. Cuando más vecinos se sumen en este barrio, aparecerán aquí.";
+    contenedor.appendChild(aviso);
+  }
 }
 
 /* =========================
-   CIRCUITO DE INTERCAMBIOS, CIERRE Y EVALUACIÓN CRUZADA
+   CIRCUITO DE GÓNDOLA Y PUBLICACIONES
+========================= */
+
+function configurarPublicaciones() {
+  const formPub = $("form-publicacion");
+  const listaPubs = $("lista-publicaciones");
+  const listaMisPubs = $("lista-mis-publicaciones");
+  const inputBuscar = $("buscar-publicaciones");
+  const filtroTipo = $("filtro-tipo");
+  const btnBuscar = $("btn-buscar-publicaciones");
+
+  function renderizarGondola() {
+    if (!listaPubs) return;
+    listaPubs.replaceChildren();
+
+    const publicaciones = getItem("hm_publicaciones", []);
+    const textoBusqueda = inputBuscar?.value.toLowerCase().trim() || "";
+    const tipoFiltro = filtroTipo?.value || "todas";
+
+    const filtradas = publicaciones.filter(p => {
+      if (p.estado === "cerrado") return false;
+      if (tipoFiltro !== "todas" && p.tipo !== tipoFiltro) return false;
+      if (textoBusqueda) {
+        const matchTitulo = p.titulo.toLowerCase().includes(textoBusqueda);
+        const matchDetalle = p.detalle.toLowerCase().includes(textoBusqueda);
+        const matchCat = p.categoria.toLowerCase().includes(textoBusqueda);
+        if (!matchTitulo && !matchDetalle && !matchCat) return false;
+      }
+      return true;
+    });
+
+    if (filtradas.length === 0) {
+      listaPubs.innerHTML = `<p class="texto-ayuda">No hay publicaciones activas con esos filtros en la góndola.</p>`;
+    } else {
+      filtradas.forEach(p => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "tarjeta-publicacion";
+        tarjeta.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <h3 style="margin: 0 0 4px 0;">${p.tipo === 'oferta' ? '🟢 OFREZCO' : '🔵 BUSCO'}: ${p.titulo}</h3>
+            <span style="font-size: 0.72rem; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 2px 6px; border-radius: 4px;">${p.categoria}</span>
+          </div>
+          <p style="margin: 6px 0; font-size: 0.88rem;">${p.detalle}</p>
+          <small style="color: var(--texto-suave);">📍 Zona: ${p.barrio || 'General'}</small>
+        `;
+        listaPubs.appendChild(tarjeta);
+      });
+    }
+
+    // Renderizar sección de "Mis publicaciones" en perfil
+    if (listaMisPubs) {
+      listaMisPubs.replaceChildren();
+      const misPubs = publicaciones.filter(p => p.estado !== "cerrado");
+      if (misPubs.length === 0) {
+        listaMisPubs.innerHTML = `<p class="texto-ayuda">No tenés publicaciones activas actualmente.</p>`;
+      } else {
+        misPubs.forEach(p => {
+          const art = document.createElement("article");
+          art.className = "tarjeta-publicacion";
+          art.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <h4 style="margin: 0 0 4px 0;">${p.tipo === 'oferta' ? '🟢 OFREZCO' : '🔵 BUSCO'}: ${p.titulo}</h4>
+              <button class="boton-secundario" type="button" style="padding: 2px 6px; font-size: 0.7rem; background: #991b1b; color: #fff;" onclick="window.cerrarMiPublicacion('${p.id}')">Eliminar</button>
+            </div>
+            <p style="margin: 4px 0; font-size: 0.84rem;">${p.detalle}</p>
+          `;
+          listaMisPubs.appendChild(art);
+        });
+      }
+    }
+  }
+
+  window.cerrarMiPublicacion = function(id) {
+    let pubs = getItem("hm_publicaciones", []);
+    pubs = pubs.map(p => {
+      if (p.id === id) p.estado = "cerrado";
+      return p;
+    });
+    setItem("hm_publicaciones", pubs);
+    mostrarNotificacion("Publicación eliminada de la góndola.");
+    renderizarGondola();
+    renderizarRadarVecinos();
+  };
+
+  formPub?.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const tipo = $("tipo-publicacion").value;
+    const categoria = $("categoria-publicacion").value;
+    const titulo = $("titulo-publicacion").value.trim();
+    const detalle = $("detalle-publicacion").value.trim();
+    const barrio = getItem("hm_barrio", "Balvanera");
+
+    if (!titulo || !detalle) {
+      mostrarNotificacion("Completá el título y la descripción.");
+      return;
+    }
+
+    let publicaciones = getItem("hm_publicaciones", []);
+    const nuevaPub = {
+      id: crypto.randomUUID(),
+      tipo,
+      categoria,
+      titulo,
+      detalle,
+      barrio,
+      estado: "activo",
+      fecha: new Date().toISOString()
+    };
+
+    publicaciones.push(nuevaPub);
+    setItem("hm_publicaciones", publicaciones);
+
+    mostrarNotificacion("¡Publicación guardada en la Góndola!");
+    formPub.reset();
+
+    renderizarGondola();
+    renderizarRadarVecinos();
+  });
+
+  btnBuscar?.addEventListener("click", renderizarGondola);
+  inputBuscar?.addEventListener("input", renderizarGondola);
+  filtroTipo?.addEventListener("change", renderizarGondola);
+
+  renderizarGondola();
+}
+
+/* =========================
+   CIRCUITO DE INTERCAMBIOS
 ========================= */
 
 function configurarIntercambios() {
@@ -336,27 +381,21 @@ function configurarIntercambios() {
   intercambiosConfigurados = true;
 
   const claveIntercambios = "hm_intercambios_activos";
+  let regs = getItem(claveIntercambios, []);
 
-  function obtenerIntercambios() {
-    const regs = getItem(claveIntercambios, []);
-    return Array.isArray(regs) ? regs : [];
-  }
-
-  let regs = obtenerIntercambios();
   if (regs.length === 0) {
     const fechaLimite = new Date();
-    fechaLimite.setHours(fechaLimite.getHours() + 72); // 72 horas iniciales
+    fechaLimite.setHours(fechaLimite.getHours() + 72);
 
     regs.push({
       id: "intercambio-demo-1",
-      contraparte: "Vecino Test (Esquel / Mendoza)",
-      referencia: "Trueque de herramientas manuales",
+      contraparte: "Vecino Comunitario",
+      referencia: "Trueque o colaboración de prueba",
       estado: "activo", 
       confirmado_a: false,
       confirmado_b: false,
       fecha_limite: fechaLimite.toISOString(),
-      prorroga_usada: false,
-      motivo_prorroga: null
+      prorroga_usada: false
     });
     setItem(claveIntercambios, regs);
   }
@@ -379,26 +418,19 @@ function renderizarIntercambiosActivos() {
   regs.forEach(item => {
     const tarjeta = document.createElement("article");
     tarjeta.className = "tarjeta-publicacion";
-
     const vencido = new Date() > new Date(item.fecha_limite) && item.estado === "activo";
 
     tarjeta.innerHTML = `
-      <h3>Trueque con: ${item.contraparte}</h3>
-      <p>📝 Referencia: ${item.referencia}</p>
-      <p>⏳ Estado: <strong>${item.estado.toUpperCase()}</strong></p>
-      <p>⏰ Límite de cierre: ${new Date(item.fecha_limite).toLocaleString("es-AR")}</p>
-      ${vencido ? '<p style="color: #f87171;">⚠️ Plazo de 72hs vencido sin completar.</p>' : ''}
+      <h4 style="margin: 0 0 4px 0;">Trueque con: ${item.contraparte}</h4>
+      <p style="margin: 4px 0; font-size: 0.84rem;">📝 ${item.referencia}</p>
+      <p style="margin: 4px 0; font-size: 0.84rem;">⏳ Estado: <strong>${item.estado.toUpperCase()}</strong></p>
+      ${vencido ? '<p style="color: #f87171; margin: 4px 0;">⚠️ Plazo de 72hs vencido.</p>' : ''}
       
       <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
         ${item.estado === 'activo' ? `
-          <button class="boton-accion" type="button" onclick="window.confirmarConcretarIntercambio('${item.id}')" style="flex: 1; min-width: 140px;">
-            🤝 Concretar Intercambio
+          <button class="boton-accion" type="button" onclick="window.confirmarConcretarIntercambio('${item.id}')" style="flex: 1; font-size: 0.78rem;">
+            🤝 Concretar
           </button>
-          ${!item.prorroga_usada ? `
-            <button class="boton-secundario" type="button" onclick="window.solicitarProrrogaIntercambio('${item.id}')" style="background: #0284c7; color: #fff;">
-              ⏱️ Prórroga +48h
-            </button>
-          ` : ''}
         ` : ''}
       </div>
     `;
@@ -413,46 +445,19 @@ window.confirmarConcretarIntercambio = function(id) {
 
   item.confirmado_a = true;
   item.confirmado_b = true; 
+  item.estado = "finalizado";
 
-  if (item.confirmado_a && item.confirmado_b) {
-    item.estado = "finalizado";
-    
-    // Al finalizar el intercambio, cerramos automáticamente la publicación asociada para bajar el contador
-    let publicaciones = getItem("hm_publicaciones", []);
-    publicaciones = publicaciones.map(p => {
-      if (p.estado !== "cerrado") { p.estado = "cerrado"; }
-      return p;
-    });
-    setItem("hm_publicaciones", publicaciones);
-
-    mostrarNotificacion("¡Intercambio concretado y publicación actualizada!");
-    setItem("hm_intercambios_activos", regs);
-    renderizarIntercambiosActivos();
-    renderizarRadarVecinos();
-    abrirModalEvaluacionCruzada(item);
-  } else {
-    setItem("hm_intercambios_activos", regs);
-    renderizarIntercambiosActivos();
-    mostrarNotificacion("Confirmación registrada. Esperando a la contraparte.");
-  }
-};
-
-window.solicitarProrrogaIntercambio = function(id) {
-  let regs = getItem("hm_intercambios_activos", []);
-  let item = regs.find(x => x.id === id);
-  if (!item || item.prorroga_usada) return;
-
-  const nuevaFecha = new Date(item.fecha_limite);
-  nuevaFecha.setHours(nuevaFecha.getHours() + 48);
-
-  item.fecha_limite = nuevaFecha.toISOString();
-  item.prorroga_usada = true;
-  item.motivo_prorroga = "Fuerza mayor / contingencia humanitaria (falta de luz/internet)";
+  let publicaciones = getItem("hm_publicaciones", []);
+  publicaciones = publicaciones.map(p => {
+    if (p.estado !== "cerrado") p.estado = "cerrado";
+    return p;
+  });
+  setItem("hm_publicaciones", publicaciones);
 
   setItem("hm_intercambios_activos", regs);
   renderizarIntercambiosActivos();
-  mostrarNotificacion("Prórroga de 48 horas aplicada con éxito.");
-  verificarSoftLockVencidos();
+  renderizarRadarVecinos();
+  abrirModalEvaluacionCruzada(item);
 };
 
 function abrirModalEvaluacionCruzada(item) {
@@ -478,14 +483,14 @@ document.getElementById("form-evaluacion-cruzada-modal")?.addEventListener("subm
 
   setItem("hm_evaluaciones", evaluaciones);
   $("modal-evaluacion-cruzada").hidden = true;
-  mostrarNotificacion("Evaluación guardada. Porcentaje de humanidad actualizado.");
+  mostrarNotificacion("Evaluación guardada. Reputación actualizada.");
   renderizarEstadoHumanidad();
 });
 
 function verificarSoftLockVencidos() {
   const regs = getItem("hm_intercambios_activos", []);
   const ahora = new Date();
-  const vencidos = regs.filter(x => x.estado === "activo" && ahora > new Date(x.fecha_limite) && x.prorroga_usada);
+  const vencidos = regs.filter(x => x.estado === "activo" && ahora > new Date(x.fecha_limite));
 
   const modalSoftLock = $("modal-soft-lock");
   const contenedorSoftLock = $("contenido-soft-lock-intercambios");
@@ -497,7 +502,7 @@ function verificarSoftLockVencidos() {
       const div = document.createElement("div");
       div.innerHTML = `
         <p style="color: #fca5a5;">Trueque con ${v.contraparte} vencido.</p>
-        <button class="boton-accion" type="button" onclick="window.confirmarConcretarIntercambio('${v.id}'); document.getElementById('modal-soft-lock').hidden = true;">
+        <button class="boton-accion boton-ancho" type="button" onclick="window.confirmarConcretarIntercambio('${v.id}'); document.getElementById('modal-soft-lock').hidden = true;">
           Cerrar y Evaluar Ahora
         </button>
       `;
@@ -509,7 +514,7 @@ function verificarSoftLockVencidos() {
 }
 
 /* =========================
-   PERFIL Y CÁLCULO DE HUMANIDAD
+   PERFIL Y HUMANÓMETRO
 ========================= */
 
 function configurarPerfil() {
@@ -518,12 +523,14 @@ function configurarPerfil() {
 
   const formulario = $("form-perfil");
   const inputNombre = $("nombre-usuario");
+  const inputBarrio = $("barrio");
   const inputWhatsapp = $("whatsapp-usuario");
   const inputOffline = $("offline-activo");
   const inputPubManual = $("pub-activas-manual");
   const estadoPerfil = $("estado-perfil");
 
   if (inputNombre) inputNombre.value = getItem("hm_nombre_usuario", "");
+  if (inputBarrio) inputBarrio.value = getItem("hm_barrio", "");
   if (inputWhatsapp) inputWhatsapp.value = getItem("hm_whatsapp_usuario", "");
   if (inputOffline) inputOffline.checked = Boolean(getItem("hm_offline_activo", false));
   if (inputPubManual) inputPubManual.value = getItem("hm_pub_activas_manual", "");
@@ -531,6 +538,7 @@ function configurarPerfil() {
   formulario?.addEventListener("submit", (evento) => {
     evento.preventDefault();
     const nombre = inputNombre?.value.trim() || "";
+    const barrio = inputBarrio?.value.trim() || "";
     const whatsapp = inputWhatsapp?.value.trim() || "";
     const offlineActivo = Boolean(inputOffline?.checked);
     const pubManualVal = inputPubManual?.value.trim() || "";
@@ -541,6 +549,7 @@ function configurarPerfil() {
     }
 
     setItem("hm_nombre_usuario", nombre);
+    setItem("hm_barrio", barrio);
     setItem("hm_whatsapp_usuario", whatsapp);
     setItem("hm_offline_activo", offlineActivo);
     setItem("hm_pub_activas_manual", pubManualVal);
@@ -569,54 +578,9 @@ function renderizarEstadoHumanidad() {
   const promedio = evaluaciones.length > 0 ? Math.round(puntajeAcumulado / evaluaciones.length) : 0;
 
   contenedor.innerHTML = `
-    <p style="font-size: 2.2rem; font-weight: bold; color: #38bdf8; margin: 5px 0;">${promedio}%</p>
-    <p style="font-size: 0.9rem; color: #cbd5e1;">Basado en <strong>${evaluaciones.length}</strong> evaluaciones de intercambios comunitarios.</p>
+    <p style="font-size: 2rem; font-weight: bold; color: #38bdf8; margin: 4px 0;">${promedio}%</p>
+    <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0;">Basado en <strong>${evaluaciones.length}</strong> evaluaciones comunitarias.</p>
   `;
-}
-
-/* =========================
-   PUBLICACIONES (GÓNDOLA) CON RECONOCIMIENTO AUTOMÁTICO
-========================= */
-
-function configurarPublicaciones() {
-  const formPub = $("form-publicacion");
-  if (!formPub) return;
-
-  formPub.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const tipo = $("tipo-publicacion").value;
-    const categoria = $("categoria-publicacion").value;
-    const titulo = $("titulo-publicacion").value.trim();
-    const detalle = $("detalle-publicacion").value.trim();
-    const barrio = getItem("hm_barrio", "Balvanera");
-
-    if (!titulo || !detalle) {
-      mostrarNotificacion("Completá el título y la descripción de la publicación.");
-      return;
-    }
-
-    let publicaciones = getItem("hm_publicaciones", []);
-    const nuevaPub = {
-      id: crypto.randomUUID(),
-      tipo,
-      categoria,
-      titulo,
-      detalle,
-      barrio,
-      estado: "activo", // Nace activa, incrementando automáticamente el contador
-      fecha: new Date().toISOString()
-    };
-
-    publicaciones.push(nuevaPub);
-    setItem("hm_publicaciones", publicaciones);
-
-    mostrarNotificacion("¡Publicación guardada! El radar se ha actualizado.");
-    formPub.reset();
-
-    // Actualizar inmediatamente el radar para que el contador refleje la nueva publicación
-    renderizarRadarVecinos();
-  });
 }
 
 /* =========================
@@ -625,7 +589,7 @@ function configurarPublicaciones() {
 
 async function iniciarAplicacion() {
   configurarNavegacion();
-  configurarBarrio();
+  configurarRadarUbicacion();
   configurarPerfil();
   configurarIntercambios();
   configurarPublicaciones();
