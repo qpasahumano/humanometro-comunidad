@@ -264,7 +264,10 @@ function renderizarRadarVecinos() {
 
   contenedor.replaceChildren();
 
-  // Simulación y obtención de perfiles locales / registrados
+  // 1. Obtener publicaciones vigentes desde almacenamiento
+  const publicaciones = getItem("hm_publicaciones", []);
+  
+  // 2. Obtener datos del perfil actual
   const perfilActual = {
     nombre: getItem("hm_nombre_usuario", "Usuario Actual"),
     whatsapp: getItem("hm_whatsapp_usuario", "Sin WhatsApp"),
@@ -272,15 +275,51 @@ function renderizarRadarVecinos() {
     offline: getItem("hm_offline_activo", false)
   };
 
-  const tarjeta = document.createElement("article");
-  tarjeta.className = "tarjeta-publicacion";
-  tarjeta.innerHTML = `
-    <h3>👤 ${perfilActual.nombre} (Vos)</h3>
+  // 3. Contar cuántas publicaciones activas/vigentes tiene el usuario actual
+  const conteoPublicacionesUsuario = publicaciones.filter(p => p.estado !== "cerrado").length;
+
+  // 4. Renderizar la ficha del usuario actual (Vos)
+  const tarjetaPropia = document.createElement("article");
+  tarjetaPropia.className = "tarjeta-publicacion";
+  tarjetaPropia.style.border = "1px solid #38bdf8";
+  tarjetaPropia.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <h3>👤 ${perfilActual.nombre} (Vos)</h3>
+      <span class="badge-publicaciones-activas">
+        📦 ${conteoPublicacionesUsuario} ${conteoPublicacionesUsuario === 1 ? 'publicación activa' : 'publicaciones activas'}
+      </span>
+    </div>
     <p>📍 Zona: ${perfilActual.barrio}</p>
     <p>📡 Comunicación offline: ${perfilActual.offline ? 'Activa (Emergencia)' : 'Inactiva'}</p>
     <p>💬 WhatsApp: ${perfilActual.whatsapp}</p>
+    <small style="color: #cbd5e1; display: block; margin-top: 6px;">
+      ℹ️ Las publicaciones vigentes se descuentan automáticamente al cerrar y medir el intercambio.
+    </small>
   `;
-  contenedor.appendChild(tarjeta);
+  contenedor.appendChild(tarjetaPropia);
+
+  // 5. Renderizar vecinos en el radar con su respectivo contador activo
+  const vecinosSimulados = [
+    { nombre: "Javier M. (Esquel)", barrio: "Esquel / Centro", offline: true, whatsapp: "+5492945000000", pubActivas: 2 },
+    { nombre: "Lucía G. (Mendoza)", barrio: "Mendoza / Capital", offline: false, whatsapp: "+5492610000000", pubActivas: 1 }
+  ];
+
+  vecinosSimulados.forEach(v => {
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "tarjeta-publicacion";
+    tarjeta.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <h3>👤 ${v.nombre}</h3>
+        <span class="badge-publicaciones-activas">
+          📦 ${v.pubActivas} ${v.pubActivas === 1 ? 'publicación activa' : 'publicaciones activas'}
+        </span>
+      </div>
+      <p>📍 Zona: ${v.barrio}</p>
+      <p>📡 Comunicación offline: ${v.offline ? 'Activa (Emergencia)' : 'Inactiva'}</p>
+      <p>💬 WhatsApp: ${v.whatsapp}</p>
+    `;
+    contenedor.appendChild(tarjeta);
+  });
 }
 
 /* =========================
@@ -292,14 +331,12 @@ function configurarIntercambios() {
   intercambiosConfigurados = true;
 
   const claveIntercambios = "hm_intercambios_activos";
-  const claveEvaluaciones = "hm_evaluaciones";
 
   function obtenerIntercambios() {
     const regs = getItem(claveIntercambios, []);
     return Array.isArray(regs) ? regs : [];
   }
 
-  // Si no hay intercambios de prueba, inicializamos uno activo de ejemplo para testing
   let regs = obtenerIntercambios();
   if (regs.length === 0) {
     const fechaLimite = new Date();
@@ -309,7 +346,7 @@ function configurarIntercambios() {
       id: "intercambio-demo-1",
       contraparte: "Vecino Test (Esquel / Mendoza)",
       referencia: "Trueque de herramientas manuales",
-      estado: "activo", // activo, completado_por_a, completado_por_b, finalizado, inconcluso_penalizado
+      estado: "activo", 
       confirmado_a: false,
       confirmado_b: false,
       fecha_limite: fechaLimite.toISOString(),
@@ -364,14 +401,12 @@ function renderizarIntercambiosActivos() {
   });
 }
 
-// Funciones globales para manejar eventos de intercambios
 window.confirmarConcretarIntercambio = function(id) {
   let regs = getItem("hm_intercambios_activos", []);
   let item = regs.find(x => x.id === id);
   if (!item) return;
 
   item.confirmado_a = true;
-  // Simulamos confirmación cruzada simétrica para completar el circuito
   item.confirmado_b = true; 
 
   if (item.confirmado_a && item.confirmado_b) {
@@ -393,7 +428,7 @@ window.solicitarProrrogaIntercambio = function(id) {
   if (!item || item.prorroga_usada) return;
 
   const nuevaFecha = new Date(item.fecha_limite);
-  nuevaFecha.setHours(nuevaFecha.getHours() + 48); // +48 horas por contingencia
+  nuevaFecha.setHours(nuevaFecha.getHours() + 48);
 
   item.fecha_limite = nuevaFecha.toISOString();
   item.prorroga_usada = true;
