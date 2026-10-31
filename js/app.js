@@ -665,6 +665,7 @@ function configurarPerfil() {
   const formulario = $("form-perfil");
   const inputNombre = $("nombre-usuario");
   const inputWhatsapp = $("whatsapp-usuario");
+  const inputOffline = $("offline-activo");
   const estadoPerfil = $("estado-perfil");
 
   if (!formulario) return;
@@ -675,12 +676,16 @@ function configurarPerfil() {
   if (inputWhatsapp) {
     inputWhatsapp.value = getItem("hm_whatsapp_usuario", "");
   }
+  if (inputOffline) {
+    inputOffline.checked = Boolean(getItem("hm_offline_activo", false));
+  }
 
   formulario.addEventListener("submit", (evento) => {
     evento.preventDefault();
 
     const nombre = inputNombre?.value.trim() || "";
     const whatsapp = inputWhatsapp?.value.trim() || "";
+    const offlineActivo = Boolean(inputOffline?.checked);
 
     if (!whatsapp) {
       mostrarNotificacion("El número de WhatsApp es obligatorio para crear o actualizar el perfil.");
@@ -699,14 +704,15 @@ function configurarPerfil() {
 
     const guardadoNombre = setItem("hm_nombre_usuario", nombre);
     const guardadoWhatsapp = setItem("hm_whatsapp_usuario", whatsapp);
+    const guardadoOffline = setItem("hm_offline_activo", offlineActivo);
 
-    if (!guardadoNombre || !guardadoWhatsapp) {
+    if (!guardadoNombre || !guardadoWhatsapp || !guardadoOffline) {
       mostrarNotificacion("No se pudieron guardar los datos del perfil en este dispositivo.");
       return;
     }
 
     if (estadoPerfil) {
-      estadoPerfil.textContent = "¡Perfil guardado correctamente con validación de WhatsApp!";
+      estadoPerfil.textContent = "¡Perfil guardado correctamente con validación de WhatsApp y conectividad offline!";
     }
 
     mostrarNotificacion("Perfil guardado con éxito.");
