@@ -163,7 +163,7 @@ export function initCommunity({
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
         .select(
-          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, whatsapp, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, actualizado_en"
+          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, whatsapp, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en"
         );
       if (errorPerfiles) throw errorPerfiles;
 
@@ -250,9 +250,19 @@ export function initCommunity({
 
         const datos = document.createElement("div");
         datos.className = "vecino-indicadores";
+        
+        // --- PUNTO 3: CONTADOR DE PUBLICACIONES ACTIVAS EN TIEMPO REAL ---
+        const totalPubs = conteos.get(String(perfil.id)) || 0;
         const publicacionesVecino = document.createElement("span");
-        publicacionesVecino.textContent = `📦 ${conteos.get(String(perfil.id)) || 0} publicaciones activas`;
+        publicacionesVecino.textContent = `📦 ${totalPubs} ${totalPubs === 1 ? "publicación activa" : "publicaciones activas"}`;
         datos.appendChild(publicacionesVecino);
+
+        // --- PUNTO 3: MEDIDOR DE HUMANIDAD EN FICHA AJENA ---
+        const humanometroVecino = document.createElement("span");
+        const porcentajeHumanidad = perfil.porcentaje_humanidad ?? 0;
+        humanometroVecino.className = "vecino-humanometro-badge";
+        humanometroVecino.textContent = `🤝 Humanómetro: ${porcentajeHumanidad}%`;
+        datos.appendChild(humanometroVecino);
 
         if (perfil.conectividad_disponible) {
           const conectividad = document.createElement("span");
