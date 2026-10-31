@@ -228,10 +228,14 @@
       <!-- GESTIÓN DE INTERCAMBIOS ACTIVOS Y CIRCUITOS (A/B) -->
       <section class="tarjeta" style="background: #101d2d; border: 1px solid #38bdf8; margin-bottom: 20px;">
         <h3 style="color: #38bdf8; margin-top: 0;">🔄 Mis Intercambios Activos y Cierres</h3>
-        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 12px;">
+        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px;">
           Cada trueque requiere la <strong>confirmación cruzada</strong> (ambas partes deben pulsar "Concretar Intercambio"). Tenés un plazo de 72 horas o una prórroga única de 48 horas por contingencia.
         </p>
-        <div id="lista-intercambios-activos" class="lista-publicaciones" aria-live="polite">
+        <!-- AVISO EXPLÍCITO DE OBLIGATORIEDAD DE MEDICIÓN -->
+        <p style="font-size: 0.82rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.3); margin-top: 8px;">
+          ⭐ <strong>Compromiso Comunitario:</strong> La medición y evaluación mutua al cerrar cada intercambio es <strong>obligatoria</strong>. Evaluar a tus vecinos protege el tiempo y la buena fe de la red, y es el pilar indispensable para sostenerte activamente dentro de la comunidad.
+        </p>
+        <div id="lista-intercambios-activos" class="lista-publicaciones" aria-live="polite" style="margin-top: 12px;">
           No hay intercambios activos en curso.
         </div>
       </section>
@@ -458,6 +462,9 @@
       <!-- ESTADO DE HUMANIDAD Y MÉTRICAS DE INTERCAMBIO -->
       <section class="tarjeta" style="background: #17212b; border: 1px solid #38bdf8;">
         <h3>Porcentaje de Humanidad y Reputación</h3>
+        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px;">
+          Tu medidor refleja el cumplimiento de tus tratos. <strong>La medición y evaluación obligatoria de cada intercambio</strong> es el cimiento indispensable para sostenerte y mantener la confianza dentro de la comunidad.
+        </p>
         <div id="contenedor-estado-humanidad">
           <!-- Se renderiza dinámicamente desde JS -->
         </div>
@@ -536,7 +543,7 @@
       <div class="tarjeta" style="max-width: 450px; width: 90%; background: #17212b; border: 2px solid #f87171; text-align: center;">
         <h3 style="color: #f87171; margin-top: 0;">⚠️ Bloqueo por Intercambio Vencido</h3>
         <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px;">
-          Tenés operaciones pendientes que superaron el plazo límite sin concretarse o solicitar prórroga. Para continuar usando la comunidad, debés cerrar el intercambio o activar la prórroga humanitaria.
+          Tenés operaciones pendientes que superaron el plazo límite sin concretarse o solicitar prórroga. Para continuar usando la comunidad, debés cerrar el intercambio y completar la <strong>evaluación obligatoria</strong>.
         </p>
         <div id="contenido-soft-lock-intercambios">
           <!-- Listado de intercambios vencidos con botones de acción -->
@@ -557,9 +564,10 @@
   <!-- MODAL DE EVALUACIÓN CRUZADA (MUTUA) -->
   <div id="modal-evaluacion-cruzada" class="pantalla" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 20, 38, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999;" hidden>
     <div class="tarjeta" style="max-width: 450px; width: 90%; background: #17212b; border: 1px solid #38bdf8;">
-      <h3 style="color: #38bdf8; margin-top: 0;">🌟 Evaluación Cruzada de Intercambio</h3>
+      <h3 style="color: #38bdf8; margin-top: 0;">🌟 Evaluación Cruzada Obligatoria</h3>
       <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px;">
-        Valorá la experiencia con <strong id="eval-contraparte-nombre">Vecino</strong> para actualizar el porcentaje de humanidad.
+        Valorá la experiencia con <strong id="eval-contraparte-nombre">Vecino</strong>. 
+        <em>Recordá que realizar esta medición es obligatoria</em> para sostener la confianza, proteger al barrio y mantener tu pertenencia activa en la red.
       </p>
       <form id="form-evaluacion-cruzada-modal">
         <input type="hidden" id="eval-intercambio-id">
@@ -574,7 +582,7 @@
         <label for="eval-detalle">Explicación de la experiencia</label>
         <textarea id="eval-detalle" rows="3" maxlength="500" placeholder="Describí hechos concretos..." required></textarea>
         <div style="display: flex; gap: 10px; margin-top: 12px;">
-          <button type="submit" class="boton-accion" style="flex: 1;">GUARDAR EVALUACIÓN</button>
+          <button type="submit" class="boton-accion" style="flex: 1;">GUARDAR Y CERRAR OPERACIÓN</button>
         </div>
       </form>
     </div>
