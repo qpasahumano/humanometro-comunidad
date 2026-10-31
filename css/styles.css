@@ -216,7 +216,7 @@ select:focus-visible {
   font-size: 0.88rem;
 }
 
-/* TARJETAS Y CAMPOS OPTIMIZADOS PARA MÓVIL (SIN SCROLL EXCESIVO) */
+/* TARJETAS Y CAMPOS OPTIMIZADOS PARA MÓVIL */
 
 .tarjeta {
   padding: 12px !important;
@@ -687,6 +687,8 @@ select option {
   margin-top: 5px;
 }
 
+/* MENSAJERÍA OFFLINE: PERFIL */
+
 .perfil-mensajeria-offline {
   margin-top: 12px;
 }
@@ -776,10 +778,7 @@ select option {
   line-height: 1.3;
 }
 
-/* =====================================================
-   AJUSTE VISUAL DE ICONOS — HUMANÓMETRO COMUNIDAD
-   SVG CELESTE LUMINOSO SOBRE FONDO OSCURO
-   ===================================================== */
+/* ICONOS SVG CELESTES LUMINOSOS */
 
 .icono-modulo {
   color: #8bd9ee;
@@ -804,18 +803,9 @@ select option {
   filter: drop-shadow(0 0 3px rgba(83, 197, 235, 0.55));
 }
 
-.icono-gondola svg {
-  stroke: #8bd9ee;
-}
-
-.icono-comunicacion svg {
-  stroke: #8bd9ee;
-}
-
-.icono-red-humana svg {
-  stroke: #8bd9ee;
-}
-
+.icono-gondola svg,
+.icono-comunicacion svg,
+.icono-red-humana svg,
 .icono-humanometro svg {
   stroke: #8bd9ee;
 }
@@ -924,8 +914,9 @@ select option {
 }
 
 /* =====================================================
-   NAVEGACIÓN PRINCIPAL EN TRES SOLAPAS — MOBILE FIRST
+   NAVEGACIÓN PRINCIPAL EN CUATRO SOLAPAS
    ===================================================== */
+
 .encabezado {
   position: relative;
   z-index: 20;
@@ -936,8 +927,11 @@ select option {
   top: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: 0.82fr 1.25fr 1.1fr;
-  gap: 6px;
+
+  /* ACTUALIZADO: CUATRO SOLAPAS */
+  grid-template-columns: 0.82fr 1.25fr 0.95fr 1.15fr;
+
+  gap: 5px;
   width: 100%;
   max-width: 760px;
   margin: 10px auto 14px;
@@ -958,12 +952,12 @@ select option {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 6px 4px;
+  padding: 6px 3px;
   border: 1px solid transparent;
   border-radius: 11px;
   color: var(--texto-suave);
   background: transparent;
-  font-size: clamp(0.62rem, 2.3vw, 0.76rem);
+  font-size: clamp(0.56rem, 2vw, 0.72rem);
   font-weight: 750;
   line-height: 1.15;
   text-align: center;
@@ -981,7 +975,9 @@ select option {
   color: var(--blanco);
   border-color: rgba(139, 217, 238, 0.52);
   background: rgba(83, 197, 235, 0.15);
-  box-shadow: inset 0 0 12px rgba(83, 197, 235, 0.08), 0 0 12px rgba(83, 197, 235, 0.08);
+  box-shadow:
+    inset 0 0 12px rgba(83, 197, 235, 0.08),
+    0 0 12px rgba(83, 197, 235, 0.08);
 }
 
 .solapa-principal:active {
@@ -993,6 +989,8 @@ select option {
   max-width: 760px;
   margin: 0 auto;
 }
+
+/* DIRECTORIO DE INTEGRANTES */
 
 .radar-vecinos {
   margin-top: 12px;
@@ -1152,7 +1150,11 @@ select option {
   .solapa-principal {
     min-height: 46px;
     padding: 5px 2px;
-    font-size: 0.6rem;
+    font-size: 0.55rem;
+  }
+
+  .solapa-principal > span:first-child {
+    font-size: 0.95rem;
   }
 }
 
@@ -1221,6 +1223,8 @@ select option {
   width: 100%;
 }
 
+/* SELECTOR OFREZCO / NECESITO */
+
 .selector-tipo-publicacion {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1259,4 +1263,107 @@ select option {
   border-color: rgba(139, 217, 238, 0.7);
   background: rgba(83, 197, 235, 0.13);
   box-shadow: 0 0 14px rgba(83, 197, 235, 0.08);
+}
+
+/* =====================================================
+   NUEVA PANTALLA: RADAR COMUNITARIO
+   ===================================================== */
+
+#vista-radar {
+  width: 100%;
+  max-width: 760px;
+  margin: 14px auto 0;
+}
+
+#vista-radar > h2 {
+  color: var(--blanco);
+  margin-top: 14px;
+}
+
+#vista-radar > .texto-ayuda {
+  margin-bottom: 14px;
+}
+
+#vista-radar .selector-barrio {
+  margin-top: 12px;
+}
+
+#vista-radar .selector-barrio h3 {
+  color: var(--celeste);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+#vista-radar .selector-barrio > p {
+  color: var(--texto-suave);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+#vista-radar input {
+  margin-bottom: 12px !important;
+}
+
+#vista-radar #btn-buscar-radar {
+  margin-top: 12px;
+  min-height: 44px;
+  letter-spacing: 0.04em;
+}
+
+#vista-radar #estado-radar {
+  margin-top: 12px;
+  padding: 8px 0 2px;
+}
+
+#vista-radar .boton-volver {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+}
+
+/* PRESENTACIÓN DE RESULTADOS DEL RADAR */
+
+#lista-radar,
+.lista-radar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.tarjeta-radar {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(139, 217, 238, 0.3);
+  border-radius: 14px;
+  background: rgba(5, 20, 37, 0.86);
+  overflow-wrap: anywhere;
+}
+
+.tarjeta-radar h3 {
+  margin: 0 0 6px;
+  color: var(--celeste);
+  font-size: 0.95rem;
+}
+
+.tarjeta-radar p {
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 620px) {
+  #lista-radar,
+  .lista-radar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* AJUSTE DE NAVEGACIÓN EN CELULARES ANGOSTOS */
+
+@media (max-width: 360px) {
+  .navegacion-principal {
+    grid-template-columns: 0.8fr 1.2fr 0.9fr 1.1fr;
+  }
 }
