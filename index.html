@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#071426">
-  <meta name="description" content="HUMANÓMETRO COMUNIDAD: una red vecinal de comunicación, recursos y ayuda mutua.">
+  <meta name="description" content="HUMANÓMETRO COMUNIDAD: una red comunitaria de comunicación, recursos y ayuda mutua.">
   <title>HUMANÓMETRO COMUNIDAD</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="stylesheet" href="./css/styles.css">
@@ -47,237 +47,344 @@
       </button>
     </header>
 
-    <!-- NAVEGACIÓN PRINCIPAL: TRES SOLAPAS FIJAS -->
+    <!-- NAVEGACIÓN PRINCIPAL: CUATRO SOLAPAS -->
     <nav class="navegacion-principal" aria-label="Navegación principal de Humanómetro Comunidad">
       <button id="tab-perfil" class="solapa-principal" type="button" data-tab="perfil" aria-controls="vista-perfil" aria-selected="false">
         <span aria-hidden="true">👤</span><span>Mi Perfil</span>
       </button>
+
       <button id="tab-gondola" class="solapa-principal" type="button" data-tab="gondola" aria-controls="vista-gondola" aria-selected="false">
         <span aria-hidden="true">🤝</span><span>Intercambios / Góndola</span>
       </button>
+
       <button id="tab-comunidad" class="solapa-principal" type="button" data-tab="comunidad" aria-controls="panel-comunidad" aria-selected="true">
-        <span aria-hidden="true">🗺️</span><span>Comunidad / Vecinos</span>
+        <span aria-hidden="true">👥</span><span>Comunidad</span>
+      </button>
+
+      <button id="tab-radar" class="solapa-principal" type="button" data-tab="radar" aria-controls="vista-radar" aria-selected="false">
+        <span aria-hidden="true">📡</span><span>Radar comunitario</span>
       </button>
     </nav>
 
+    <!-- =====================================================
+         COMUNIDAD: DIRECTORIO DE INTEGRANTES
+         ===================================================== -->
     <div id="panel-comunidad" class="panel-principal">
 
-    <!-- BIENVENIDA -->
-    <section class="bienvenida">
-      <p class="etiqueta">RED HUMANA LOCAL</p>
-      <h1>Tu comunidad, más cerca.</h1>
-      <p>
-        Recursos, comunicación y ayuda mutua para las personas de tu barrio.
+      <section class="bienvenida">
+        <p class="etiqueta">RED HUMANA LOCAL</p>
+        <h1>Tu comunidad, más cerca.</h1>
+        <p>
+          Recursos, comunicación y ayuda mutua para las personas de tu comunidad.
+        </p>
+      </section>
+
+      <!-- UBICACIÓN DE LA COMUNIDAD PROPIA -->
+      <section class="selector-barrio tarjeta">
+        <h2>Mi comunidad</h2>
+
+        <label for="barrio">Barrio o localidad de referencia</label>
+
+        <div class="fila-barrio">
+          <input
+            id="barrio"
+            type="text"
+            maxlength="100"
+            placeholder="Escribí tu barrio o localidad"
+            autocomplete="address-level3"
+          >
+
+          <button
+            id="btn-guardar-barrio"
+            class="boton-secundario"
+            type="button"
+          >
+            GUARDAR
+          </button>
+        </div>
+
+        <button
+          id="btn-ubicacion"
+          class="boton-secundario boton-ancho"
+          type="button"
+        >
+          USAR MI UBICACIÓN APROXIMADA
+        </button>
+
+        <p class="texto-ayuda">
+          La ubicación es opcional. Podés escribir tu barrio manualmente.
+          No publicamos tus coordenadas exactas.
+        </p>
+
+        <p class="texto-ayuda">
+          Identificación geográfica: datos de OpenStreetMap contributors.
+        </p>
+
+        <p
+          id="estado-barrio"
+          class="texto-ayuda"
+          aria-live="polite"
+        >
+          Elegí tu barrio para organizar la actividad local.
+        </p>
+      </section>
+
+      <!-- DIRECTORIO DE INTEGRANTES DE LA COMUNIDAD -->
+      <section id="radar-vecinos" class="tarjeta radar-vecinos">
+        <div class="radar-encabezado">
+          <div>
+            <p class="etiqueta">PERSONAS QUE INTEGRAN ESTA COMUNIDAD</p>
+            <h2>Comunidad</h2>
+            <p class="texto-ayuda">
+              Conocé a quienes forman parte de tu comunidad, consultá sus
+              perfiles y descubrí qué ofrecen o necesitan.
+            </p>
+          </div>
+
+          <button
+            id="btn-actualizar-vecinos"
+            class="boton-secundario"
+            type="button"
+          >
+            ACTUALIZAR
+          </button>
+        </div>
+
+        <div
+          id="estado-vecinos"
+          class="texto-ayuda"
+          aria-live="polite"
+        >
+          Cargando integrantes de tu comunidad…
+        </div>
+
+        <div
+          id="lista-vecinos"
+          class="lista-vecinos"
+          aria-live="polite"
+        ></div>
+      </section>
+
+      <!-- ACCESOS RÁPIDOS A MÓDULOS SECUNDARIOS -->
+      <section class="acciones-principales">
+
+        <!-- ICONO: GÓNDOLA COMUNITARIA -->
+        <button
+          id="btn-gondola"
+          class="boton-modulo boton-gondola"
+          type="button"
+        >
+          <span class="icono-modulo icono-gondola" aria-hidden="true">
+            <svg viewBox="0 0 64 64" focusable="false">
+              <path d="M12 25h40l-4 28H16z"/>
+              <path d="M9 20h46l-3 7H12z"/>
+              <path d="M17 20l4-9h8l3 9"/>
+              <path d="M33 20l3-9h8l4 9"/>
+              <path d="M23 32v13M32 32v13M41 32v13"/>
+              <path d="M20 53v4M44 53v4"/>
+            </svg>
+          </span>
+
+          <span class="contenido-modulo">
+            <strong>GÓNDOLA COMUNITARIA</strong>
+            <small>Productos, alimentos, servicios y recursos.</small>
+          </span>
+
+          <span class="flecha" aria-hidden="true">›</span>
+        </button>
+
+        <!-- ICONO: COMUNICACIÓN -->
+        <button
+          id="btn-comunicacion"
+          class="boton-modulo"
+          type="button"
+        >
+          <span class="icono-modulo icono-comunicacion" aria-hidden="true">
+            <svg viewBox="0 0 64 64" focusable="false">
+              <path d="M7 12h32v23H22l-9 8v-8H7z"/>
+              <path d="M25 29h32v22H46l-9 8v-8h-5"/>
+              <path d="M14 20h18M14 26h12"/>
+              <path d="M34 37h15M34 43h10"/>
+              <path d="M44 15l7 5-7 5"/>
+            </svg>
+          </span>
+
+          <span class="contenido-modulo">
+            <strong>NO PIERDAS LA COMUNICACIÓN</strong>
+            <small>Prepará mensajes, chat y kit de emergencia.</small>
+          </span>
+
+          <span class="flecha" aria-hidden="true">›</span>
+        </button>
+
+        <!-- ICONO: RED HUMANA -->
+        <button
+          id="btn-ayuda"
+          class="boton-modulo"
+          type="button"
+        >
+          <span class="icono-modulo icono-red-humana" aria-hidden="true">
+            <svg viewBox="0 0 64 64" focusable="false">
+              <circle cx="32" cy="12" r="7"/>
+              <circle cx="13" cy="25" r="6"/>
+              <circle cx="51" cy="25" r="6"/>
+              <circle cx="19" cy="48" r="6"/>
+              <circle cx="45" cy="48" r="6"/>
+              <path d="M27 18l-9 4M37 18l9 4"/>
+              <path d="M16 31l2 11M48 31l-2 11"/>
+              <path d="M25 47h14"/>
+              <path d="M25 26l7 8 7-8"/>
+              <path d="M24 38l8 5 8-5"/>
+            </svg>
+          </span>
+
+          <span class="contenido-modulo">
+            <strong>RED HUMANA</strong>
+            <small>Pedí ayuda u ofrecé lo que esté a tu alcance.</small>
+          </span>
+
+          <span class="flecha" aria-hidden="true">›</span>
+        </button>
+
+        <!-- ICONO: HUMANÓMETRO DE HUMANIDAD -->
+        <button
+          id="btn-humanometro"
+          class="boton-modulo"
+          type="button"
+        >
+          <span class="icono-modulo icono-humanometro" aria-hidden="true">
+            <svg viewBox="0 0 64 64" focusable="false">
+              <path d="M32 55S9 42 9 25c0-8 5-13 12-13 5 0 9 3 11 8 2-5 6-8 11-8 7 0 12 5 12 13 0 17-23 30-23 30z"/>
+              <path d="M13 34h10l5-11 8 22 5-11h10"/>
+              <circle cx="32" cy="32" r="26"/>
+            </svg>
+          </span>
+
+          <span class="contenido-modulo">
+            <strong>HUMANÓMETRO DE HUMANIDAD</strong>
+            <small>Registrá cómo se desarrollan los intercambios.</small>
+          </span>
+
+          <span class="flecha" aria-hidden="true">›</span>
+        </button>
+
+      </section>
+
+      <!-- PRESENTACIÓN DEL PROYECTO -->
+      <section class="humanometro tarjeta">
+        <div class="humanometro-icono" aria-hidden="true">
+          <svg viewBox="0 0 64 64" focusable="false">
+            <circle cx="32" cy="32" r="28"/>
+            <path d="M18 17v30M46 17v30M18 32h28"/>
+            <path d="M24 17h16M24 47h16"/>
+          </svg>
+        </div>
+
+        <div>
+          <h2>Una red de personas para las personas</h2>
+          <p>
+            La cooperación, la responsabilidad y el respeto son el centro
+            de esta comunidad.
+          </p>
+        </div>
+      </section>
+
+    </div><!-- /#panel-comunidad -->
+
+    <!-- =====================================================
+         RADAR COMUNITARIO
+         ===================================================== -->
+    <section id="vista-radar" class="vista-interna" hidden>
+
+      <button class="boton-volver" data-volver type="button">
+        ← Volver a la comunidad
+      </button>
+
+      <h2>Radar comunitario</h2>
+
+      <p class="texto-ayuda">
+        Buscá gente de la comunidad en otros lugares.
       </p>
-    </section>
 
-    <!-- COMUNIDAD Y UBICACIÓN APROXIMADA -->
-    <section class="selector-barrio tarjeta">
-      <h2>Tu comunidad</h2>
+      <section class="tarjeta selector-barrio">
 
-      <!-- Selector de Modo de Visualización (Barrio vs Exploración) -->
-      <label for="modo-visualizacion">Modo de visualización</label>
-      <select id="modo-visualizacion" style="margin-bottom: 12px;">
-        <option value="barrio">🏠 Mi barrio / Zona de emergencia (Estricto)</option>
-        <option value="explorar">🗺️ Explorar otra localidad (Ej.: Esquel)</option>
-      </select>
+        <h3>¿A qué comunidad querés llegar?</h3>
 
-      <!-- Contenedor para elegir la zona a explorar cuando se activa el modo exploración -->
-      <div id="contenedor-explorar-zona" hidden style="margin-bottom: 12px;">
-        <label for="zona-explorar">Localidad a explorar</label>
+        <p>
+          Elegí el destino para consultar las fichas de las personas
+          registradas en ese lugar. No necesitás estar físicamente allí.
+        </p>
+
+        <label for="radar-pais">País</label>
+
+        <input
+          id="radar-pais"
+          type="text"
+          maxlength="100"
+          placeholder="Ej.: México"
+          autocomplete="country-name"
+        >
+
+        <label for="radar-provincia">
+          Provincia, estado o región
+        </label>
+
+        <input
+          id="radar-provincia"
+          type="text"
+          maxlength="100"
+          placeholder="Ej.: Ciudad de México"
+        >
+
+        <label for="zona-explorar">
+          Ciudad, localidad o barrio
+        </label>
+
         <input
           id="zona-explorar"
           type="text"
           maxlength="100"
-          placeholder="Escribí la localidad (ej: Esquel)"
-        >
-      </div>
-
-      <label for="barrio">Barrio o localidad actual</label>
-
-      <div class="fila-barrio">
-        <input
-          id="barrio"
-          type="text"
-          maxlength="100"
-          placeholder="Escribí el nombre de tu barrio"
-          autocomplete="address-level3"
+          placeholder="Ej.: Coyoacán, Ciudad de México"
         >
 
         <button
-          id="btn-guardar-barrio"
-          class="boton-secundario"
+          id="btn-buscar-radar"
+          class="boton-accion boton-ancho"
           type="button"
         >
-          GUARDAR
+          BUSCAR COMUNIDAD
         </button>
-      </div>
 
-      <button
-        id="btn-ubicacion"
-        class="boton-secundario boton-ancho"
-        type="button"
-      >
-        USAR MI UBICACIÓN APROXIMADA
-      </button>
-
-      <p class="texto-ayuda">
-        La ubicación es opcional. Podés escribir tu barrio manualmente.
-        No publicamos tus coordenadas exactas.
-      </p>
-
-      <p class="texto-ayuda">
-        Identificación geográfica: datos de OpenStreetMap contributors.
-      </p>
-
-      <p
-        id="estado-barrio"
-        class="texto-ayuda"
-        aria-live="polite"
-      >
-        Elegí tu barrio para organizar la actividad local.
-      </p>
-    </section>
-
-    <!-- RADAR SOCIAL DE VECINOS -->
-    <section id="radar-vecinos" class="tarjeta radar-vecinos">
-      <div class="radar-encabezado">
-        <div>
-          <p class="etiqueta">RED HUMANA CERCANA</p>
-          <h2>Vecinos de la comunidad</h2>
-          <p class="texto-ayuda">Conocé perfiles registrados, sus publicaciones activas y cómo contactarles.</p>
-        </div>
-        <button id="btn-actualizar-vecinos" class="boton-secundario" type="button">ACTUALIZAR</button>
-      </div>
-      <div id="estado-vecinos" class="texto-ayuda" aria-live="polite">Cargando vecinos de tu comunidad…</div>
-      <div id="lista-vecinos" class="lista-vecinos" aria-live="polite"></div>
-    </section>
-
-    <!-- ACCESOS RÁPIDOS A MÓDULOS SECUNDARIOS -->
-    <section class="acciones-principales">
-
-      <!-- ICONO: GÓNDOLA COMUNITARIA -->
-      <button
-        id="btn-gondola"
-        class="boton-modulo boton-gondola"
-        type="button"
-      >
-        <span class="icono-modulo icono-gondola" aria-hidden="true">
-          <svg viewBox="0 0 64 64" focusable="false">
-            <path d="M12 25h40l-4 28H16z"/>
-            <path d="M9 20h46l-3 7H12z"/>
-            <path d="M17 20l4-9h8l3 9"/>
-            <path d="M33 20l3-9h8l4 9"/>
-            <path d="M23 32v13M32 32v13M41 32v13"/>
-            <path d="M20 53v4M44 53v4"/>
-          </svg>
-        </span>
-
-        <span class="contenido-modulo">
-          <strong>GÓNDOLA COMUNITARIA</strong>
-          <small>Productos, alimentos, servicios y recursos.</small>
-        </span>
-
-        <span class="flecha" aria-hidden="true">›</span>
-      </button>
-
-      <!-- ICONO: COMUNICACIÓN -->
-      <button
-        id="btn-comunicacion"
-        class="boton-modulo"
-        type="button"
-      >
-        <span class="icono-modulo icono-comunicacion" aria-hidden="true">
-          <svg viewBox="0 0 64 64" focusable="false">
-            <path d="M7 12h32v23H22l-9 8v-8H7z"/>
-            <path d="M25 29h32v22H46l-9 8v-8h-5"/>
-            <path d="M14 20h18M14 26h12"/>
-            <path d="M34 37h15M34 43h10"/>
-            <path d="M44 15l7 5-7 5"/>
-          </svg>
-        </span>
-
-        <span class="contenido-modulo">
-          <strong>NO PIERDAS LA COMUNICACIÓN</strong>
-          <small>Prepará mensajes, chat y kit de emergencia.</small>
-        </span>
-
-        <span class="flecha" aria-hidden="true">›</span>
-      </button>
-
-      <!-- ICONO: RED HUMANA -->
-      <button
-        id="btn-ayuda"
-        class="boton-modulo"
-        type="button"
-      >
-        <span class="icono-modulo icono-red-humana" aria-hidden="true">
-          <svg viewBox="0 0 64 64" focusable="false">
-            <circle cx="32" cy="12" r="7"/>
-            <circle cx="13" cy="25" r="6"/>
-            <circle cx="51" cy="25" r="6"/>
-            <circle cx="19" cy="48" r="6"/>
-            <circle cx="45" cy="48" r="6"/>
-            <path d="M27 18l-9 4M37 18l9 4"/>
-            <path d="M16 31l2 11M48 31l-2 11"/>
-            <path d="M25 47h14"/>
-            <path d="M25 26l7 8 7-8"/>
-            <path d="M24 38l8 5 8-5"/>
-          </svg>
-        </span>
-
-        <span class="contenido-modulo">
-          <strong>RED HUMANA</strong>
-          <small>Pedí ayuda u ofrecé lo que esté a tu alcance.</small>
-        </span>
-
-        <span class="flecha" aria-hidden="true">›</span>
-      </button>
-
-      <!-- ICONO: HUMANÓMETRO DE HUMANIDAD -->
-      <button
-        id="btn-humanometro"
-        class="boton-modulo"
-        type="button"
-      >
-        <span class="icono-modulo icono-humanometro" aria-hidden="true">
-          <svg viewBox="0 0 64 64" focusable="false">
-            <path d="M32 55S9 42 9 25c0-8 5-13 12-13 5 0 9 3 11 8 2-5 6-8 11-8 7 0 12 5 12 13 0 17-23 30-23 30z"/>
-            <path d="M13 34h10l5-11 8 22 5-11h10"/>
-            <circle cx="32" cy="32" r="26"/>
-          </svg>
-        </span>
-
-        <span class="contenido-modulo">
-          <strong>HUMANÓMETRO DE HUMANIDAD</strong>
-          <small>Registrá cómo se desarrollan los intercambios.</small>
-        </span>
-
-        <span class="flecha" aria-hidden="true">›</span>
-      </button>
-
-    </section>
-
-    <!-- PRESENTACIÓN DEL PROYECTO -->
-    <section class="humanometro tarjeta">
-      <div class="humanometro-icono" aria-hidden="true">
-        <svg viewBox="0 0 64 64" focusable="false">
-          <circle cx="32" cy="32" r="28"/>
-          <path d="M18 17v30M46 17v30M18 32h28"/>
-          <path d="M24 17h16M24 47h16"/>
-        </svg>
-      </div>
-
-      <div>
-        <h2>Una red de personas para las personas</h2>
-        <p>
-          La cooperación, la responsabilidad y el respeto son el centro
-          de esta comunidad.
+        <p
+          id="estado-radar"
+          class="texto-ayuda"
+          aria-live="polite"
+        >
+          Seleccioná un destino para ver sus integrantes.
         </p>
-      </div>
-    </section>
 
-    </div><!-- /#panel-comunidad -->
+        <!-- COMPATIBILIDAD CON LA NAVEGACIÓN GEOGRÁFICA EXISTENTE -->
+        <select
+          id="modo-visualizacion"
+          hidden
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          <option value="barrio">Mi comunidad</option>
+          <option value="explorar">Explorar otra localidad</option>
+        </select>
+
+        <div id="contenedor-explorar-zona" hidden>
+          <input
+            id="zona-explorar-compatibilidad"
+            type="text"
+            maxlength="100"
+          >
+        </div>
+
+      </section>
+
+    </section>
 
     <!-- =====================================================
          GÓNDOLA COMUNITARIA
@@ -299,12 +406,12 @@
       <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff; margin-bottom: 20px;">
         <h3 style="color: #38bdf8; margin-top: 0;">🛡️ Política de Seguridad y Medicamentos</h3>
         <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
-          Por razones de salud pública, seguridad sanitaria y normativas legales, 
-          <strong>Humanómetro prohíbe terminantemente la publicación, oferta, donación, trueque o comercialización de medicamentos</strong>, 
+          Por razones de salud pública, seguridad sanitaria y normativas legales,
+          <strong>Humanómetro prohíbe terminantemente la publicación, oferta, donación, trueque o comercialización de medicamentos</strong>,
           fármacos o productos farmacéuticos entre particulares.
         </p>
         <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
-          Para la gestión segura de fármacos, te sugerimos acudir exclusivamente a entidades oficiales y especializadas a través del directorio de 
+          Para la gestión segura de fármacos, te sugerimos acudir exclusivamente a entidades oficiales y especializadas a través del directorio de
           <strong>Bancos de Medicamentos y Redes de Salud</strong>.
         </p>
       </section>
@@ -421,14 +528,21 @@
         ></textarea>
 
         <label for="zona-publicacion">Ubicación aproximada de lo que ofrecés o necesitás</label>
+
         <input
           id="zona-publicacion"
           type="text"
           maxlength="120"
           placeholder="Barrio o localidad donde se ofrece o necesita"
         >
-        <button id="btn-ubicacion-publicacion" class="boton-secundario" type="button">USAR UBICACIÓN APROXIMADA</button>
-        <small class="texto-ayuda">No se publica tu dirección ni tus coordenadas exactas.</small>
+
+        <button id="btn-ubicacion-publicacion" class="boton-secundario" type="button">
+          USAR UBICACIÓN APROXIMADA
+        </button>
+
+        <small class="texto-ayuda">
+          No se publica tu dirección ni tus coordenadas exactas.
+        </small>
 
         <button class="boton-accion" type="submit">
           GUARDAR PUBLICACIÓN
@@ -455,6 +569,7 @@
         >
 
         <label for="filtro-zona-gondola">Buscar en barrio o localidad</label>
+
         <input
           id="filtro-zona-gondola"
           type="search"
@@ -491,6 +606,7 @@
           >
             LIMPIAR BÚSQUEDA
           </button>
+
           <button
             id="btn-actualizar-red"
             class="boton-secundario boton-ancho"
@@ -502,8 +618,10 @@
       </div>
 
       <div id="filtro-vecino-activo" class="filtro-vecino-activo" hidden>
-        <span id="texto-filtro-vecino">Publicaciones de un vecino</span>
-        <button id="btn-quitar-filtro-vecino" class="boton-secundario" type="button">VER TODAS</button>
+        <span id="texto-filtro-vecino">Publicaciones de un integrante</span>
+        <button id="btn-quitar-filtro-vecino" class="boton-secundario" type="button">
+          VER TODAS
+        </button>
       </div>
 
       <h3>Publicaciones</h3>
@@ -551,29 +669,31 @@
         </p>
       </div>
 
-      <!-- =====================================================
-           RESILIENCIA TÁCTICA: KIT DE COMUNICACIÓN PREVENTIVO
-           ===================================================== -->
+      <!-- KIT DE COMUNICACIÓN PREVENTIVO -->
       <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff;">
         <h3 style="color: #38bdf8; margin-top: 0;">📡 Kit de Comunicación Táctico (Sin Internet)</h3>
-        
+
         <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
-          <strong>Aviso importante:</strong> Las aplicaciones web requieren conectividad de red para operar de forma centralizada. 
-          Ante cortes totales de energía o caídas de internet que dejen los dispositivos sin señal Wi-Fi, 
-          <strong>los navegadores no pueden transmitir datos por el aire</strong>. 
+          <strong>Aviso importante:</strong> Las aplicaciones web requieren conectividad de red para operar de forma centralizada.
+          Ante cortes totales de energía o caídas de internet que dejen los dispositivos sin señal Wi-Fi,
+          <strong>los navegadores no pueden transmitir datos por el aire</strong>.
         </p>
+
         <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
-          Para garantizar que una emergencia o contingencia no te agarre desprovisto/a, te recomendamos firmemente tener instaladas 
+          Para garantizar que una emergencia o contingencia no te agarre desprovisto/a, te recomendamos firmemente tener instaladas
           <strong>ahora mismo</strong> (mientras hay conexión) aplicaciones de red de malla (*mesh*) o mensajería descentralizada por Bluetooth:
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+
           <!-- Bridgefy -->
           <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
             <strong style="color: #38bdf8; font-size: 0.95rem;">Bridgefy (Red Mesh por Bluetooth)</strong>
+
             <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 8px 0;">
               Permite chatear de celular a celular saltando de dispositivo en dispositivo sin internet ni red celular en tu zona.
             </p>
+
             <a href="https://play.google.com/store/apps/details?id=com.bridgefy.android" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
               Descargar Bridgefy (Android / iOS)
             </a>
@@ -582,13 +702,16 @@
           <!-- Briar -->
           <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
             <strong style="color: #38bdf8; font-size: 0.95rem;">Briar (Mensajería P2P Segura)</strong>
+
             <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 8px 0;">
               Diseñado para crisis y zonas incomunicadas. Sincroniza mensajes vía Bluetooth, Wi-Fi local o redes de relevo punto a punto.
             </p>
+
             <a href="https://briarproject.org/" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
               Sitio oficial y descarga de Briar
             </a>
           </div>
+
         </div>
 
         <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 15px; text-align: center; border-top: 1px solid #334155; padding-top: 10px;">
@@ -780,6 +903,7 @@
       <form id="form-evaluacion" class="tarjeta">
 
         <label for="usuario-evaluado">Nombre visible de la contraparte</label>
+
         <input
           id="usuario-evaluado"
           type="text"
@@ -863,7 +987,11 @@
       </button>
 
       <h2>Mi perfil comunitario</h2>
-      <p class="texto-ayuda">Primero ingresá con tu email y contraseña. Si sos nuevo, creá tu cuenta y completá todos los datos para habilitar la comunidad.</p>
+
+      <p class="texto-ayuda">
+        Primero ingresá con tu email y contraseña. Si sos nuevo, creá tu cuenta
+        y completá todos los datos para habilitar la comunidad.
+      </p>
 
       <form id="form-perfil" class="tarjeta">
 
@@ -875,16 +1003,21 @@
 
           <div class="perfil-foto-controles">
             <label for="foto-perfil-archivo">Foto de perfil</label>
+
             <input
               id="foto-perfil-archivo"
               type="file"
               accept="image/jpeg,image/png,image/webp"
             >
-            <small>JPG, PNG o WebP. La foto se compartirá según la configuración del perfil.</small>
+
+            <small>
+              JPG, PNG o WebP. La foto se compartirá según la configuración del perfil.
+            </small>
           </div>
         </div>
 
         <label for="nombre-usuario">Nombre visible</label>
+
         <input
           id="nombre-usuario"
           type="text"
@@ -895,6 +1028,7 @@
 
         <!-- CAMPO OBLIGATORIO DE WHATSAPP -->
         <label for="whatsapp-usuario">Número de WhatsApp (Obligatorio)</label>
+
         <input
           id="whatsapp-usuario"
           type="tel"
@@ -902,7 +1036,10 @@
           placeholder="Ej: +5491112345678"
           required
         >
-        <small class="texto-ayuda">Requerido para validar tu perfil y mantener la seguridad comunitaria.</small>
+
+        <small class="texto-ayuda">
+          Requerido para validar tu perfil y mantener la seguridad comunitaria.
+        </small>
 
         <button
           id="btn-guardar-perfil"
@@ -922,8 +1059,16 @@
 
       <section class="tarjeta" aria-labelledby="titulo-mis-publicaciones">
         <h3 id="titulo-mis-publicaciones">Mis publicaciones activas</h3>
-        <p class="texto-ayuda">Acá vas a encontrar los productos y servicios publicados desde tu cuenta.</p>
-        <div id="lista-mis-publicaciones" class="lista-publicaciones" aria-live="polite">
+
+        <p class="texto-ayuda">
+          Acá vas a encontrar los productos y servicios publicados desde tu cuenta.
+        </p>
+
+        <div
+          id="lista-mis-publicaciones"
+          class="lista-publicaciones"
+          aria-live="polite"
+        >
           Iniciá sesión para consultar tus publicaciones.
         </div>
       </section>
@@ -935,13 +1080,30 @@
 
     </section>
 
-    <div id="modal-whatsapp-seguro" class="modal-confirmacion-contacto" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-modal-contacto">
+    <div
+      id="modal-whatsapp-seguro"
+      class="modal-confirmacion-contacto"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-modal-contacto"
+    >
       <div class="modal-confirmacion-contenido tarjeta">
         <h3 id="titulo-modal-contacto">Antes de contactar</h3>
-        <p>Vas a abrir una conversación con este vecino dentro de Humanómetro Comunidad. No compartas contraseñas, códigos ni datos privados.</p>
+
+        <p>
+          Vas a abrir una conversación con este integrante dentro de
+          HUMANÓMETRO COMUNIDAD. No compartas contraseñas, códigos ni datos privados.
+        </p>
+
         <div class="acciones-busqueda">
-          <button id="btn-confirmar-wsp" class="boton-accion" type="button">CONTINUAR A COMUNICACIÓN</button>
-          <button id="btn-cancelar-wsp" class="boton-secundario" type="button">CANCELAR</button>
+          <button id="btn-confirmar-wsp" class="boton-accion" type="button">
+            CONTINUAR A COMUNICACIÓN
+          </button>
+
+          <button id="btn-cancelar-wsp" class="boton-secundario" type="button">
+            CANCELAR
+          </button>
         </div>
       </div>
     </div>
@@ -962,8 +1124,6 @@
   ></div>
 
   <script type="module" src="./js/app.js"></script>
-
-
 
 </body>
 </html>
