@@ -47,6 +47,21 @@
       </button>
     </header>
 
+    <!-- NAVEGACIÓN PRINCIPAL: TRES SOLAPAS FIJAS -->
+    <nav class="navegacion-principal" aria-label="Navegación principal de Humanómetro Comunidad">
+      <button id="tab-perfil" class="solapa-principal" type="button" data-tab="perfil" aria-controls="vista-perfil" aria-selected="false">
+        <span aria-hidden="true">👤</span><span>Mi Perfil</span>
+      </button>
+      <button id="tab-gondola" class="solapa-principal" type="button" data-tab="gondola" aria-controls="vista-gondola" aria-selected="false">
+        <span aria-hidden="true">🤝</span><span>Intercambios / Góndola</span>
+      </button>
+      <button id="tab-comunidad" class="solapa-principal" type="button" data-tab="comunidad" aria-controls="panel-comunidad" aria-selected="true">
+        <span aria-hidden="true">🗺️</span><span>Comunidad / Vecinos</span>
+      </button>
+    </nav>
+
+    <div id="panel-comunidad" class="panel-principal">
+
     <!-- BIENVENIDA -->
     <section class="bienvenida">
       <p class="etiqueta">RED HUMANA LOCAL</p>
@@ -124,7 +139,21 @@
       </p>
     </section>
 
-    <!-- ACCESOS PRINCIPALES -->
+    <!-- RADAR SOCIAL DE VECINOS -->
+    <section id="radar-vecinos" class="tarjeta radar-vecinos">
+      <div class="radar-encabezado">
+        <div>
+          <p class="etiqueta">RED HUMANA CERCANA</p>
+          <h2>Vecinos de la comunidad</h2>
+          <p class="texto-ayuda">Conocé perfiles registrados, sus publicaciones activas y cómo contactarles.</p>
+        </div>
+        <button id="btn-actualizar-vecinos" class="boton-secundario" type="button">ACTUALIZAR</button>
+      </div>
+      <div id="estado-vecinos" class="texto-ayuda" aria-live="polite">Cargando vecinos de tu comunidad…</div>
+      <div id="lista-vecinos" class="lista-vecinos" aria-live="polite"></div>
+    </section>
+
+    <!-- ACCESOS RÁPIDOS A MÓDULOS SECUNDARIOS -->
     <section class="acciones-principales">
 
       <!-- ICONO: GÓNDOLA COMUNITARIA -->
@@ -248,6 +277,8 @@
       </div>
     </section>
 
+    </div><!-- /#panel-comunidad -->
+
     <!-- =====================================================
          GÓNDOLA COMUNITARIA
          ===================================================== -->
@@ -278,9 +309,18 @@
         </p>
       </section>
 
+      <div class="selector-tipo-publicacion" role="group" aria-label="Elegí qué tipo de ficha querés crear">
+        <button id="btn-ficha-ofrezco" class="selector-ficha activa" type="button" aria-pressed="true">
+          <strong>OFREZCO</strong><small>Tengo algo para compartir</small>
+        </button>
+        <button id="btn-ficha-necesito" class="selector-ficha" type="button" aria-pressed="false">
+          <strong>NECESITO / BUSCO</strong><small>Estoy buscando algo</small>
+        </button>
+      </div>
+
       <form id="form-publicacion" class="tarjeta">
 
-        <label for="tipo-publicacion">¿Qué querés publicar?</label>
+        <label for="tipo-publicacion">Tipo de publicación</label>
 
         <select id="tipo-publicacion" required>
           <option value="necesidad">BUSCO: necesito algo</option>
@@ -380,6 +420,16 @@
           placeholder="Ej.: un producto, un servicio, alimentos, colaboración o nada."
         ></textarea>
 
+        <label for="zona-publicacion">Ubicación aproximada de lo que ofrecés o necesitás</label>
+        <input
+          id="zona-publicacion"
+          type="text"
+          maxlength="120"
+          placeholder="Barrio o localidad donde se ofrece o necesita"
+        >
+        <button id="btn-ubicacion-publicacion" class="boton-secundario" type="button">USAR UBICACIÓN APROXIMADA</button>
+        <small class="texto-ayuda">No se publica tu dirección ni tus coordenadas exactas.</small>
+
         <button class="boton-accion" type="submit">
           GUARDAR PUBLICACIÓN
         </button>
@@ -404,6 +454,14 @@
           placeholder="Buscá por servicio, título, detalle o categoría"
         >
 
+        <label for="filtro-zona-gondola">Buscar en barrio o localidad</label>
+        <input
+          id="filtro-zona-gondola"
+          type="search"
+          maxlength="120"
+          placeholder="Dejá vacío para usar tu zona seleccionada"
+        >
+
         <label for="filtro-tipo">Mostrar</label>
 
         <select id="filtro-tipo">
@@ -411,6 +469,11 @@
           <option value="necesidad">Solo lo que se busca</option>
           <option value="oferta">Solo lo que se ofrece</option>
         </select>
+
+        <label class="control-check filtro-offline" for="filtro-offline-activo">
+          <input id="filtro-offline-activo" type="checkbox">
+          Mostrar solo vecinos con comunicación offline activa
+        </label>
 
         <div class="acciones-busqueda">
           <button
@@ -428,7 +491,19 @@
           >
             LIMPIAR BÚSQUEDA
           </button>
+          <button
+            id="btn-actualizar-red"
+            class="boton-secundario boton-ancho"
+            type="button"
+          >
+            ACTUALIZAR RED
+          </button>
         </div>
+      </div>
+
+      <div id="filtro-vecino-activo" class="filtro-vecino-activo" hidden>
+        <span id="texto-filtro-vecino">Publicaciones de un vecino</span>
+        <button id="btn-quitar-filtro-vecino" class="boton-secundario" type="button">VER TODAS</button>
       </div>
 
       <h3>Publicaciones</h3>
@@ -704,6 +779,15 @@
 
       <form id="form-evaluacion" class="tarjeta">
 
+        <label for="usuario-evaluado">Nombre visible de la contraparte</label>
+        <input
+          id="usuario-evaluado"
+          type="text"
+          maxlength="100"
+          placeholder="Nombre del vecino con quien intercambiaste"
+          required
+        >
+
         <label for="referencia-evaluacion">
           Referencia del intercambio
         </label>
@@ -779,6 +863,7 @@
       </button>
 
       <h2>Mi perfil comunitario</h2>
+      <p class="texto-ayuda">Primero ingresá con tu email y contraseña. Si sos nuevo, creá tu cuenta y completá todos los datos para habilitar la comunidad.</p>
 
       <form id="form-perfil" class="tarjeta">
 
@@ -836,7 +921,7 @@
       </form>
 
       <section class="tarjeta" aria-labelledby="titulo-mis-publicaciones">
-        <h3 id="titulo-mis-publicaciones">Mis publicaciones</h3>
+        <h3 id="titulo-mis-publicaciones">Mis publicaciones activas</h3>
         <p class="texto-ayuda">Acá vas a encontrar los productos y servicios publicados desde tu cuenta.</p>
         <div id="lista-mis-publicaciones" class="lista-publicaciones" aria-live="polite">
           Iniciá sesión para consultar tus publicaciones.
@@ -849,6 +934,17 @@
       </p>
 
     </section>
+
+    <div id="modal-whatsapp-seguro" class="modal-confirmacion-contacto" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-modal-contacto">
+      <div class="modal-confirmacion-contenido tarjeta">
+        <h3 id="titulo-modal-contacto">Antes de contactar</h3>
+        <p>Vas a abrir una conversación con este vecino dentro de Humanómetro Comunidad. No compartas contraseñas, códigos ni datos privados.</p>
+        <div class="acciones-busqueda">
+          <button id="btn-confirmar-wsp" class="boton-accion" type="button">CONTINUAR A COMUNICACIÓN</button>
+          <button id="btn-cancelar-wsp" class="boton-secundario" type="button">CANCELAR</button>
+        </div>
+      </div>
+    </div>
 
     <footer class="pie">
       HUMANÓMETRO COMUNIDAD · Ayuda mutua y responsabilidad.
@@ -867,51 +963,7 @@
 
   <script type="module" src="./js/app.js"></script>
 
-  <script>
-    // Control visual para alternar entre el modo barrio estricto y el modo exploración de otra localidad
-    const modoVisualizacion = document.getElementById("modo-visualizacion");
-    const contenedorExplorarZona = document.getElementById("contenedor-explorar-zona");
 
-    function actualizarModoVisualizacion() {
-      const esExplorar = modoVisualizacion?.value === "explorar";
-      if (contenedorExplorarZona) {
-        contenedorExplorarZona.hidden = !esExplorar;
-      }
-    }
-
-    modoVisualizacion?.addEventListener("change", actualizarModoVisualizacion);
-    actualizarModoVisualizacion();
-
-    // Categoría personalizada
-    const categoriaPublicacion = document.getElementById(
-      "categoria-publicacion"
-    );
-
-    const contenedorOtraCategoria = document.getElementById(
-      "contenedor-otra-categoria"
-    );
-
-    const otraCategoria = document.getElementById("otra-categoria");
-
-    function actualizarCategoriaPersonalizada() {
-      const mostrar = categoriaPublicacion?.value === "otra";
-
-      if (contenedorOtraCategoria) {
-        contenedorOtraCategoria.hidden = !mostrar;
-      }
-
-      if (otraCategoria) {
-        otraCategoria.required = mostrar;
-      }
-    }
-
-    categoriaPublicacion?.addEventListener(
-      "change",
-      actualizarCategoriaPersonalizada
-    );
-
-    actualizarCategoriaPersonalizada();
-  </script>
 
 </body>
 </html>
