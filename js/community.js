@@ -6,13 +6,19 @@ import {
 } from "./auth.js";
 
 const STORAGE_KEY = "hm_publicaciones";
+
 const MATRIX_CONFIG = {
-  DB_NAME: 'HumanometroComunidadDB',
-  DB_VERSION: 1,
-  STORE_PUBLICACIONES: 'publicaciones_cache'
+  DB_NAME: "HumanometroComunidadDB",
+  DB_VERSION: 2,
+  STORE_PUBLICACIONES: "publicaciones_cache",
+  STORE_MENSAJES: "mensajes_pendientes",
+  STORE_MEDICIONES: "mediciones_pendientes"
 };
 
-// Umbral de vigencia temporal para la caché local (ej. 48 horas en milisegundos)
+const BRIDGEFY_URL =
+  "https://play.google.com/store/apps/details?id=me.bridgefy.main";
+
+// Umbral de vigencia temporal para la caché local (48 horas).
 const UMBRAL_VIGENCIA_CACHE_MS = 48 * 60 * 60 * 1000;
 
 export function initCommunity({
@@ -69,6 +75,7 @@ export function initCommunity({
   let dbMatrixInstance = null;
 
   // --- RADAR DE VECINOS: usa las tablas existentes perfiles/publicaciones ---
+
   function normalizarZonaRadar(valor) {
     return String(valor || "")
       .normalize("NFD")
@@ -77,42 +84,100 @@ export function initCommunity({
       .toLocaleLowerCase("es-AR");
   }
 
+  // Indicador externo de mensajería offline.
+  // Solo aparece si el usuario activó la opción en su perfil.
+  function crearIndicadorMensajeriaOffline(perfil) {
+    if (!perfil || !perfil.mensajeria_offline) {
+      return null;
+    }
+
+    const enlace = document.createElement("a");
+    enlace.className = "indicador-mensajeria-offline";
+    enlace.href = BRIDGEFY_URL;
+    enlace.target = "_blank";
+    enlace.rel = "noopener noreferrer";
+    enlace.title =
+      "Este vecino declara contar con mensajería offline. Conocé Bridgefy.";
+    enlace.setAttribute(
+      "aria-label",
+      "Mensajería offline. Abrir Bridgefy en Google Play."
+    );
+
+    const icono = document.createElement("span");
+    icono.className = "indicador-mensajeria-offline-icon";
+    icono.setAttribute("aria-hidden", "true");
+    icono.textContent = "📶";
+
+    const texto = document.createElement("span");
+    texto.textContent = "Mensajería offline disponible";
+
+    const flecha = document.createElement("span");
+    flecha.setAttribute("aria-hidden", "true");
+    flecha.textContent = "↗";
+
+    enlace.append(icono, texto, flecha);
+
+    return enlace;
+  }
+
   async function cargarVecinos() {
     if (!listaVecinos) return;
+
     listaVecinos.replaceChildren();
-    if (estadoVecinos) estadoVecinos.textContent = "Buscando perfiles de vecinos…";
+
+    if (estadoVecinos) {
+      estadoVecinos.textContent = "Buscando perfiles de vecinos…";
+    }
 
     if (!navigator.onLine) {
-      if (estadoVecinos) estadoVecinos.textContent = "El radar necesita conexión para consultar los perfiles comunitarios.";
+      if (estadoVecinos) {
+        estadoVecinos.textContent =
+          "El radar necesita conexión para consultar los perfiles comunitarios.";
+      }
       return;
     }
 
     try {
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
-        .select("id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, actualizado_en");
+        .select(
+          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, actualizado_en"
+        );
 
       if (errorPerfiles) throw errorPerfiles;
 
-      const { data: publicacionesActivas, error: errorPublicaciones } = await supabase
-        .from("publicaciones")
-        .select("perfil_id")
-        .eq("estado", "activa");
+      const { data: publicacionesActivas, error: errorPublicaciones } =
+        await supabase
+          .from("publicaciones")
+          .select("perfil_id")
+          .eq("estado", "activa");
 
       if (errorPublicaciones) throw errorPublicaciones;
 
       const conteos = new Map();
+
       (publicacionesActivas || []).forEach((publicacion) => {
         const id = String(publicacion.perfil_id || "");
-        if (id) conteos.set(id, (conteos.get(id) || 0) + 1);
+
+        if (id) {
+          conteos.set(id, (conteos.get(id) || 0) + 1);
+        }
       });
 
       const usuario = await obtenerUsuarioActual();
       const perfilPropio = await obtenerPerfilActual();
+
       const modo = getItem("hm_modo_visualizacion", "barrio");
+
       const zonaElegida = modo === "explorar"
         ? getItem("hm_zona_explorar", "")
-        : (getItem("hm_barrio", "") || perfilPropio?.zona_aproximada || perfilPropio?.localidad || "");
+        : (
+            getItem("hm_barrio", "") ||
+            perfilPropio?.zona_aproximada ||
+            perfilPropio?.localidad ||
+            ""
+          );
+
       const zonaNormalizada = normalizarZonaRadar(zonaElegida);
 
       let vecinos = (perfiles || []).filter((perfil) =>
@@ -122,13 +187,17 @@ export function initCommunity({
         String(perfil.localidad || "").trim() &&
         String(perfil.foto_url || "").trim()
       );
+
       if (zonaNormalizada) {
         vecinos = vecinos.filter((perfil) => {
           const localidad = normalizarZonaRadar(perfil.localidad);
           const zona = normalizarZonaRadar(perfil.zona_aproximada);
+
           return modo === "explorar"
-            ? localidad.includes(zonaNormalizada) || zona.includes(zonaNormalizada)
-            : zona === zonaNormalizada || localidad === zonaNormalizada;
+            ? localidad.includes(zonaNormalizada) ||
+              zona.includes(zonaNormalizada)
+            : zona === zonaNormalizada ||
+              localidad === zonaNormalizada;
         });
       } else {
         vecinos = [];
@@ -137,6 +206,7 @@ export function initCommunity({
       vecinos.sort((a, b) => {
         const fechaA = new Date(a.actualizado_en || 0).getTime();
         const fechaB = new Date(b.actualizado_en || 0).getTime();
+
         return fechaB - fechaA;
       });
 
@@ -146,10 +216,12 @@ export function initCommunity({
             ? `Todavía no encontramos perfiles registrados en ${zonaElegida}.`
             : "Para ver vecinos, guardá primero tu barrio o localidad en el selector de comunidad.";
         }
+
         return;
       }
 
       const fragmento = document.createDocumentFragment();
+
       vecinos.forEach((perfil) => {
         const tarjeta = document.createElement("article");
         tarjeta.className = "tarjeta-vecino";
@@ -159,6 +231,7 @@ export function initCommunity({
 
         const avatar = document.createElement("div");
         avatar.className = "vecino-avatar";
+
         if (perfil.foto_url) {
           const imagen = document.createElement("img");
           imagen.src = perfil.foto_url;
@@ -166,93 +239,214 @@ export function initCommunity({
           imagen.loading = "lazy";
           avatar.appendChild(imagen);
         } else {
-          avatar.textContent = String(perfil.nombre_visible || "H").trim().charAt(0).toUpperCase() || "H";
+          avatar.textContent =
+            String(perfil.nombre_visible || "H")
+              .trim()
+              .charAt(0)
+              .toUpperCase() || "H";
         }
 
         const identidad = document.createElement("div");
         identidad.className = "vecino-identidad";
+
         const nombre = document.createElement("h3");
-        nombre.textContent = perfil.nombre_visible || "Vecino de la comunidad";
+        nombre.textContent =
+          perfil.nombre_visible || "Vecino de la comunidad";
+
         const ubicacion = document.createElement("p");
-        ubicacion.textContent = [perfil.localidad, perfil.zona_aproximada].filter(Boolean).join(" · ") || "Zona no especificada";
+        ubicacion.textContent = [
+          perfil.localidad,
+          perfil.zona_aproximada
+        ].filter(Boolean).join(" · ") || "Zona no especificada";
+
         identidad.append(nombre, ubicacion);
         encabezado.append(avatar, identidad);
         tarjeta.appendChild(encabezado);
 
         const presentacion = document.createElement("p");
         presentacion.className = "vecino-presentacion";
-        presentacion.textContent = perfil.presentacion || "Este vecino todavía no agregó una presentación.";
+        presentacion.textContent =
+          perfil.presentacion ||
+          "Este vecino todavía no agregó una presentación.";
+
         tarjeta.appendChild(presentacion);
 
         const datos = document.createElement("div");
         datos.className = "vecino-indicadores";
-        const publicaciones = document.createElement("span");
-        publicaciones.textContent = `📦 ${conteos.get(String(perfil.id)) || 0} publicaciones activas`;
-        datos.appendChild(publicaciones);
+
+        const publicacionesVecino = document.createElement("span");
+        publicacionesVecino.textContent =
+          `📦 ${conteos.get(String(perfil.id)) || 0} publicaciones activas`;
+
+        datos.appendChild(publicacionesVecino);
+
         if (perfil.conectividad_disponible) {
           const conectividad = document.createElement("span");
           conectividad.className = "vecino-conectividad";
-          const modalidad = perfil.conectividad_modalidad || "solidaria";
-          conectividad.textContent = `📡 Conectividad: ${modalidad}${perfil.conectividad_emergencias ? " · Emergencias" : ""}`;
+
+          const modalidad =
+            perfil.conectividad_modalidad || "solidaria";
+
+          conectividad.textContent =
+            `📡 Conectividad: ${modalidad}` +
+            (perfil.conectividad_emergencias ? " · Emergencias" : "");
+
           datos.appendChild(conectividad);
         }
+
         tarjeta.appendChild(datos);
+
+        // NUEVO: indicador de mensajería offline en el Radar.
+        // El enlace lleva directamente a Google Play.
+        const indicadorOffline =
+          crearIndicadorMensajeriaOffline(perfil);
+
+        if (indicadorOffline) {
+          tarjeta.appendChild(indicadorOffline);
+        }
 
         const acciones = document.createElement("div");
         acciones.className = "vecino-acciones";
+
         const verPublicaciones = document.createElement("button");
         verPublicaciones.type = "button";
         verPublicaciones.className = "boton-secundario";
         verPublicaciones.textContent = "VER PUBLICACIONES";
+
         verPublicaciones.addEventListener("click", () => {
           perfilFiltroActivo = perfil.id;
           perfilFiltroNombre = perfil.nombre_visible || "Vecino";
-          if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
-          if (textoFiltroVecino) textoFiltroVecino.textContent = `Mostrando publicaciones de ${perfilFiltroNombre}`;
+
+          if (filtroVecinoActivo) {
+            filtroVecinoActivo.hidden = false;
+          }
+
+          if (textoFiltroVecino) {
+            textoFiltroVecino.textContent =
+              `Mostrando publicaciones de ${perfilFiltroNombre}`;
+          }
+
           cargarPublicacionesRemotas();
-          window.dispatchEvent(new CustomEvent("abrirVistaGondola"));
+
+          window.dispatchEvent(
+            new CustomEvent("abrirVistaGondola")
+          );
         });
+
         acciones.appendChild(verPublicaciones);
 
         const contactar = document.createElement("button");
         contactar.type = "button";
         contactar.className = "boton-accion";
         contactar.textContent = "CONTACTAR VECINO";
+
         contactar.addEventListener("click", () => {
           if (typeof window.abrirChatConVecino === "function") {
-            window.abrirChatConVecino(perfil.nombre_visible || "Vecino", perfil.id);
+            window.abrirChatConVecino(
+              perfil.nombre_visible || "Vecino",
+              perfil.id
+            );
           } else {
-            window.dispatchEvent(new CustomEvent("abrirVistaComunicacion"));
+            window.dispatchEvent(
+              new CustomEvent("abrirVistaComunicacion")
+            );
           }
         });
+
         acciones.appendChild(contactar);
         tarjeta.appendChild(acciones);
+
         fragmento.appendChild(tarjeta);
       });
 
       listaVecinos.appendChild(fragmento);
-      if (estadoVecinos) estadoVecinos.textContent = `${vecinos.length} vecino${vecinos.length === 1 ? "" : "s"} encontrado${vecinos.length === 1 ? "" : "s"} · ordenados por actividad reciente.`;
+
+      if (estadoVecinos) {
+        estadoVecinos.textContent =
+          `${vecinos.length} vecino${vecinos.length === 1 ? "" : "s"} encontrado${vecinos.length === 1 ? "" : "s"} · ordenados por actividad reciente.`;
+      }
+
     } catch (error) {
       console.error("No se pudo cargar el radar de vecinos:", error);
-      if (estadoVecinos) estadoVecinos.textContent = "No se pudo actualizar el radar. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
+
+      if (estadoVecinos) {
+        estadoVecinos.textContent =
+          "No se pudo actualizar el radar. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
+      }
     }
   }
 
   // --- NÚCLEO MATRIX: INDEXEDDB LOCAL ---
+
   function abrirMatrixDB() {
     return new Promise((resolve, reject) => {
-      if (dbMatrixInstance) return resolve(dbMatrixInstance);
+      if (dbMatrixInstance) {
+        return resolve(dbMatrixInstance);
+      }
 
-      const request = indexedDB.open(MATRIX_CONFIG.DB_NAME, MATRIX_CONFIG.DB_VERSION);
+      if (!("indexedDB" in window)) {
+        reject(new Error("IndexedDB no está disponible."));
+        return;
+      }
+
+      const request = indexedDB.open(
+        MATRIX_CONFIG.DB_NAME,
+        MATRIX_CONFIG.DB_VERSION
+      );
+
       request.onerror = (e) => reject(e.target.error);
+
       request.onsuccess = (e) => {
         dbMatrixInstance = e.target.result;
+
+        dbMatrixInstance.onversionchange = () => {
+          dbMatrixInstance.close();
+          dbMatrixInstance = null;
+        };
+
         resolve(dbMatrixInstance);
       };
+
       request.onupgradeneeded = (e) => {
         const db = e.target.result;
-        if (!db.objectStoreNames.contains(MATRIX_CONFIG.STORE_PUBLICACIONES)) {
-          db.createObjectStore(MATRIX_CONFIG.STORE_PUBLICACIONES, { keyPath: 'id' });
+
+        if (
+          !db.objectStoreNames.contains(
+            MATRIX_CONFIG.STORE_PUBLICACIONES
+          )
+        ) {
+          db.createObjectStore(
+            MATRIX_CONFIG.STORE_PUBLICACIONES,
+            { keyPath: "id" }
+          );
+        }
+
+        if (
+          !db.objectStoreNames.contains(
+            MATRIX_CONFIG.STORE_MENSAJES
+          )
+        ) {
+          db.createObjectStore(
+            MATRIX_CONFIG.STORE_MENSAJES,
+            {
+              keyPath: "id",
+              autoIncrement: true
+            }
+          );
+        }
+
+        if (
+          !db.objectStoreNames.contains(
+            MATRIX_CONFIG.STORE_MEDICIONES
+          )
+        ) {
+          db.createObjectStore(
+            MATRIX_CONFIG.STORE_MEDICIONES,
+            {
+              keyPath: "id",
+              autoIncrement: true
+            }
+          );
         }
       };
     });
@@ -261,24 +455,56 @@ export function initCommunity({
   async function guardarMatrixCache(pubs) {
     try {
       const db = await abrirMatrixDB();
-      const tx = db.transaction([MATRIX_CONFIG.STORE_PUBLICACIONES], 'readwrite');
-      const store = tx.objectStore(MATRIX_CONFIG.STORE_PUBLICACIONES);
-      pubs.forEach(pub => store.put(pub));
+
+      const tx = db.transaction(
+        [MATRIX_CONFIG.STORE_PUBLICACIONES],
+        "readwrite"
+      );
+
+      const store = tx.objectStore(
+        MATRIX_CONFIG.STORE_PUBLICACIONES
+      );
+
+      pubs.forEach((pub) => {
+        if (pub?.id) store.put(pub);
+      });
+
+      return await new Promise((resolve) => {
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+      });
+
     } catch (err) {
-      console.warn("Matrix: No se pudo guardar caché en IndexedDB", err);
+      console.warn(
+        "Matrix: No se pudo guardar caché en IndexedDB",
+        err
+      );
+
+      return false;
     }
   }
 
   async function obtenerMatrixCache() {
     try {
       const db = await abrirMatrixDB();
+
       return new Promise((resolve) => {
-        const tx = db.transaction([MATRIX_CONFIG.STORE_PUBLICACIONES], 'readonly');
-        const store = tx.objectStore(MATRIX_CONFIG.STORE_PUBLICACIONES);
+        const tx = db.transaction(
+          [MATRIX_CONFIG.STORE_PUBLICACIONES],
+          "readonly"
+        );
+
+        const store = tx.objectStore(
+          MATRIX_CONFIG.STORE_PUBLICACIONES
+        );
+
         const req = store.getAll();
+
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => resolve([]);
       });
+
     } catch {
       return [];
     }
@@ -295,9 +521,15 @@ export function initCommunity({
   function obtenerLocales() {
     try {
       const resultado = getItem(STORAGE_KEY, []);
+
       return Array.isArray(resultado) ? resultado : [];
+
     } catch (error) {
-      console.error("Error leyendo publicaciones locales:", error);
+      console.error(
+        "Error leyendo publicaciones locales:",
+        error
+      );
+
       return [];
     }
   }
@@ -305,9 +537,15 @@ export function initCommunity({
   function guardarLocales(datos) {
     try {
       const resultado = setItem(STORAGE_KEY, datos);
+
       return resultado !== false;
+
     } catch (error) {
-      console.error("Error guardando publicaciones locales:", error);
+      console.error(
+        "Error guardando publicaciones locales:",
+        error
+      );
+
       return false;
     }
   }
@@ -347,16 +585,26 @@ export function initCommunity({
   }
 
   // --- LÓGICA DE ZONA INTELIGENTE ---
+
   function obtenerZona() {
     try {
-      const zonaGondola = normalizarTexto(filtroZonaGondola?.value);
+      const zonaGondola =
+        normalizarTexto(filtroZonaGondola?.value);
+
       if (zonaGondola) return zonaGondola;
 
       const modo = getItem("hm_modo_visualizacion", "barrio");
+
       if (modo === "explorar") {
-        return normalizarTexto(getItem("hm_zona_explorar", ""));
+        return normalizarTexto(
+          getItem("hm_zona_explorar", "")
+        );
       }
-      return normalizarTexto(getItem("hm_barrio", ""));
+
+      return normalizarTexto(
+        getItem("hm_barrio", "")
+      );
+
     } catch {
       return "";
     }
@@ -380,7 +628,10 @@ export function initCommunity({
   function actualizarCampoOtraCategoria() {
     if (!categoriaInput || !contenedorOtraCategoria) return;
 
-    const valor = normalizarTexto(categoriaInput.value).toLowerCase();
+    const valor = normalizarTexto(
+      categoriaInput.value
+    ).toLowerCase();
+
     const mostrar = valor === "otra" || valor === "otro";
 
     contenedorOtraCategoria.hidden = !mostrar;
@@ -408,6 +659,7 @@ export function initCommunity({
       descripcion: texto
         .replace(coincidencia[0], "")
         .trim(),
+
       condicion: normalizarTexto(coincidencia[1])
     };
   }
@@ -431,7 +683,9 @@ export function initCommunity({
       que_necesita_a_cambio:
         registro.que_necesita_a_cambio ?? "",
       zona_aproximada: registro.zona_aproximada ?? "",
-      offline_activo: Boolean(registro.offline_activo ?? false),
+      offline_activo: Boolean(
+        registro.offline_activo ?? false
+      ),
       fotos: Array.isArray(registro.fotos)
         ? registro.fotos
         : [],
@@ -480,14 +734,17 @@ export function initCommunity({
     if (destruido || cargando) return;
 
     cargando = true;
+
     const identificadorCarga = ++ultimaCarga;
 
     const zonaActualFiltro = obtenerZona();
-    const palabraClave = normalizarTexto(busquedaInput?.value);
+    const palabraClave = normalizarTexto(
+      busquedaInput?.value
+    );
 
-    // Feedback visual instantáneo en pantalla para no dejar la interfaz muda
     if (lista) {
-      lista.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px; color: #38bdf8;'>🔍 Buscando publicaciones en la red...</p>";
+      lista.innerHTML =
+        "<p class='texto-ayuda' style='text-align: center; padding: 20px; color: #38bdf8;'>🔍 Buscando publicaciones en la red...</p>";
     }
 
     try {
@@ -516,64 +773,98 @@ export function initCommunity({
           .eq("estado", "activa");
 
         if (perfilFiltroActivo) {
-          query = query.eq("perfil_id", perfilFiltroActivo);
+          query = query.eq(
+            "perfil_id",
+            perfilFiltroActivo
+          );
         }
 
-        // Filtro flexible por zona (ilike)
         if (zonaActualFiltro && !perfilFiltroActivo) {
-          query = query.ilike("zona_aproximada", `%${zonaActualFiltro}%`);
+          query = query.ilike(
+            "zona_aproximada",
+            `%${zonaActualFiltro}%`
+          );
         }
 
-        // Filtro flexible por palabra clave (título o descripción) con ilike
         if (palabraClave) {
-          query = query.or(`titulo.ilike.%${palabraClave}%,descripcion.ilike.%${palabraClave}%`);
+          query = query.or(
+            `titulo.ilike.%${palabraClave}%,descripcion.ilike.%${palabraClave}%`
+          );
         }
 
-        const { data, error } = await query.order("creado_en", {
-          ascending: false
-        });
+        const { data, error } = await query.order(
+          "creado_en",
+          { ascending: false }
+        );
 
-        if (destruido || identificadorCarga !== ultimaCarga) {
+        if (
+          destruido ||
+          identificadorCarga !== ultimaCarga
+        ) {
           return;
         }
 
         if (!error && data) {
           const remotas = data.map(convertirRegistroRemoto);
+
           await guardarMatrixCache(remotas);
 
           publicaciones = combinarPublicaciones(
             obtenerLocales(),
             remotas
           );
+
           renderizarPublicaciones();
+
           cargando = false;
           return;
+
         } else if (error) {
-          console.error("Error en consulta Supabase:", error);
+          console.error(
+            "Error en consulta Supabase:",
+            error
+          );
         }
       }
+
     } catch (error) {
-      console.warn("Red intermitente, cargando desde red de relevo local Matrix...", error);
+      console.warn(
+        "Red intermitente, cargando desde red de relevo local Matrix...",
+        error
+      );
+
     } finally {
       cargando = false;
     }
 
-    // Fallback Matrix Cache local
+    if (destruido) return;
+
+    // Fallback Matrix Cache local.
     const cacheLocal = await obtenerMatrixCache();
-    let remotasCache = cacheLocal.map(convertirRegistroRemoto);
+
+    let remotasCache = cacheLocal.map(
+      convertirRegistroRemoto
+    );
 
     if (perfilFiltroActivo) {
-      remotasCache = remotasCache.filter(p => String(p.perfil_id) === String(perfilFiltroActivo));
+      remotasCache = remotasCache.filter(
+        p => String(p.perfil_id) === String(perfilFiltroActivo)
+      );
+
     } else if (zonaActualFiltro) {
-      remotasCache = remotasCache.filter(p => 
-        String(p.zona_aproximada || "").toLowerCase().includes(zonaActualFiltro.toLowerCase())
+      remotasCache = remotasCache.filter(p =>
+        String(p.zona_aproximada || "")
+          .toLowerCase()
+          .includes(zonaActualFiltro.toLowerCase())
       );
     }
 
     if (palabraClave) {
       const q = palabraClave.toLowerCase();
-      remotasCache = remotasCache.filter(p => 
-        p.titulo.toLowerCase().includes(q) || p.descripcion.toLowerCase().includes(q)
+
+      remotasCache = remotasCache.filter(p =>
+        p.titulo.toLowerCase().includes(q) ||
+        p.descripcion.toLowerCase().includes(q)
       );
     }
 
@@ -581,6 +872,7 @@ export function initCommunity({
       obtenerLocales(),
       remotasCache
     );
+
     renderizarPublicaciones();
   }
 
@@ -605,17 +897,36 @@ export function initCommunity({
       fechaLegible(publicacion.creado_en)
     );
 
-    const esIntercambio = Boolean(publicacion.modalidad_intercambio || publicacion.que_necesita_a_cambio);
+    const esIntercambio = Boolean(
+      publicacion.modalidad_intercambio ||
+      publicacion.que_necesita_a_cambio
+    );
 
-    const nombreAutor = escaparHTML(publicacion.perfil_nombre || "Vecino");
-    const autorId = publicacion.perfil_id || "";
-    const offlineActivo = Boolean(publicacion.offline_activo);
+    const nombreAutor = escaparHTML(
+      publicacion.perfil_nombre || "Vecino"
+    );
+
+    const autorId = escaparHTML(
+      publicacion.perfil_id || ""
+    );
+
+    const offlineActivo = Boolean(
+      publicacion.offline_activo
+    );
 
     let requiereRevalidar = false;
+
     if (publicacion.creado_en) {
-      const tiempoCreacion = new Date(publicacion.creado_en).getTime();
+      const tiempoCreacion = new Date(
+        publicacion.creado_en
+      ).getTime();
+
       const tiempoActual = Date.now();
-      if (!Number.isNaN(tiempoCreacion) && (tiempoActual - tiempoCreacion > UMBRAL_VIGENCIA_CACHE_MS)) {
+
+      if (
+        !Number.isNaN(tiempoCreacion) &&
+        tiempoActual - tiempoCreacion > UMBRAL_VIGENCIA_CACHE_MS
+      ) {
         requiereRevalidar = true;
       }
     }
@@ -680,9 +991,9 @@ export function initCommunity({
 
       <small class="publicacion-fecha">${fecha}</small>
 
-      <button 
-        class="boton-secundario btn-contactar-trueque" 
-        data-id="${autorId}" 
+      <button
+        class="boton-secundario btn-contactar-trueque"
+        data-id="${autorId}"
         data-nombre="${nombreAutor}"
         style="margin-top: 10px; width: 100%; font-size: 0.85rem; cursor: pointer;"
       >
@@ -696,30 +1007,61 @@ export function initCommunity({
   let contactoPendiente = null;
 
   document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("btn-contactar-trueque")) {
-      const destinatarioId = e.target.getAttribute("data-id");
-      const destinatarioNombre = e.target.getAttribute("data-nombre");
+    const boton = e.target.closest?.(".btn-contactar-trueque");
 
-      contactoPendiente = { destinatarioNombre, destinatarioId };
+    if (!boton) return;
 
-      const modalWsp = document.getElementById("modal-whatsapp-seguro");
-      if (modalWsp) {
-        modalWsp.hidden = false;
-      } else if (window.abrirChatConVecino) {
-        window.abrirChatConVecino(destinatarioNombre, destinatarioId);
-      }
+    const destinatarioId =
+      boton.getAttribute("data-id");
+
+    const destinatarioNombre =
+      boton.getAttribute("data-nombre");
+
+    contactoPendiente = {
+      destinatarioNombre,
+      destinatarioId
+    };
+
+    const modalWsp = document.getElementById(
+      "modal-whatsapp-seguro"
+    );
+
+    if (modalWsp) {
+      modalWsp.hidden = false;
+
+    } else if (window.abrirChatConVecino) {
+      window.abrirChatConVecino(
+        destinatarioNombre,
+        destinatarioId
+      );
     }
   });
 
-  const btnConfirmarWsp = document.getElementById("btn-confirmar-wsp");
-  const btnCancelarWsp = document.getElementById("btn-cancelar-wsp");
-  const modalWsp = document.getElementById("modal-whatsapp-seguro");
+  const btnConfirmarWsp = document.getElementById(
+    "btn-confirmar-wsp"
+  );
+
+  const btnCancelarWsp = document.getElementById(
+    "btn-cancelar-wsp"
+  );
+
+  const modalWsp = document.getElementById(
+    "modal-whatsapp-seguro"
+  );
 
   btnConfirmarWsp?.addEventListener("click", () => {
     if (modalWsp) modalWsp.hidden = true;
-    if (contactoPendiente && window.abrirChatConVecino) {
-      window.abrirChatConVecino(contactoPendiente.destinatarioNombre, contactoPendiente.destinatarioId);
+
+    if (
+      contactoPendiente &&
+      window.abrirChatConVecino
+    ) {
+      window.abrirChatConVecino(
+        contactoPendiente.destinatarioNombre,
+        contactoPendiente.destinatarioId
+      );
     }
+
     contactoPendiente = null;
   });
 
@@ -735,7 +1077,9 @@ export function initCommunity({
       filtroTipoInput?.value
     ).toLocaleLowerCase("es-AR");
 
-    const soloOffline = Boolean(filtroOfflineActivoInput?.checked);
+    const soloOffline = Boolean(
+      filtroOfflineActivoInput?.checked
+    );
 
     const filtradas = publicaciones.filter(publicacion => {
       const coincideTipo =
@@ -745,22 +1089,35 @@ export function initCommunity({
         String(publicacion.tipo)
           .toLocaleLowerCase("es-AR") === tipoFiltro;
 
-      const coincideOffline = !soloOffline || Boolean(publicacion.offline_activo);
-      const coincideAutor = !perfilFiltroActivo || String(publicacion.perfil_id || "") === String(perfilFiltroActivo);
+      const coincideOffline =
+        !soloOffline ||
+        Boolean(publicacion.offline_activo);
 
-      return coincideTipo && coincideOffline && coincideAutor;
+      const coincideAutor =
+        !perfilFiltroActivo ||
+        String(publicacion.perfil_id || "") ===
+          String(perfilFiltroActivo);
+
+      return coincideTipo &&
+        coincideOffline &&
+        coincideAutor;
     });
 
     lista.replaceChildren();
 
     if (filtradas.length === 0) {
       const mensaje = document.createElement("div");
+
       mensaje.className = "tarjeta-publicacion";
-      mensaje.style.cssText = "text-align: center; padding: 25px; background: #17212b; border: 1px solid #2b3b4f; border-radius: 8px;";
+
+      mensaje.style.cssText =
+        "text-align: center; padding: 25px; background: #17212b; border: 1px solid #2b3b4f; border-radius: 8px;";
+
       mensaje.innerHTML = `
         <p style="color: #cbd5e1; font-weight: bold; margin-bottom: 6px;">No se encontraron publicaciones con esos criterios.</p>
         <small style="color: #94a3b8;">Probá limpiando los filtros o revisá que la localidad escrita sea correcta.</small>
       `;
+
       lista.appendChild(mensaje);
       return;
     }
@@ -776,7 +1133,10 @@ export function initCommunity({
     lista.appendChild(fragmento);
   }
 
-  async function obtenerZonaPorCoordenadas(latitud, longitud) {
+  async function obtenerZonaPorCoordenadas(
+    latitud,
+    longitud
+  ) {
     const parametros = new URLSearchParams({
       format: "jsonv2",
       lat: String(latitud),
@@ -785,54 +1145,123 @@ export function initCommunity({
       addressdetails: "1",
       "accept-language": "es"
     });
-    const respuesta = await fetch(`https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`, {
-      headers: { Accept: "application/json" },
-      cache: "no-store"
-    });
-    if (!respuesta.ok) throw new Error("No se pudo consultar OpenStreetMap.");
+
+    const respuesta = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`,
+      {
+        headers: { Accept: "application/json" },
+        cache: "no-store"
+      }
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudo consultar OpenStreetMap."
+      );
+    }
+
     const datos = await respuesta.json();
     const direccion = datos.address || {};
-    const zona = direccion.neighbourhood || direccion.suburb || direccion.quarter ||
-      direccion.city_district || direccion.village || direccion.town ||
-      direccion.city || direccion.municipality || direccion.county;
-    if (!zona) throw new Error("No se pudo reconocer el barrio o localidad.");
+
+    const zona =
+      direccion.neighbourhood ||
+      direccion.suburb ||
+      direccion.quarter ||
+      direccion.city_district ||
+      direccion.village ||
+      direccion.town ||
+      direccion.city ||
+      direccion.municipality ||
+      direccion.county;
+
+    if (!zona) {
+      throw new Error(
+        "No se pudo reconocer el barrio o localidad."
+      );
+    }
+
     return String(zona).trim();
   }
 
   function usarUbicacionEnPublicacion() {
     if (!navigator.geolocation) {
-      notificar("Este dispositivo no ofrece geolocalización.", "warning");
+      notificar(
+        "Este dispositivo no ofrece geolocalización.",
+        "warning"
+      );
       return;
     }
+
     if (!navigator.onLine) {
-      notificar("Necesitás conexión para identificar la zona con OpenStreetMap.", "warning");
+      notificar(
+        "Necesitás conexión para identificar la zona con OpenStreetMap.",
+        "warning"
+      );
       return;
     }
+
     if (botonUbicacionPublicacion) {
       botonUbicacionPublicacion.disabled = true;
-      botonUbicacionPublicacion.textContent = "IDENTIFICANDO ZONA…";
+      botonUbicacionPublicacion.textContent =
+        "IDENTIFICANDO ZONA…";
     }
-    navigator.geolocation.getCurrentPosition(async (posicion) => {
-      try {
-        const zona = await obtenerZonaPorCoordenadas(posicion.coords.latitude, posicion.coords.longitude);
-        if (zonaPublicacionInput) zonaPublicacionInput.value = zona;
-        notificar(`Zona aproximada identificada: ${zona}. Revisala antes de publicar.`, "success");
-      } catch (error) {
-        console.warn("No se pudo identificar la zona de la publicación:", error);
-        notificar("No se pudo identificar la zona. Podés escribirla manualmente.", "warning");
-      } finally {
+
+    navigator.geolocation.getCurrentPosition(
+      async (posicion) => {
+        try {
+          const zona = await obtenerZonaPorCoordenadas(
+            posicion.coords.latitude,
+            posicion.coords.longitude
+          );
+
+          if (zonaPublicacionInput) {
+            zonaPublicacionInput.value = zona;
+          }
+
+          notificar(
+            `Zona aproximada identificada: ${zona}. Revisala antes de publicar.`,
+            "success"
+          );
+
+        } catch (error) {
+          console.warn(
+            "No se pudo identificar la zona de la publicación:",
+            error
+          );
+
+          notificar(
+            "No se pudo identificar la zona. Podés escribirla manualmente.",
+            "warning"
+          );
+
+        } finally {
+          if (botonUbicacionPublicacion) {
+            botonUbicacionPublicacion.disabled = false;
+            botonUbicacionPublicacion.textContent =
+              "USAR UBICACIÓN APROXIMADA";
+          }
+        }
+      },
+      (error) => {
         if (botonUbicacionPublicacion) {
           botonUbicacionPublicacion.disabled = false;
-          botonUbicacionPublicacion.textContent = "USAR UBICACIÓN APROXIMADA";
+          botonUbicacionPublicacion.textContent =
+            "USAR UBICACIÓN APROXIMADA";
         }
+
+        notificar(
+          error.code === 1
+            ? "No autorizaste la ubicación."
+            : "No se pudo obtener la ubicación. Escribí la zona manualmente.",
+          "warning"
+        );
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 300000
       }
-    }, (error) => {
-      if (botonUbicacionPublicacion) {
-        botonUbicacionPublicacion.disabled = false;
-        botonUbicacionPublicacion.textContent = "USAR UBICACIÓN APROXIMADA";
-      }
-      notificar(error.code === 1 ? "No autorizaste la ubicación." : "No se pudo obtener la ubicación. Escribí la zona manualmente.", "warning");
-    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
+    );
   }
 
   function validarFormulario() {
@@ -850,19 +1279,28 @@ export function initCommunity({
       return null;
     }
 
-    const modalidad = normalizarTexto(modalidadInput?.value);
-    const necesita = normalizarTexto(necesitaInput?.value);
+    const modalidad = normalizarTexto(
+      modalidadInput?.value
+    );
+
+    const necesita = normalizarTexto(
+      necesitaInput?.value
+    );
 
     return {
       tipo,
       categoria,
       titulo,
       descripcion,
-      condicion: normalizarTexto(condicionInput?.value),
+      condicion: normalizarTexto(
+        condicionInput?.value
+      ),
       modalidad_intercambio: modalidad,
       que_necesita_a_cambio: necesita,
       zona_aproximada: normalizarTexto(
-        zonaPublicacionInput?.value || getItem("hm_barrio", "") || getItem("hm_zona_explorar", "")
+        zonaPublicacionInput?.value ||
+        getItem("hm_barrio", "") ||
+        getItem("hm_zona_explorar", "")
       )
     };
   }
@@ -899,13 +1337,15 @@ export function initCommunity({
       return;
     }
 
-    // Feedback claro en el botón y texto de estado para evitar dudas
     if (botonSubmitForm) {
       botonSubmitForm.disabled = true;
-      botonSubmitForm.textContent = "COMPARTIENDO EN LA RED...";
+      botonSubmitForm.textContent =
+        "COMPARTIENDO EN LA RED...";
     }
+
     if (estadoPublicacion) {
-      estadoPublicacion.textContent = "Compartiendo publicación con la comunidad...";
+      estadoPublicacion.textContent =
+        "Compartiendo publicación con la comunidad...";
     }
 
     const ahora = new Date().toISOString();
@@ -929,7 +1369,9 @@ export function initCommunity({
       que_necesita_a_cambio:
         datos.que_necesita_a_cambio,
       zona_aproximada: datos.zona_aproximada,
-      offline_activo: Boolean(getItem("hm_offline_activo", false)),
+      offline_activo: Boolean(
+        getItem("hm_offline_activo", false)
+      ),
       fotos: [],
       estado: "activa",
       actualizado_en: ahora
@@ -976,9 +1418,18 @@ export function initCommunity({
       );
 
       renderizarPublicaciones();
-      window.dispatchEvent(new CustomEvent("publicacionComunidadActualizada"));
+
+      window.dispatchEvent(
+        new CustomEvent("publicacionComunidadActualizada")
+      );
+
       form.reset();
-      if (zonaPublicacionInput) zonaPublicacionInput.value = getItem("hm_barrio", "") || "";
+
+      if (zonaPublicacionInput) {
+        zonaPublicacionInput.value =
+          getItem("hm_barrio", "") || "";
+      }
+
       actualizarCampoOtraCategoria();
 
       notificar(
@@ -990,6 +1441,7 @@ export function initCommunity({
         estadoPublicacion.textContent =
           "¡Publicado y visible en la red!";
       }
+
     } catch (error) {
       console.error(
         "Error inesperado al publicar:",
@@ -1005,6 +1457,7 @@ export function initCommunity({
       };
 
       const locales = obtenerLocales();
+
       locales.unshift(publicacionLocal);
       guardarLocales(locales);
 
@@ -1014,7 +1467,10 @@ export function initCommunity({
       );
 
       renderizarPublicaciones();
-      window.dispatchEvent(new CustomEvent("publicacionComunidadActualizada"));
+
+      window.dispatchEvent(
+        new CustomEvent("publicacionComunidadActualizada")
+      );
 
       notificar(
         "No se pudo conectar con el servidor, guardado localmente en este dispositivo.",
@@ -1025,10 +1481,12 @@ export function initCommunity({
         estadoPublicacion.textContent =
           "Guardado localmente en este dispositivo.";
       }
+
     } finally {
       if (botonSubmitForm) {
         botonSubmitForm.disabled = false;
-        botonSubmitForm.textContent = "GUARDAR PUBLICACIÓN";
+        botonSubmitForm.textContent =
+          "GUARDAR PUBLICACIÓN";
       }
     }
   }
@@ -1036,7 +1494,11 @@ export function initCommunity({
   function limpiarFiltros() {
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
-    if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
+
+    if (filtroVecinoActivo) {
+      filtroVecinoActivo.hidden = true;
+    }
+
     if (busquedaInput) {
       busquedaInput.value = "";
     }
@@ -1057,17 +1519,48 @@ export function initCommunity({
   }
 
   function actualizarSelectorFicha(tipo) {
-    if (tipoInput) tipoInput.value = tipo;
+    if (tipoInput) {
+      tipoInput.value = tipo;
+    }
+
     const ofrece = tipo === "oferta";
-    botonFichaOfrezco?.classList.toggle("activa", ofrece);
-    botonFichaNecesito?.classList.toggle("activa", !ofrece);
-    botonFichaOfrezco?.setAttribute("aria-pressed", String(ofrece));
-    botonFichaNecesito?.setAttribute("aria-pressed", String(!ofrece));
+
+    botonFichaOfrezco?.classList.toggle(
+      "activa",
+      ofrece
+    );
+
+    botonFichaNecesito?.classList.toggle(
+      "activa",
+      !ofrece
+    );
+
+    botonFichaOfrezco?.setAttribute(
+      "aria-pressed",
+      String(ofrece)
+    );
+
+    botonFichaNecesito?.setAttribute(
+      "aria-pressed",
+      String(!ofrece)
+    );
   }
 
-  botonFichaOfrezco?.addEventListener("click", () => actualizarSelectorFicha("oferta"));
-  botonFichaNecesito?.addEventListener("click", () => actualizarSelectorFicha("necesidad"));
-  tipoInput?.addEventListener("change", () => actualizarSelectorFicha(tipoInput.value));
+  botonFichaOfrezco?.addEventListener(
+    "click",
+    () => actualizarSelectorFicha("oferta")
+  );
+
+  botonFichaNecesito?.addEventListener(
+    "click",
+    () => actualizarSelectorFicha("necesidad")
+  );
+
+  tipoInput?.addEventListener(
+    "change",
+    () => actualizarSelectorFicha(tipoInput.value)
+  );
+
   actualizarSelectorFicha("oferta");
 
   const manejarCategoria = () => {
@@ -1093,9 +1586,17 @@ export function initCommunity({
   );
 
   actualizarRedBtn?.addEventListener("click", async () => {
-    notificar("Actualizando estado de la red...", "info");
+    notificar(
+      "Actualizando estado de la red...",
+      "info"
+    );
+
     await cargarPublicacionesRemotas();
-    notificar("¡Estado de la red actualizado con éxito!", "success");
+
+    notificar(
+      "¡Estado de la red actualizado con éxito!",
+      "success"
+    );
   });
 
   busquedaInput?.addEventListener("keydown", (evento) => {
@@ -1119,9 +1620,12 @@ export function initCommunity({
     }
   });
 
-  filtroOfflineActivoInput?.addEventListener("change", () => {
-    renderizarPublicaciones();
-  });
+  filtroOfflineActivoInput?.addEventListener(
+    "change",
+    () => {
+      renderizarPublicaciones();
+    }
+  );
 
   limpiarFiltrosBtn?.addEventListener(
     "click",
@@ -1133,45 +1637,93 @@ export function initCommunity({
     manejarSubmit
   );
 
-  window.addEventListener("cambioZonaComunidad", () => {
-    cargarPublicacionesRemotas();
-  });
+  window.addEventListener(
+    "cambioZonaComunidad",
+    () => {
+      cargarPublicacionesRemotas();
+    }
+  );
 
   actualizarCampoOtraCategoria();
-  if (zonaPublicacionInput && !zonaPublicacionInput.value) {
-    zonaPublicacionInput.value = getItem("hm_barrio", "") || getItem("hm_zona_explorar", "") || "";
-  }
-  botonUbicacionPublicacion?.addEventListener("click", usarUbicacionEnPublicacion);
 
-  botonActualizarVecinos?.addEventListener("click", cargarVecinos);
+  if (
+    zonaPublicacionInput &&
+    !zonaPublicacionInput.value
+  ) {
+    zonaPublicacionInput.value =
+      getItem("hm_barrio", "") ||
+      getItem("hm_zona_explorar", "") ||
+      "";
+  }
+
+  botonUbicacionPublicacion?.addEventListener(
+    "click",
+    usarUbicacionEnPublicacion
+  );
+
+  botonActualizarVecinos?.addEventListener(
+    "click",
+    cargarVecinos
+  );
+
   botonQuitarFiltroVecino?.addEventListener("click", () => {
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
-    if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
+
+    if (filtroVecinoActivo) {
+      filtroVecinoActivo.hidden = true;
+    }
+
     cargarPublicacionesRemotas();
   });
-  window.addEventListener("cambioZonaComunidad", cargarVecinos);
-  window.addEventListener("perfilComunidadActualizado", cargarVecinos);
-  window.addEventListener("online", cargarVecinos);
+
+  window.addEventListener(
+    "cambioZonaComunidad",
+    cargarVecinos
+  );
+
+  window.addEventListener(
+    "perfilComunidadActualizado",
+    cargarVecinos
+  );
+
+  window.addEventListener(
+    "online",
+    cargarVecinos
+  );
 
   cargarVecinos();
 
-  window.addEventListener('online', () => {
+  window.addEventListener("online", () => {
     cargarPublicacionesRemotas();
   });
 
-  abrirMatrixDB().then(() => {
-    obtenerMatrixCache().then(cacheLocal => {
-      const remotasCache = cacheLocal.map(convertirRegistroRemoto);
-      publicaciones = combinarPublicaciones(obtenerLocales(), remotasCache);
+  abrirMatrixDB()
+    .then(() => {
+      return obtenerMatrixCache();
+    })
+    .then(cacheLocal => {
+      const remotasCache = cacheLocal.map(
+        convertirRegistroRemoto
+      );
+
+      publicaciones = combinarPublicaciones(
+        obtenerLocales(),
+        remotasCache
+      );
+
+      renderizarPublicaciones();
+      cargarPublicacionesRemotas();
+    })
+    .catch(() => {
+      publicaciones = combinarPublicaciones(
+        obtenerLocales(),
+        []
+      );
+
       renderizarPublicaciones();
       cargarPublicacionesRemotas();
     });
-  }).catch(() => {
-    publicaciones = combinarPublicaciones(obtenerLocales(), []);
-    renderizarPublicaciones();
-    cargarPublicacionesRemotas();
-  });
 
   try {
     const resultado = supabase.auth.onAuthStateChange(() => {
@@ -1181,6 +1733,7 @@ export function initCommunity({
 
     suscripcionAuth =
       resultado?.data?.subscription ?? null;
+
   } catch (error) {
     console.error(
       "No se pudo registrar el cambio de sesión:",
@@ -1226,6 +1779,11 @@ export function initCommunity({
       );
 
       suscripcionAuth?.unsubscribe();
+
+      if (dbMatrixInstance) {
+        dbMatrixInstance.close();
+        dbMatrixInstance = null;
+      }
     }
   };
 }
