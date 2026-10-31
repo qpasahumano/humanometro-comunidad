@@ -274,9 +274,20 @@
         indicá su condición y qué necesitás a cambio.
       </p>
 
-      <!-- BÚSQUEDA, FILTROS INTEGRADOS Y BOTÓN DE ACTUALIZACIÓN FORZADA -->
+      <!-- BÚSQUEDA, FILTROS INTEGRADOS Y ZONA FLEXIBLE -->
       <div class="tarjeta filtros" style="background: #17212b; border: 1px solid #2b3b4f; margin-bottom: 20px;">
         <h3>🔍 Buscar publicaciones y Estado de Red</h3>
+
+        <!-- BÚSQUEDA POR LOCALIDAD/BARRIO DIRECTA EN GÓNDOLA -->
+        <label for="filtro-zona-gondola">📍 Zona / Localidad de búsqueda</label>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <input
+            id="filtro-zona-gondola"
+            type="text"
+            placeholder="Ej.: Esquel, Balvanera, Córdoba (o dejar vacío para tu barrio)"
+            style="flex: 1;"
+          >
+        </div>
 
         <label for="buscar-publicaciones">Palabra clave / Producto o servicio</label>
         <input
@@ -308,7 +319,7 @@
             BUSCAR EN ESTA ZONA
           </button>
 
-          <!-- NUEVO BOTÓN DE REVALIDACIÓN Y ACTUALIZACIÓN DE CACHÉ -->
+          <!-- BOTÓN DE REVALIDACIÓN Y ACTUALIZACIÓN DE CACHÉ -->
           <button
             id="btn-actualizar-red"
             class="boton-secundario boton-ancho"
@@ -501,9 +512,7 @@
         </p>
       </div>
 
-      <!-- =====================================================
-           RESILIENCIA TÁCTICA: KIT DE COMUNICACIÓN PREVENTIVO
-           ===================================================== -->
+      <!-- KIT DE COMUNICACIÓN PREVENTIVO -->
       <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff;">
         <h3 style="color: #38bdf8; margin-top: 0;">📡 Kit de Comunicación Táctico (Sin Internet)</h3>
         
@@ -546,9 +555,7 @@
         </p>
       </section>
 
-      <!-- =====================================================
-           GUÍA TÁCTICA: BÚSQUEDA Y CONTACTO OFFLINE POR BLUETOOTH
-           ===================================================== -->
+      <!-- GUÍA TÁCTICA: BÚSQUEDA Y CONTACTO OFFLINE POR BLUETOOTH -->
       <section class="tarjeta" style="background: #17212b; border: 1px solid #38bdf8; color: #fff; margin-top: 20px;">
         <h3 style="color: #38bdf8; margin-top: 0;">📶 ¿Cómo buscar y contactar a un vecino sin internet?</h3>
         
@@ -819,9 +826,12 @@
 
     </section>
 
-    <!-- PERFIL -->
+    <!-- =====================================================
+         PERFIL (CON BOTÓN VOLVER INCLUIDO)
+         ===================================================== -->
     <section id="vista-perfil" class="vista-interna" hidden>
 
+      <!-- BOTÓN VOLVER AGREGADO A LA SECCIÓN DE PERFIL -->
       <button class="boton-volver" data-volver type="button">
         ← Volver a la comunidad
       </button>
