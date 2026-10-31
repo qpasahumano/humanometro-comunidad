@@ -1,68 +1,78 @@
 import { initCommunity } from "./community.js";
 import { initConnectivity } from "./connectivity.js";
 import { initMessages } from "./messages.js";
+import { iniciarAutenticacion } from "./auth.js";
 import { getItem, setItem } from "./storage.js";
 
 const $ = (id) => document.getElementById(id);
 
 let navegacionConfigurada = false;
 let barrioConfigurado = false;
-let perfilConfigurado = false;
-let intercambiosConfigurados = false;
+let ayudaConfigurada = false;
+let evaluacionesConfiguradas = false;
+let conectividadSolidariaConfigurada = false;
+
+/* =========================
+   NOTIFICACIONES
+========================= */
 
 function mostrarNotificacion(mensaje) {
   const elemento = $("notificacion");
   if (!elemento) return;
+
   elemento.textContent = mensaje;
   elemento.hidden = false;
+
   clearTimeout(mostrarNotificacion.timer);
-  mostrarNotificacion.timer = setTimeout(() => { elemento.hidden = true; }, 3500);
+
+  mostrarNotificacion.timer = setTimeout(() => {
+    elemento.hidden = true;
+  }, 3500);
 }
 
-// ORDEN DE SOLAPAS: perfil (1), intercambios (2), comunidad (3 por defecto)
-function mostrarSolapa(nombreSolapa) {
-  const solapas = ["perfil", "intercambios", "comunidad"];
-  
-  solapas.forEach(s => {
-    const vista = $(`vista-solapa-${s === 'comunidad' ? 'comunidad-principal' : s}`);
-    const boton = $(`tab-${s}`);
-    if (vista) vista.hidden = s !== nombreSolapa;
-    if (boton) {
-      if (s === nombreSolapa) boton.classList.add("activo");
-      else boton.classList.remove("activo");
-    }
+/* =========================
+   NAVEGACIÓN ENTRE VISTAS
+========================= */
+
+function mostrarVista(nombre = null) {
+  const vistas = [
+    "vista-gondola",
+    "vista-comunicacion",
+    "vista-ayuda",
+    "vista-perfil",
+    "vista-humanometro"
+  ];
+
+  vistas.forEach((id) => {
+    const elemento = $(id);
+    if (elemento) elemento.hidden = id !== nombre;
   });
 
-  ["vista-comunicacion", "vista-ayuda"].forEach(id => {
-    const el = $(id);
-    if (el) el.hidden = true;
+  const elementosInicio = [
+    document.querySelector(".bienvenida"),
+    document.querySelector(".selector-barrio"),
+    document.querySelector(".acciones-principales"),
+    document.querySelector(".humanometro")
+  ];
+
+  elementosInicio.forEach((elemento) => {
+    if (elemento) elemento.hidden = Boolean(nombre);
   });
 
-  window.scrollTo({ top: 0, behavior: "auto" });
-}
-
-function mostrarVistaSecundaria(idVista) {
-  ["vista-comunicacion", "vista-ayuda"].forEach(id => {
-    const el = $(id);
-    if (el) el.hidden = id !== idVista;
+  window.scrollTo({
+    top: 0,
+    behavior: "auto"
   });
-
-  ["vista-solapa-perfil", "vista-solapa-intercambios", "vista-solapa-comunidad-principal"].forEach(id => {
-    const el = $(id);
-    if (el) el.hidden = true;
-  });
-
-  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function entrarALaComunidad() {
   const inicial = $("pantalla-inicial");
   const comunidad = $("pantalla-comunidad");
+
   if (inicial) inicial.hidden = true;
   if (comunidad) comunidad.hidden = false;
 
-  mostrarSolapa("comunidad"); // Inicia por defecto en el Radar
-  verificarSoftLockVencidos();
+  mostrarVista(null);
 }
 
 function configurarNavegacion() {
@@ -71,20 +81,36 @@ function configurarNavegacion() {
 
   $("btn-entrar")?.addEventListener("click", entrarALaComunidad);
 
-  document.querySelectorAll(".boton-solapa").forEach(boton => {
+  $("btn-gondola")?.addEventListener("click", () => {
+    mostrarVista("vista-gondola");
+  });
+
+  $("btn-comunicacion")?.addEventListener("click", () => {
+    mostrarVista("vista-comunicacion");
+  });
+
+  $("btn-ayuda")?.addEventListener("click", () => {
+    mostrarVista("vista-ayuda");
+  });
+
+  $("btn-humanometro")?.addEventListener("click", () => {
+    mostrarVista("vista-humanometro");
+  });
+
+  $("btn-perfil")?.addEventListener("click", () => {
+    mostrarVista("vista-perfil");
+  });
+
+  document.querySelectorAll("[data-volver]").forEach((boton) => {
     boton.addEventListener("click", () => {
-      const solapa = boton.getAttribute("data-solapa");
-      if (solapa) mostrarSolapa(solapa);
+      mostrarVista(null);
     });
   });
-
-  $("btn-comunicacion")?.addEventListener("click", () => { mostrarVistaSecundaria("vista-comunicacion"); });
-  $("btn-ayuda")?.addEventListener("click", () => { mostrarVistaSecundaria("vista-ayuda"); });
-
-  document.querySelectorAll("[data-volver-comunidad]").forEach((boton) => {
-    boton.addEventListener("click", () => { mostrarSolapa("comunidad"); });
-  });
 }
+
+/* =========================
+   GEOLOCALIZACIÓN INVERSA
+========================= */
 
 async function buscarBarrioPorCoordenadas(latitud, longitud) {
   const parametros = new URLSearchParams({
@@ -96,21 +122,50 @@ async function buscarBarrioPorCoordenadas(latitud, longitud) {
     "accept-language": "es"
   });
 
-  const respuesta = await fetch(`https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-    cache: "no-store"
-  });
+  const respuesta = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      },
+      cache: "no-store"
+    }
+  );
 
-  if (!respuesta.ok) throw new Error("No se pudo consultar el servicio geográfico.");
+  if (!respuesta.ok) {
+    throw new Error("No se pudo consultar el servicio geográfico.");
+  }
+
   const datos = await respuesta.json();
   const direccion = datos.address;
-  if (!direccion) throw new Error("No se encontró una dirección reconocible.");
 
-  const barrio = direccion.neighbourhood || direccion.suburb || direccion.quarter || direccion.city_district || direccion.borough || direccion.village || direccion.town || direccion.city;
-  if (!barrio) throw new Error("El servicio no identificó el barrio.");
+  if (!direccion) {
+    throw new Error("No se encontró una dirección reconocible.");
+  }
+
+  const barrio =
+    direccion.neighbourhood ||
+    direccion.suburb ||
+    direccion.quarter ||
+    direccion.city_district ||
+    direccion.borough ||
+    direccion.village ||
+    direccion.town ||
+    direccion.city ||
+    direccion.municipality ||
+    direccion.county;
+
+  if (!barrio) {
+    throw new Error("El servicio no identificó el barrio.");
+  }
+
   return String(barrio).trim();
 }
+
+/* =========================
+   BARRIO, LOCALIDAD Y EXPLORACIÓN
+========================= */
 
 function configurarBarrio() {
   if (barrioConfigurado) return;
@@ -120,446 +175,836 @@ function configurarBarrio() {
   const boton = $("btn-guardar-barrio");
   const estado = $("estado-barrio");
   const ubicacion = $("btn-ubicacion");
+  
   const modoVisualizacion = $("modo-visualizacion");
   const contenedorExplorarZona = $("contenedor-explorar-zona");
   const inputZonaExplorar = $("zona-explorar");
-  const btnExplorarZona = $("btn-explorar-zona");
 
   if (!input || !boton) return;
 
   input.value = getItem("hm_barrio", "");
-  if (modoVisualizacion) modoVisualizacion.value = getItem("hm_modo_visualizacion", "barrio");
-  if (inputZonaExplorar) inputZonaExplorar.value = getItem("hm_zona_explorar", "Mendoza");
+  
+  const modoGuardado = getItem("hm_modo_visualizacion", "barrio");
+  if (modoVisualizacion) {
+    modoVisualizacion.value = modoGuardado;
+  }
 
-  const actualizarVisibilidadExploracion = () => {
-    if (contenedorExplorarZona) contenedorExplorarZona.hidden = modoVisualizacion?.value !== "explorar";
-  };
+  const zonaExplorarGuardada = getItem("hm_zona_explorar", "Esquel");
+  if (inputZonaExplorar) {
+    inputZonaExplorar.value = zonaExplorarGuardada;
+  }
+
+  function actualizarVisibilidadExploracion() {
+    const esExplorar = modoVisualizacion?.value === "explorar";
+    if (contenedorExplorarZona) {
+      contenedorExplorarZona.hidden = !esExplorar;
+    }
+  }
+
   actualizarVisibilidadExploracion();
 
   modoVisualizacion?.addEventListener("change", () => {
-    setItem("hm_modo_visualizacion", modoVisualizacion.value);
+    const modo = modoVisualizacion.value;
+    setItem("hm_modo_visualizacion", modo);
     actualizarVisibilidadExploracion();
-    renderizarRadarVecinos();
+    
+    if (modo === "barrio") {
+      mostrarNotificacion("Modo de emergencia y barrio estricto activado.");
+    } else {
+      mostrarNotificacion("Modo exploración de otra localidad activado.");
+    }
+    
+    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
-  btnExplorarZona?.addEventListener("click", () => {
-    const zonaVal = inputZonaExplorar?.value.trim() || "";
-    if (!zonaVal) { mostrarNotificacion("Escribí la localidad a explorar."); return; }
+  inputZonaExplorar?.addEventListener("input", () => {
+    const zonaVal = inputZonaExplorar.value.trim();
     setItem("hm_zona_explorar", zonaVal);
-    mostrarNotificacion(`Explorando zona: ${zonaVal}`);
-    renderizarRadarVecinos();
+    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
-  if (input.value && estado) estado.textContent = `Comunidad seleccionada: ${input.value}`;
+  if (input.value && estado) {
+    estado.textContent = `Comunidad seleccionada: ${input.value}`;
+  }
 
   boton.addEventListener("click", () => {
     const barrio = input.value.trim();
-    if (!barrio) { mostrarNotificacion("Escribí tu barrio."); input.focus(); return; }
-    setItem("hm_barrio", barrio);
-    if (estado) estado.textContent = `Comunidad seleccionada: ${barrio}`;
-    mostrarNotificacion("Barrio guardado.");
-    renderizarRadarVecinos();
-  });
 
-  ubicacion?.addEventListener("click", () => {
-    if (!navigator.geolocation) { mostrarNotificacion("Geolocalización no disponible."); return; }
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      try {
-        const barrio = await buscarBarrioPorCoordenadas(pos.coords.latitude, pos.coords.longitude);
-        input.value = barrio;
-        if (estado) estado.textContent = `Barrio sugerido: ${barrio}. Guardá los cambios.`;
-        mostrarNotificacion("Ubicación identificada.");
-      } catch (e) { mostrarNotificacion("No se pudo identificar el barrio."); }
-    }, () => { mostrarNotificacion("Error de GPS."); });
-  });
-
-  renderizarRadarVecinos();
-}
-
-function renderizarRadarVecinos() {
-  const contenedor = $("lista-radar-vecinos");
-  if (!contenedor) return;
-  contenedor.replaceChildren();
-
-  const perfilActual = {
-    nombre: getItem("hm_nombre_usuario", "Usuario Actual"),
-    whatsapp: getItem("hm_whatsapp_usuario", "Sin WhatsApp"),
-    barrio: getItem("hm_barrio", "Balvanera"),
-    offline: getItem("hm_offline_activo", false)
-  };
-
-  const publicaciones = getItem("hm_publicaciones", []);
-  const conteoPubs = publicaciones.filter(p => p.estado !== "cerrado").length;
-
-  const tarjetaPropia = document.createElement("article");
-  tarjetaPropia.className = "tarjeta-publicacion";
-  tarjetaPropia.style.border = "1px solid #38bdf8";
-  tarjetaPropia.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-      <h3>👤 ${perfilActual.nombre} (Vos)</h3>
-      <span class="badge-publicaciones-activas">📦 ${conteoPubs} activas</span>
-    </div>
-    <p style="margin: 4px 0; font-size: 0.85rem;">📍 Zona: ${perfilActual.barrio}</p>
-    <p style="margin: 4px 0; font-size: 0.85rem;">📡 Comunicación offline: ${perfilActual.offline ? 'Activa' : 'Inactiva'}</p>
-    <p style="margin: 4px 0; font-size: 0.85rem;">💬 WhatsApp: ${perfilActual.whatsapp}</p>
-  `;
-  contenedor.appendChild(tarjetaPropia);
-
-  const vecinos = getItem("hm_vecinos_red", []);
-  vecinos.forEach(v => {
-    const t = document.createElement("article");
-    t.className = "tarjeta-publicacion";
-    t.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-        <h3>👤 ${v.nombre}</h3>
-        <span class="badge-publicaciones-activas">📦 ${v.pubActivas || 0} activas</span>
-      </div>
-      <p style="margin: 4px 0; font-size: 0.85rem;">📍 Zona: ${v.barrio}</p>
-      <p style="margin: 4px 0; font-size: 0.85rem;">📡 Offline: ${v.offline ? 'Activa' : 'Inactiva'}</p>
-      <p style="margin: 4px 0; font-size: 0.85rem;">💬 WhatsApp: ${v.whatsapp}</p>
-    `;
-    contenedor.appendChild(t);
-  });
-}
-
-function configurarIntercambios() {
-  if (intercambiosConfigurados) return;
-  intercambiosConfigurados = true;
-
-  const clave = "hm_intercambios_activos";
-  let regs = getItem(clave, []);
-  if (regs.length === 0) {
-    const limite = new Date();
-    limite.setHours(limite.getHours() + 72);
-    regs.push({
-      id: "intercambio-demo-1",
-      contraparte: "Vecino Comunitario",
-      referencia: "Trueque de prueba",
-      estado: "activo",
-      confirmado_a: false,
-      confirmado_b: false,
-      fecha_limite: limite.toISOString(),
-      prorroga_usada: false
-    });
-    setItem(clave, regs);
-  }
-  renderizarIntercambiosActivos();
-}
-
-function renderizarIntercambiosActivos() {
-  const contenedor = $("lista-intercambios-activos");
-  if (!contenedor) return;
-  contenedor.replaceChildren();
-
-  const regs = getItem("hm_intercambios_activos", []);
-  if (!regs.length) {
-    contenedor.innerHTML = `<p class="texto-ayuda">No hay intercambios activos.</p>`;
-    return;
-  }
-
-  regs.forEach(item => {
-    const t = document.createElement("article");
-    t.className = "tarjeta-publicacion";
-    const vencido = new Date() > new Date(item.fecha_limite) && item.estado === "activo";
-    t.innerHTML = `
-      <h3>Trueque con: ${item.contraparte}</h3>
-      <p style="margin: 4px 0; font-size: 0.85rem;">📝 ${item.referencia}</p>
-      <p style="margin: 4px 0; font-size: 0.85rem;">⏳ Estado: <strong>${item.estado.toUpperCase()}</strong></p>
-      ${vencido ? '<p style="color: #f87171; font-size: 0.82rem;">⚠️ Plazo de 72hs vencido.</p>' : ''}
-      ${item.estado === 'activo' ? `
-        <button class="boton-accion boton-ancho" type="button" onclick="window.confirmarConcretarIntercambio('${item.id}')" style="margin-top: 8px;">
-          🤝 Concretar Operación
-        </button>
-      ` : ''}
-    `;
-    contenedor.appendChild(t);
-  });
-}
-
-window.confirmarConcretarIntercambio = function(id) {
-  let regs = getItem("hm_intercambios_activos", []);
-  let item = regs.find(x => x.id === id);
-  if (!item) return;
-
-  item.confirmado_a = true;
-  item.confirmado_b = true;
-  item.estado = "finalizado";
-
-  let pubs = getItem("hm_publicaciones", []);
-  pubs = pubs.map(p => { if (p.estado !== "cerrado") p.estado = "cerrado"; return p; });
-  setItem("hm_publicaciones", pubs);
-  setItem("hm_intercambios_activos", regs);
-
-  renderizarIntercambiosActivos();
-  renderizarRadarVecinos();
-  abrirModalEvaluacionCruzada(item);
-};
-
-function abrirModalEvaluacionCruzada(item) {
-  const modal = $("modal-evaluacion-cruzada");
-  if (!modal) return;
-  $("eval-contraparte-nombre").textContent = item.contraparte;
-  $("eval-intercambio-id").value = item.id;
-  modal.hidden = false;
-}
-
-document.getElementById("form-evaluacion-cruzada-modal")?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const resultado = $("eval-resultado").value;
-  const detalle = $("eval-detalle").value.trim();
-
-  const evals = getItem("hm_evaluaciones", []);
-  evals.push({ id: crypto.randomUUID(), resultado, detalle, fecha: new Date().toISOString() });
-  setItem("hm_evaluaciones", evals);
-
-  $("modal-evaluacion-cruzada").hidden = true;
-  mostrarNotificacion("Evaluación guardada. Humanidad actualizada.");
-  renderizarEstadoHumanidad();
-});
-
-function verificarSoftLockVencidos() {
-  const regs = getItem("hm_intercambios_activos", []);
-  const ahora = new Date();
-  const vencidos = regs.filter(x => x.estado === "activo" && ahora > new Date(x.fecha_limite));
-  const modal = $("modal-soft-lock");
-  const cont = $("contenido-soft-lock-intercambios");
-
-  if (vencidos.length > 0 && modal && cont) {
-    modal.hidden = false;
-    cont.replaceChildren();
-    vencidos.forEach(v => {
-      const d = document.createElement("div");
-      d.innerHTML = `
-        <p style="color: #fca5a5;">Trueque vencido con ${v.contraparte}</p>
-        <button class="boton-accion boton-ancho" type="button" onclick="window.confirmarConcretarIntercambio('${v.id}'); document.getElementById('modal-soft-lock').hidden = true;">
-          Cerrar y Evaluar Ahora
-        </button>
-      `;
-      cont.appendChild(d);
-    });
-  } else if (modal) {
-    modal.hidden = true;
-  }
-}
-
-function configurarPerfil() {
-  if (perfilConfigurado) return;
-  perfilConfigurado = true;
-
-  const formulario = $("form-perfil");
-  const inputNombre = $("nombre-usuario");
-  const inputWhatsapp = $("whatsapp-usuario");
-  const inputOffline = $("offline-activo");
-  const inputArchivoFoto = $("foto-perfil-archivo");
-  const imgFotoVista = $("foto-perfil-vista");
-  const spanInicialFoto = $("foto-perfil-inicial");
-  const estadoPerfil = $("estado-perfil");
-
-  if (inputNombre) inputNombre.value = getItem("hm_nombre_usuario", "");
-  if (inputWhatsapp) inputWhatsapp.value = getItem("hm_whatsapp_usuario", "");
-  if (inputOffline) inputOffline.checked = Boolean(getItem("hm_offline_activo", false));
-
-  const fotoGuardada = getItem("hm_foto_perfil", "");
-  if (fotoGuardada && imgFotoVista && spanInicialFoto) {
-    imgFotoVista.src = fotoGuardada;
-    imgFotoVista.hidden = false;
-    spanInicialFoto.hidden = true;
-  }
-
-  inputArchivoFoto?.addEventListener("change", (e) => {
-    const archivo = e.target.files[0];
-    if (!archivo) return;
-    const lector = new FileReader();
-    lector.onload = (ev) => {
-      const base64 = ev.target.result;
-      setItem("hm_foto_perfil", base64);
-      if (imgFotoVista && spanInicialFoto) {
-        imgFotoVista.src = base64;
-        imgFotoVista.hidden = false;
-        spanInicialFoto.hidden = true;
-      }
-      mostrarNotificacion("Foto actualizada.");
-    };
-    lector.readAsDataURL(archivo);
-  });
-
-  formulario?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const nombre = inputNombre?.value.trim() || "";
-    const whatsapp = inputWhatsapp?.value.trim() || "";
-    const offline = Boolean(inputOffline?.checked);
-
-    if (!whatsapp || !nombre) {
-      mostrarNotificacion("El nombre y el WhatsApp son obligatorios.");
+    if (!barrio) {
+      mostrarNotificacion("Escribí el nombre de tu barrio.");
+      input.focus();
       return;
     }
 
-    setItem("hm_nombre_usuario", nombre);
-    setItem("hm_whatsapp_usuario", whatsapp);
-    setItem("hm_offline_activo", offline);
+    if (!setItem("hm_barrio", barrio)) {
+      mostrarNotificacion(
+        "No se pudo guardar el barrio en este dispositivo."
+      );
+      return;
+    }
 
-    if (estadoPerfil) estadoPerfil.textContent = "¡Perfil guardado!";
-    mostrarNotificacion("Perfil guardado con éxito.");
-    renderizarRadarVecinos();
+    if (estado) {
+      estado.textContent = `Comunidad seleccionada: ${barrio}`;
+    }
+
+    mostrarNotificacion("Barrio guardado en este dispositivo.");
+    window.dispatchEvent(new CustomEvent("cambioZonaComunidad"));
   });
 
-  renderizarEstadoHumanidad();
-  renderizarMisPublicacionesPerfil();
+  ubicacion?.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      mostrarNotificacion(
+        "Este navegador no ofrece geolocalización."
+      );
+      return;
+    }
+
+    if (!navigator.onLine) {
+      mostrarNotificacion(
+        "Necesitás internet para identificar el barrio automáticamente."
+      );
+      return;
+    }
+
+    ubicacion.disabled = true;
+    ubicacion.textContent = "BUSCANDO TU BARRIO...";
+
+    navigator.geolocation.getCurrentPosition(
+      async (posicion) => {
+        try {
+          const { latitude, longitude } = posicion.coords;
+
+          const barrio = await buscarBarrioPorCoordenadas(
+            latitude,
+            longitude
+          );
+
+          input.value = barrio;
+
+          if (estado) {
+            estado.textContent =
+              `Barrio sugerido: ${barrio}. ` +
+              "Verificá el nombre y pulsá GUARDAR.";
+          }
+
+          input.focus();
+
+          mostrarNotificacion(
+            "Ubicación aproximada identificada. Revisá el nombre y guardalo."
+          );
+        } catch (error) {
+          console.error("Error al identificar el barrio:", error);
+
+          if (estado) {
+            estado.textContent =
+              "No pudimos identificar el barrio automáticamente. " +
+              "Podés escribirlo manualmente.";
+          }
+
+          mostrarNotificacion(
+            "No se pudo identificar el barrio. Podés escribirlo manualmente."
+          );
+        } finally {
+          ubicacion.disabled = false;
+          ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
+        }
+      },
+      (error) => {
+        ubicacion.disabled = false;
+        ubicacion.textContent = "USAR MI UBICACIÓN APROXIMADA";
+
+        let mensaje =
+          "No se obtuvo la ubicación. Podés escribir el barrio manualmente.";
+
+        if (error.code === 1) {
+          mensaje =
+            "No autorizaste la ubicación. Podés escribir el barrio manualmente.";
+        } else if (error.code === 2) {
+          mensaje =
+            "El teléfono no pudo determinar la ubicación. Escribí el barrio manualmente.";
+        } else if (error.code === 3) {
+          mensaje =
+            "La ubicación tardó demasiado. Probá de nuevo o escribí el barrio.";
+        }
+
+        if (estado) estado.textContent = mensaje;
+        mostrarNotificacion(mensaje);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 300000
+      }
+    );
+  });
 }
 
-function renderizarEstadoHumanidad() {
-  const contenedor = $("contenedor-estado-humanidad");
-  if (!contenedor) return;
+/* =========================
+   TARJETAS INFORMATIVAS
+========================= */
 
-  const evals = getItem("hm_evaluaciones", []);
-  let puntos = 0;
-  evals.forEach(r => {
-    if (r.resultado === "buena") puntos += 100;
-    else if (r.resultado === "intermedia") puntos += 50;
-    else puntos += 25;
+function crearTarjeta(titulo, lineas = []) {
+  const tarjeta = document.createElement("article");
+  tarjeta.className = "tarjeta-publicacion";
+
+  const encabezado = document.createElement("h3");
+  encabezado.textContent = titulo;
+  tarjeta.appendChild(encabezado);
+
+  lineas.forEach((texto) => {
+    if (!texto) return;
+
+    const parrafo = document.createElement("p");
+    parrafo.textContent = texto;
+    tarjeta.appendChild(parrafo);
   });
 
-  const promedio = evals.length > 0 ? Math.round(puntos / evals.length) : 0;
-  contenedor.innerHTML = `
-    <p style="font-size: 2rem; font-weight: bold; color: #38bdf8; margin: 4px 0;">${promedio}%</p>
-    <p style="font-size: 0.82rem; color: #cbd5e1; margin: 0;">Basado en <strong>${evals.length}</strong> evaluaciones comunitarias.</p>
-  `;
+  return tarjeta;
 }
 
-function renderizarMisPublicacionesPerfil() {
-  const listaMisPubs = $("lista-mis-publicaciones");
-  if (!listaMisPubs) return;
-  listaMisPubs.replaceChildren();
+/* =========================
+   SOLICITUDES Y OFRECIMIENTOS
+========================= */
 
-  const publicaciones = getItem("hm_publicaciones", []);
-  const misPubs = publicaciones.filter(p => p.estado !== "cerrado");
+function validarPublicacionSegura(texto) {
+  const terminosProhibidos = [
+    'medicamento', 'medicamentos', 'remedio', 'remedios', 'farmaco', 'fármaco', 
+    'farmacos', 'fármacos', 'pastilla', 'pastillas', 'droga', 'drogas', 'ampolla', 
+    'ampollas', 'comprimido', 'comprimidos', 'jarabe', 'jarabes', 'vacuna', 'vacunas'
+  ];
+  
+  const textoNormalizado = texto.toLowerCase();
+  return !terminosProhibidos.some(termino => textoNormalizado.includes(termino));
+}
 
-  if (misPubs.length === 0) {
-    listaMisPubs.innerHTML = `<p class="texto-ayuda">No tenés publicaciones activas actualmente.</p>`;
-  } else {
-    misPubs.forEach(p => {
-      const art = document.createElement("article");
-      art.className = "tarjeta-publicacion";
-      art.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <h4 style="margin: 0 0 4px 0;">${p.tipo === 'oferta' ? '🟢 OFREZCO' : '🔵 BUSCO'}: ${p.titulo}</h4>
-          <button class="boton-secundario" type="button" style="padding: 2px 6px; font-size: 0.7rem; background: #991b1b; color: #fff;" onclick="window.cerrarMiPublicacion('${p.id}')">Eliminar</button>
-        </div>
-        <p style="margin: 4px 0; font-size: 0.84rem;">${p.detalle}</p>
-      `;
-      listaMisPubs.appendChild(art);
+function configurarAyuda() {
+  if (ayudaConfigurada) return;
+  ayudaConfigurada = true;
+
+  const formulario = $("form-ayuda");
+  const lista = $("lista-ayuda");
+  const estado = $("estado-ayuda");
+  const clave = "hm_solicitudes_ayuda";
+
+  function obtenerRegistros() {
+    const registros = getItem(clave, []);
+    return Array.isArray(registros) ? registros : [];
+  }
+
+  function renderizar() {
+    if (!lista) return;
+
+    lista.replaceChildren();
+    const registros = obtenerRegistros();
+
+    if (!registros.length) {
+      lista.appendChild(
+        crearTarjeta(
+          "Todavía no hay solicitudes ni ofrecimientos guardados."
+        )
+      );
+      return;
+    }
+
+    registros.slice().reverse().forEach((registro) => {
+      const tarjeta = crearTarjeta(
+        registro.tipoTexto || "REGISTRO DE AYUDA",
+        [
+          `Categoría: ${registro.categoriaTexto || "Sin especificar"}`,
+          registro.detalle || "",
+          registro.disponibilidad
+            ? `Disponibilidad: ${registro.disponibilidad}`
+            : "",
+          registro.barrio
+            ? `Barrio indicado: ${registro.barrio}`
+            : "",
+          registro.fecha
+            ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
+            : "",
+          "Registro guardado solamente en este dispositivo."
+        ]
+      );
+
+      lista.appendChild(tarjeta);
     });
   }
-}
 
-window.cerrarMiPublicacion = function(id) {
-  let pubs = getItem("hm_publicaciones", []);
-  pubs = pubs.map(p => { if (p.id === id) p.estado = "cerrado"; return p; });
-  setItem("hm_publicaciones", pubs);
-  mostrarNotificacion("Publicación eliminada.");
-  renderizarGondola();
-  renderizarRadarVecinos();
-  renderizarMisPublicacionesPerfil();
-};
+  formulario?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
 
-function configurarPublicaciones() {
-  const formPub = $("form-publicacion");
-  const listaPubs = $("lista-publicaciones");
-  const inputBuscar = $("buscar-publicaciones");
-  const filtroTipo = $("filtro-tipo");
+    const tipo = $("tipo-ayuda")?.value || "";
+    const categoria = $("categoria-ayuda")?.value || "";
+    const detalle = $("detalle-ayuda")?.value.trim() || "";
+    const disponibilidad =
+      $("disponibilidad-ayuda")?.value.trim() || "";
 
-  function renderizarGondola() {
-    if (!listaPubs) return;
-    listaPubs.replaceChildren();
+    if (!detalle) {
+      mostrarNotificacion("Contanos qué necesitás u ofrecés.");
+      return;
+    }
 
-    const pubs = getItem("hm_publicaciones", []);
-    const texto = inputBuscar?.value.toLowerCase().trim() || "";
-    const tipoFiltro = filtroTipo?.value || "todas";
+    if (!validarPublicacionSegura(detalle)) {
+      mostrarNotificacion(
+        "Por políticas de seguridad sanitaria no se permite publicar o solicitar medicamentos entre particulares. Consultá los Bancos de Medicamentos oficiales."
+      );
+      if (estado) {
+        estado.textContent = "Prohibida la publicación de fármacos particulares. Acudí a los Bancos de Medicamentos oficiales.";
+      }
+      return;
+    }
 
-    const filtradas = pubs.filter(p => {
-      if (p.estado === "cerrado") return false;
-      if (tipoFiltro !== "todas" && p.tipo !== tipoFiltro) return false;
-      if (texto && !p.titulo.toLowerCase().includes(texto) && !p.detalle.toLowerCase().includes(texto)) return false;
-      return true;
+    const tipos = {
+      solicitud: "SOLICITUD DE AYUDA",
+      oferta: "OFRECIMIENTO DE AYUDA",
+      carga: "PUNTO DE CARGA DE CELULARES"
+    };
+
+    const categorias = {
+      alimentos: "Alimentos",
+      ropa: "Ropa y calzado",
+      transporte: "Traslado",
+      energia: "Electricidad o carga de celular",
+      herramientas: "Herramientas o materiales",
+      acompanamiento: "Acompañamiento o colaboración",
+      otra: "Otra necesidad u oferta"
+    };
+
+    const registros = obtenerRegistros();
+
+    registros.push({
+      id: crearId(),
+      tipo,
+      tipoTexto: tipos[tipo] || "REGISTRO DE AYUDA",
+      categoria,
+      categoriaTexto: categorias[categoria] || categoria,
+      detalle,
+      disponibilidad,
+      barrio: getItem("hm_barrio", ""),
+      fecha: new Date().toISOString()
     });
 
-    if (filtradas.length === 0) {
-      listaPubs.innerHTML = `<p class="texto-ayuda">No hay publicaciones activas con esos filtros.</p>`;
-    } else {
-      filtradas.forEach(p => {
-        const tarjeta = document.createElement("article");
-        tarjeta.className = "tarjeta-publicacion";
-        tarjeta.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <h3 style="margin: 0 0 4px 0; font-size: 0.9rem;">${p.tipo === 'oferta' ? '🟢 OFREZCO' : '🔵 BUSCO'}: ${p.titulo}</h3>
-            <span style="font-size: 0.7rem; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 2px 6px; border-radius: 4px;">${p.categoria}</span>
-          </div>
-          <p style="margin: 4px 0; font-size: 0.85rem;">${p.detalle}</p>
-          <small style="color: var(--texto-suave);">📍 Zona: ${p.barrio || 'General'}</small>
-        `;
-        listaPubs.appendChild(tarjeta);
-      });
+    if (!setItem(clave, registros)) {
+      mostrarNotificacion(
+        "No se pudo guardar el registro de ayuda."
+      );
+      return;
+    }
+
+    formulario.reset();
+
+    if (estado) {
+      estado.textContent =
+        "Registro guardado localmente. Todavía no fue enviado a otros usuarios.";
+    }
+
+    renderizar();
+    mostrarNotificacion("Registro guardado en este dispositivo.");
+  });
+
+  renderizar();
+}
+
+/* =========================
+   EVALUACIONES DE INTERCAMBIOS
+========================= */
+
+function configurarEvaluaciones() {
+  if (evaluacionesConfiguradas) return;
+  evaluacionesConfiguradas = true;
+
+  const formulario = $("form-evaluacion");
+  const lista = $("lista-evaluaciones");
+  const estado = $("estado-evaluacion");
+  const clave = "hm_evaluaciones";
+
+  function obtenerRegistros() {
+    const registros = getItem(clave, []);
+    return Array.isArray(registros) ? registros : [];
+  }
+
+  function calcularPorcentajeHumanidad(registros) {
+    if (!Array.isArray(registros) || registros.length === 0) return 0;
+    
+    let puntajeAcumulado = 0;
+    registros.forEach(reg => {
+      if (reg.resultado === "buena") puntajeAcumulado += 100;
+      else if (reg.resultado === "intermedia") puntajeAcumulado += 50;
+      else if (reg.resultado === "cancelacion-mutua") puntajeAcumulado += 75;
+      else if (reg.resultado === "sin-acuerdo") puntajeAcumulado += 40;
+    });
+
+    const promedio = Math.round(puntajeAcumulado / registros.length);
+    return Math.min(Math.max(promedio, 0), 100);
+  }
+
+  function renderizar() {
+    if (!lista) return;
+
+    lista.replaceChildren();
+    const registros = obtenerRegistros();
+    const porcentajeActual = calcularPorcentajeHumanidad(registros);
+    const totalIntercambios = registros.length;
+
+    const umbralMinimoIntercambiosParaRiesgo = 3;
+    const estaEnRiesgo = totalIntercambios >= umbralMinimoIntercambiosParaRiesgo && porcentajeActual < 70;
+
+    const tarjetaProgreso = document.createElement("article");
+    tarjetaProgreso.className = "tarjeta";
+    
+    let htmlAlertaRiesgo = "";
+    if (estaEnRiesgo) {
+      htmlAlertaRiesgo = `
+        <div style="background: #7f1d1d; border: 1px solid #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; color: #fca5a5;">
+          <strong>⚠️ ATENCIÓN: Perfil en zona de riesgo comunitario</strong>
+          <p style="font-size: 0.85rem; margin: 5px 0 0 0;">
+            Tu medidor se encuentra por debajo del 70% requerido tras ${totalIntercambios} intercambios. Para mantener la pertenencia y confianza en la red, debés mejorar el cumplimiento y respeto en tus próximas experiencias.
+          </p>
+        </div>
+      `;
+    }
+
+    tarjetaProgreso.innerHTML = `
+      <h3>Progreso del Humanómetro</h3>
+      <p style="font-size: 2rem; font-weight: bold; color: ${estaEnRiesgo ? '#f87171' : '#38bdf8'}; margin: 5px 0;">${porcentajeActual}%</p>
+      <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 8px;">
+        Medición basada en <strong>${totalIntercambios}</strong> ${totalIntercambios === 1 ? 'intercambio registrado' : 'intercambios registrados'}.
+      </p>
+      ${htmlAlertaRiesgo}
+      <p class="texto-ayuda">El contador inicia por defecto en 0% y evoluciona de forma progresiva según el desarrollo y la valoración de tus experiencias comunitarias (requiere un mínimo de 70% para mantener estatus óptimo).</p>
+    `;
+    lista.appendChild(tarjetaProgreso);
+
+    if (!registros.length) {
+      lista.appendChild(
+        crearTarjeta("Todavía no hay evaluaciones guardadas. Tu medidor está en 0% (período inicial de adaptación).")
+      );
+      return;
+    }
+
+    registros.slice().reverse().forEach((registro) => {
+      lista.appendChild(
+        crearTarjeta(registro.referencia || "Intercambio", [
+          `Participante evaluado: ${registro.usuarioEvaluado || "No especificado"}`,
+          `Resultado: ${registro.resultadoTexto || "Sin especificar"}`,
+          registro.detalle || "",
+          registro.fecha
+            ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
+            : "",
+          "Evaluación comunitaria registrada."
+        ])
+      );
+    });
+  }
+
+  formulario?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+
+    const usuarioEvaluado = $("usuario-evaluado")?.value.trim() || "";
+    const referencia = $("referencia-evaluacion")?.value.trim() || "";
+    const resultado = $("resultado-evaluacion")?.value || "";
+    const detalle = $("detalle-evaluacion")?.value.trim() || "";
+
+    const nombreUsuarioActual = getItem("hm_nombre_usuario", "").trim().toLowerCase();
+
+    if (usuarioEvaluado && nombreUsuarioActual && usuarioEvaluado.toLowerCase() === nombreUsuarioActual) {
+      mostrarNotificacion("No podés evaluarte a vos mismo. Las evaluaciones deben ser realizadas por la contraparte del intercambio.");
+      if (estado) {
+        estado.textContent = "Error: No está permitida la autoevaluación de perfiles.";
+      }
+      return;
+    }
+
+    if (!usuarioEvaluado || !referencia || !detalle) {
+      mostrarNotificacion("Completá el nombre de la contraparte, la referencia y la explicación.");
+      return;
+    }
+
+    const textos = {
+      buena: "BUENA",
+      intermedia: "INTERMEDIA",
+      mala: "MALA",
+      "sin-acuerdo": "NO LLEGAMOS A UN ACUERDO",
+      "cancelacion-mutua": "CANCELACIÓN DE COMÚN ACUERDO"
+    };
+
+    const registros = obtenerRegistros();
+
+    registros.push({
+      id: crearId(),
+      usuarioEvaluado,
+      referencia,
+      resultado,
+      resultadoTexto: textos[resultado] || resultado,
+      detalle,
+      fecha: new Date().toISOString()
+    });
+
+    if (!setItem(clave, registros)) {
+      mostrarNotificacion("No se pudo guardar la evaluación.");
+      return;
+    }
+
+    formulario.reset();
+
+    if (estado) {
+      estado.textContent = "Evaluación guardada localmente. El medidor progresivo ha sido actualizado.";
+    }
+
+    renderizar();
+    mostrarNotificacion("Evaluación guardada con éxito.");
+  });
+
+  renderizar();
+}
+
+/* =========================
+   GESTIÓN DE PERFIL
+========================= */
+
+function configurarPerfil() {
+  const formulario = $("form-perfil");
+  const inputNombre = $("nombre-usuario");
+  const inputWhatsapp = $("whatsapp-usuario");
+  const estadoPerfil = $("estado-perfil");
+
+  if (!formulario) return;
+
+  if (inputNombre) {
+    inputNombre.value = getItem("hm_nombre_usuario", "");
+  }
+  if (inputWhatsapp) {
+    inputWhatsapp.value = getItem("hm_whatsapp_usuario", "");
+  }
+
+  formulario.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+
+    const nombre = inputNombre?.value.trim() || "";
+    const whatsapp = inputWhatsapp?.value.trim() || "";
+
+    if (!whatsapp) {
+      mostrarNotificacion("El número de WhatsApp es obligatorio para crear o actualizar el perfil.");
+      if (estadoPerfil) {
+        estadoPerfil.textContent = "Error: El número de WhatsApp es obligatorio como filtro de seguridad.";
+      }
+      inputWhatsapp?.focus();
+      return;
+    }
+
+    if (!nombre) {
+      mostrarNotificacion("Ingresá tu nombre visible.");
+      inputNombre?.focus();
+      return;
+    }
+
+    const guardadoNombre = setItem("hm_nombre_usuario", nombre);
+    const guardadoWhatsapp = setItem("hm_whatsapp_usuario", whatsapp);
+
+    if (!guardadoNombre || !guardadoWhatsapp) {
+      mostrarNotificacion("No se pudieron guardar los datos del perfil en este dispositivo.");
+      return;
+    }
+
+    if (estadoPerfil) {
+      estadoPerfil.textContent = "¡Perfil guardado correctamente con validación de WhatsApp!";
+    }
+
+    mostrarNotificacion("Perfil guardado con éxito.");
+  });
+}
+
+/* =========================
+   CONECTIVIDAD SOLIDARIA
+========================= */
+
+function configurarConectividadSolidaria() {
+  if (conectividadSolidariaConfigurada) return;
+  conectividadSolidariaConfigurada = true;
+
+  const formulario = $("form-conectividad");
+  const ofrece = $("conectividad-ofrece");
+  const opciones = $("opciones-conectividad");
+  const modalidad = $("conectividad-modalidad");
+  const zona = $("conectividad-zona");
+  const emergencias = $("conectividad-emergencias");
+  const disponibilidad = $("conectividad-disponibilidad");
+  const estadoPerfil = $("conectividad-estado");
+  const mensajeEstado = $("estado-perfil-conectividad");
+
+  const lista = $("lista-conectividad");
+  const estadoLista = $("estado-lista-conectividad");
+
+  const clave = "hm_conectividad_solidaria";
+
+  function obtenerPerfil() {
+    const perfil = getItem(clave, null);
+
+    if (!perfil || typeof perfil !== "object" || Array.isArray(perfil)) {
+      return {
+        ofrece: false,
+        modalidad: "gratuita",
+        zona: "",
+        emergencias: false,
+        disponibilidad: "",
+        estado: "activa",
+        fechaActualizacion: null
+      };
+    }
+
+    return {
+      ofrece: Boolean(perfil.ofrece),
+      modalidad: ["gratuita", "intercambio", "ambas"].includes(
+        perfil.modalidad
+      )
+        ? perfil.modalidad
+        : "gratuita",
+      zona: String(perfil.zona || ""),
+      emergencias: Boolean(perfil.emergencias),
+      disponibilidad: String(perfil.disponibilidad || ""),
+      estado: perfil.estado === "pausada" ? "pausada" : "activa",
+      fechaActualizacion: perfil.fechaActualizacion || null
+    };
+  }
+
+  function actualizarVisibilidadOpciones() {
+    if (!opciones || !ofrece) return;
+
+    opciones.hidden = !ofrece.checked;
+
+    opciones.querySelectorAll("input, select, textarea").forEach((campo) => {
+      campo.disabled = !ofrece.checked;
+    });
+  }
+
+  function cargarFormulario() {
+    const perfil = obtenerPerfil();
+
+    if (ofrece) ofrece.checked = perfil.ofrece;
+    if (modalidad) modalidad.value = perfil.modalidad;
+    if (zona) zona.value = perfil.zona;
+    if (emergencias) emergencias.checked = perfil.emergencias;
+    if (disponibilidad) disponibilidad.value = perfil.disponibilidad;
+    if (estadoPerfil) estadoPerfil.value = perfil.estado;
+
+    actualizarVisibilidadOpciones();
+
+    if (mensajeEstado) {
+      mensajeEstado.textContent = perfil.ofrece
+        ? perfil.estado === "activa"
+          ? "Tu ofrecimiento está guardado en este dispositivo y figura como activo localmente."
+          : "Tu ofrecimiento está pausado en este dispositivo."
+        : "Todavía no estás ofreciendo conectividad solidaria.";
     }
   }
 
-  formPub?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const tipo = $("tipo-publicacion").value;
-    const categoria = $("categoria-publicacion").value;
-    const titulo = $("titulo-publicacion").value.trim();
-    const detalle = $("detalle-publicacion").value.trim();
-    const barrio = getItem("hm_barrio", "Balvanera");
+  function textoModalidad(valor) {
+    const modalidades = {
+      gratuita: "Gratuita",
+      intercambio: "Por intercambio solidario",
+      ambas: "Gratuita o por intercambio solidario"
+    };
 
-    if (!titulo || !detalle) { mostrarNotificacion("Completá los campos obligatorios."); return; }
+    return modalidades[valor] || "Sin especificar";
+  }
 
-    let pubs = getItem("hm_publicaciones", []);
-    pubs.push({
-      id: crypto.randomUUID(),
-      tipo,
-      categoria,
-      titulo,
-      detalle,
-      barrio,
-      estado: "activo",
-      fecha: new Date().toISOString()
-    });
-    setItem("hm_publicaciones", pubs);
+  function renderizarLista() {
+    if (!lista) return;
 
-    mostrarNotificacion("¡Publicación guardada en la góndola!");
-    formPub.reset();
-    renderizarGondola();
-    renderizarRadarVecinos();
-    renderizarMisPublicacionesPerfil();
+    lista.replaceChildren();
+
+    const perfil = obtenerPerfil();
+
+    if (!perfil.ofrece || perfil.estado !== "activa") {
+      if (estadoLista) {
+        estadoLista.textContent =
+          "Todavía no hay ofrecimientos activos guardados en este dispositivo.";
+      }
+      return;
+    }
+
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "tarjeta-conectividad";
+
+    const titulo = document.createElement("h3");
+    titulo.textContent = "Ofrecimiento de conectividad solidaria";
+    tarjeta.appendChild(titulo);
+
+    const distintivo = document.createElement("span");
+    distintivo.className = "distintivo-conectividad";
+    distintivo.textContent = "ACTIVO EN ESTE DISPOSITIVO";
+    tarjeta.appendChild(distintivo);
+
+    const textoZona = document.createElement("p");
+    textoZona.textContent = `Zona o localidad: ${perfil.zona || getItem("hm_barrio", "") || "No especificada"}`;
+    tarjeta.appendChild(textoZona);
+
+    const textoMod = document.createElement("p");
+    textoMod.textContent = `Modalidad: ${textoModalidad(perfil.modalidad)}`;
+    tarjeta.appendChild(textoMod);
+
+    const textoDisponibilidad = document.createElement("p");
+    textoDisponibilidad.textContent =
+      `Disponibilidad: ${perfil.disponibilidad || "A coordinar"}`;
+    tarjeta.appendChild(textoDisponibilidad);
+
+    if (perfil.emergencias) {
+      const textoEmergencias = document.createElement("p");
+      textoEmergencias.textContent =
+        "Indica disponibilidad para situaciones de emergencia.";
+      tarjeta.appendChild(textoEmergencias);
+    }
+
+    const nota = document.createElement("p");
+    nota.textContent =
+      "Este ofrecimiento está guardado localmente en la red de relevo Matrix.";
+    tarjeta.appendChild(nota);
+
+    lista.appendChild(tarjeta);
+
+    if (estadoLista) {
+      estadoLista.textContent =
+        "Se muestra el ofrecimiento guardado en este dispositivo.";
+    }
+  }
+
+  ofrece?.addEventListener("change", actualizarVisibilidadOpciones);
+
+  formulario?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+
+    const perfilOfrece = Boolean(ofrece?.checked);
+
+    const nuevoPerfil = {
+      ofrece: perfilOfrece,
+      modalidad: modalidad?.value || "gratuita",
+      zona: zona?.value.trim() || "",
+      emergencias: Boolean(emergencias?.checked),
+      disponibilidad: disponibilidad?.value.trim() || "",
+      estado: estadoPerfil?.value === "pausada" ? "pausada" : "activa",
+      fechaActualizacion: new Date().toISOString()
+    };
+
+    if (
+      perfilOfrece &&
+      !nuevoPerfil.zona &&
+      !getItem("hm_barrio", "")
+    ) {
+      mostrarNotificacion(
+        "Indicá una zona o guardá primero tu barrio o localidad."
+      );
+      zona?.focus();
+      return;
+    }
+
+    if (!setItem(clave, nuevoPerfil)) {
+      mostrarNotificacion(
+        "No se pudo guardar la configuración de Conectividad Solidaria."
+      );
+      return;
+    }
+
+    actualizarVisibilidadOpciones();
+    renderizarLista();
+
+    if (mensajeEstado) {
+      mensajeEstado.textContent = !nuevoPerfil.ofrece
+        ? "Tu perfil dejó de ofrecer conectividad solidaria en este dispositivo."
+        : nuevoPerfil.estado === "activa"
+          ? "Tu ofrecimiento se guardó en este dispositivo."
+          : "Tu ofrecimiento quedó pausado en este dispositivo.";
+    }
+
+    mostrarNotificacion(
+      "Configuración de Conectividad Solidaria guardada localmente."
+    );
   });
 
-  inputBuscar?.addEventListener("input", renderizarGondola);
-  filtroTipo?.addEventListener("change", renderizarGondola);
-  renderizarGondola();
+  cargarFormulario();
+  renderizarLista();
 }
+
+/* =========================
+   IDENTIFICADOR
+========================= */
+
+function crearId() {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+/* =========================
+   INICIO DE LA APLICACIÓN
+========================= */
 
 async function iniciarAplicacion() {
   configurarNavegacion();
   configurarBarrio();
+  configurarAyuda();
+  configurarEvaluaciones();
   configurarPerfil();
-  configurarIntercambios();
-  configurarPublicaciones();
+  configurarConectividadSolidaria();
 
-  initCommunity({ getItem, setItem, mostrarNotificacion });
+  try {
+    await iniciarAutenticacion();
+  } catch (error) {
+    console.error("Error al iniciar la autenticación:", error);
+
+    mostrarNotificacion(
+      "No se pudo inicializar el acceso a la cuenta. Revisá tu conexión."
+    );
+  }
+
+  initCommunity({
+    getItem,
+    setItem,
+    mostrarNotificacion
+  });
+
   initConnectivity({
     onChange: (conectado) => {
       const estado = $("estado-conexion");
-      if (estado) estado.textContent = conectado ? "Conexión disponible." : "Sin conexión. Modo local activo.";
+
+      if (estado) {
+        estado.textContent = conectado
+          ? "Conexión a internet disponible. Sincronización Matrix activa."
+          : "Sin conexión. Red de relevo local e IndexedDB operando en segundo plano.";
+      }
     }
   });
-  initMessages({ getItem, setItem, mostrarNotificacion });
 
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-    try { await navigator.serviceWorker.register("./service-worker.js"); } catch (e) {}
+  initMessages({
+    getItem,
+    setItem,
+    mostrarNotificacion
+  });
+
+  if (
+    "serviceWorker" in navigator &&
+    location.protocol.startsWith("http")
+  ) {
+    try {
+      await navigator.serviceWorker.register("./service-worker.js");
+    } catch (error) {
+      console.error(
+        "No se pudo registrar el service worker:",
+        error
+      );
+    }
   }
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", iniciarAplicacion, { once: true });
+  document.addEventListener(
+    "DOMContentLoaded",
+    iniciarAplicacion,
+    { once: true }
+  );
 } else {
   iniciarAplicacion();
 }
