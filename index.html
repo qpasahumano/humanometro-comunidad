@@ -67,7 +67,7 @@
     </nav>
 
     <!-- =====================================================
-         COMUNIDAD: DIRECTORIO DE INTEGRANTES
+         COMUNIDAD: DIRECTORIO DE INTEGRANTES (FEED ESTILO TINDER)
          ===================================================== -->
     <div id="panel-comunidad" class="panel-principal">
 
@@ -76,56 +76,6 @@
         <h1>Tu comunidad, más cerca.</h1>
         <p>
           Recursos, comunicación y ayuda mutua para las personas de tu comunidad.
-        </p>
-      </section>
-
-      <!-- UBICACIÓN DE LA COMUNIDAD PROPIA -->
-      <section class="selector-barrio tarjeta">
-        <h2>Mi comunidad</h2>
-
-        <label for="barrio">Barrio o localidad de referencia</label>
-
-        <div class="fila-barrio">
-          <input
-            id="barrio"
-            type="text"
-            maxlength="100"
-            placeholder="Escribí tu barrio o localidad"
-            autocomplete="address-level3"
-          >
-
-          <button
-            id="btn-guardar-barrio"
-            class="boton-secundario"
-            type="button"
-          >
-            GUARDAR
-          </button>
-        </div>
-
-        <button
-          id="btn-ubicacion"
-          class="boton-secundario boton-ancho"
-          type="button"
-        >
-          USAR MI UBICACIÓN APROXIMADA
-        </button>
-
-        <p class="texto-ayuda">
-          La ubicación es opcional. Podés escribir tu barrio manualmente.
-          No publicamos tus coordenadas exactas.
-        </p>
-
-        <p class="texto-ayuda">
-          Identificación geográfica: datos de OpenStreetMap contributors.
-        </p>
-
-        <p
-          id="estado-barrio"
-          class="texto-ayuda"
-          aria-live="polite"
-        >
-          Elegí tu barrio para organizar la actividad local.
         </p>
       </section>
 
@@ -292,7 +242,7 @@
     </div><!-- /#panel-comunidad -->
 
     <!-- =====================================================
-         RADAR COMUNITARIO
+         RADAR COMUNITARIO (UNIFICADO: BARRIO PROPIO Y OTRAS LOCALIDADES)
          ===================================================== -->
     <section id="vista-radar" class="vista-interna" hidden>
 
@@ -300,12 +250,63 @@
         ← Volver a la comunidad
       </button>
 
-      <h2>Radar comunitario</h2>
+      <h2>Radar comunitario y Ubicación</h2>
 
       <p class="texto-ayuda">
-        Buscá gente de la comunidad en otros lugares.
+        Configurá tu barrio o buscá gente de la comunidad en otros lugares del país o del mundo.
       </p>
 
+      <!-- UBICACIÓN DE LA COMUNIDAD PROPIA / BARRIO -->
+      <section class="selector-barrio tarjeta" style="margin-bottom: 16px;">
+        <h3>Mi barrio o localidad de referencia</h3>
+
+        <label for="barrio">Barrio o localidad</label>
+
+        <div class="fila-barrio">
+          <input
+            id="barrio"
+            type="text"
+            maxlength="100"
+            placeholder="Escribí tu barrio o localidad"
+            autocomplete="address-level3"
+          >
+
+          <button
+            id="btn-guardar-barrio"
+            class="boton-secundario"
+            type="button"
+          >
+            GUARDAR
+          </button>
+        </div>
+
+        <button
+          id="btn-ubicacion"
+          class="boton-secundario boton-ancho"
+          type="button"
+        >
+          USAR MI UBICACIÓN APROXIMADA
+        </button>
+
+        <p class="texto-ayuda">
+          La ubicación es opcional. Podés escribir tu barrio manualmente.
+          No publicamos tus coordenadas exactas.
+        </p>
+
+        <p class="texto-ayuda">
+          Identificación geográfica: datos de OpenStreetMap contributors.
+        </p>
+
+        <p
+          id="estado-barrio"
+          class="texto-ayuda"
+          aria-live="polite"
+        >
+          Elegí tu barrio para organizar la actividad local.
+        </p>
+      </section>
+
+      <!-- BUSCAR O EXPLORAR OTRA COMUNIDAD -->
       <section class="tarjeta selector-barrio">
 
         <h3>¿A qué comunidad querés llegar?</h3>
