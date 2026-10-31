@@ -46,6 +46,7 @@ export function initCommunity({
   );
   const actualizarRedBtn = document.getElementById("btn-actualizar-red");
   const estadoPublicacion = document.getElementById("estado-publicacion");
+  const botonSubmitForm = form?.querySelector("button[type='submit']");
 
   let publicaciones = [];
   let cargando = false;
@@ -301,9 +302,9 @@ export function initCommunity({
     const zonaActualFiltro = obtenerZona();
     const palabraClave = normalizarTexto(busquedaInput?.value);
 
-    // Feedback visual instantáneo en pantalla
+    // Feedback visual instantáneo en pantalla para no dejar la interfaz muda
     if (lista) {
-      lista.innerHTML = "<p class='texto-ayuda'>Buscando publicaciones en la red...</p>";
+      lista.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px; color: #38bdf8;'>🔍 Buscando publicaciones en la red...</p>";
     }
 
     try {
@@ -331,7 +332,7 @@ export function initCommunity({
           )
           .eq("estado", "activa");
 
-        // Filtro flexible por zona con ilike
+        // Filtro flexible por zona (ilike)
         if (zonaActualFiltro) {
           query = query.ilike("zona_aproximada", `%${zonaActualFiltro}%`);
         }
@@ -439,8 +440,8 @@ export function initCommunity({
 
       ${
         requiereRevalidar
-          ? `<div style="margin: 6px 0; background: #78350f; border: 1px solid #d97706; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; color: #fde68a; display: flex; align-items: center; gap: 6px;">
-               <span>⚠️</span> <strong>En caché local - Requiere revalidar:</strong> Esta publicación supera las 48h sin sincronizar.
+          ? `<div style="margin: 8px 0; background: #78350f; border: 1px solid #d97706; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: #fde68a;">
+               ⚠️ <strong>Aviso de perfil o publicación sin actividad reciente:</strong> Esta publicación supera las 48h. Conviene consultar disponibilidad antes de coordinar.
              </div>`
           : ""
       }
@@ -484,7 +485,7 @@ export function initCommunity({
       ${
         offlineActivo
           ? `<div style="margin: 8px 0; background: #0f172a; border: 1px solid #38bdf8; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-               <span>📡</span> <strong>Conectividad Offline Activa:</strong> Este vecino cuenta con apps alternativas (Bridgefy/Briar) para emergencias sin internet.
+               <span>📡</span> <strong>Conectividad Offline Activa:</strong> Vecino preparado para emergencias sin internet.
              </div>`
           : ""
       }
@@ -564,12 +565,13 @@ export function initCommunity({
     lista.replaceChildren();
 
     if (filtradas.length === 0) {
-      const mensaje = document.createElement("p");
-
-      mensaje.className = "sin-publicaciones";
-      mensaje.textContent =
-        "Todavía no hay publicaciones que coincidan con tu búsqueda o filtros de emergencia.";
-
+      const mensaje = document.createElement("div");
+      mensaje.className = "tarjeta-publicacion";
+      mensaje.style.cssText = "text-align: center; padding: 25px; background: #17212b; border: 1px solid #2b3b4f; border-radius: 8px;";
+      mensaje.innerHTML = `
+        <p style="color: #cbd5e1; font-weight: bold; margin-bottom: 6px;">No se encontraron publicaciones con esos criterios.</p>
+        <small style="color: #94a3b8;">Probá limpiando los filtros o revisá que la localidad escrita sea correcta.</small>
+      `;
       lista.appendChild(mensaje);
       return;
     }
@@ -680,6 +682,15 @@ export function initCommunity({
       return;
     }
 
+    // Feedback claro en el botón y texto de estado para evitar dudas
+    if (botonSubmitForm) {
+      botonSubmitForm.disabled = true;
+      botonSubmitForm.textContent = "COMPARTIENDO EN LA RED...";
+    }
+    if (estadoPublicacion) {
+      estadoPublicacion.textContent = "Compartiendo publicación con la comunidad...";
+    }
+
     const ahora = new Date().toISOString();
 
     let descripcionRemota = datos.descripcion;
@@ -707,11 +718,6 @@ export function initCommunity({
       actualizado_en: ahora
     };
 
-    if (estadoPublicacion) {
-      estadoPublicacion.textContent =
-        "Publicando...";
-    }
-
     try {
       const { data, error } = await supabase
         .from("publicaciones")
@@ -737,58 +743,7 @@ export function initCommunity({
         )
         .single();
 
-      if (error) {
-        console.error(
-          "Error publicando en Supabase:",
-          error
-        );
-
-        const publicacionLocal = {
-          ...registro,
-          ...datos,
-          id: generarIdLocal(),
-          creado_en: ahora,
-          origen: "local"
-        };
-
-        const locales = obtenerLocales();
-        locales.unshift(publicacionLocal);
-
-        if (!guardarLocales(locales)) {
-          notificar(
-            "No se pudo publicar ni guardar localmente. Revisá la conexión e intentá nuevamente.",
-            "error"
-          );
-
-          if (estadoPublicacion) {
-            estadoPublicacion.textContent = "";
-          }
-
-          return;
-        }
-
-        publicaciones = combinarPublicaciones(
-          locales,
-          publicaciones.filter(p => p.origen === "remoto")
-        );
-
-        renderizarPublicaciones();
-
-        notificar(
-          "No se pudo publicar en la comunidad compartida. La publicación quedó guardada en este dispositivo.",
-          "warning"
-        );
-
-        form.reset();
-        actualizarCampoOtraCategoria();
-
-        if (estadoPublicacion) {
-          estadoPublicacion.textContent =
-            "Guardada localmente";
-        }
-
-        return;
-      }
+      if (error) throw error;
 
       const publicacionRemota =
         convertirRegistroRemoto(data);
@@ -808,13 +763,13 @@ export function initCommunity({
       actualizarCampoOtraCategoria();
 
       notificar(
-        "¡Publicación compartida con la comunidad!",
+        "¡Publicación compartida con éxito en la comunidad!",
         "success"
       );
 
       if (estadoPublicacion) {
         estadoPublicacion.textContent =
-          "Publicación compartida";
+          "¡Publicado y visible en la red!";
       }
     } catch (error) {
       console.error(
@@ -822,14 +777,38 @@ export function initCommunity({
         error
       );
 
+      const publicacionLocal = {
+        ...registro,
+        ...datos,
+        id: generarIdLocal(),
+        creado_en: ahora,
+        origen: "local"
+      };
+
+      const locales = obtenerLocales();
+      locales.unshift(publicacionLocal);
+      guardarLocales(locales);
+
+      publicaciones = combinarPublicaciones(
+        locales,
+        publicaciones.filter(p => p.origen === "remoto")
+      );
+
+      renderizarPublicaciones();
+
       notificar(
-        "Ocurrió un error al publicar. Intentá nuevamente.",
-        "error"
+        "No se pudo conectar con el servidor, guardado localmente en este dispositivo.",
+        "warning"
       );
 
       if (estadoPublicacion) {
         estadoPublicacion.textContent =
-          "No se pudo publicar";
+          "Guardado localmente en este dispositivo.";
+      }
+    } finally {
+      if (botonSubmitForm) {
+        botonSubmitForm.disabled = false;
+        botonSubmitForm.textContent = "GUARDAR PUBLICACIÓN";
       }
     }
   }
