@@ -33,6 +33,7 @@ export function initCommunity({
   );
   const busquedaInput = document.getElementById("buscar-publicaciones");
   const filtroTipoInput = document.getElementById("filtro-tipo");
+  const filtroOfflineActivoInput = document.getElementById("filtro-offline-activo");
   const limpiarFiltrosBtn = document.getElementById(
     "btn-limpiar-filtros"
   );
@@ -238,6 +239,7 @@ export function initCommunity({
       que_necesita_a_cambio:
         registro.que_necesita_a_cambio ?? "",
       zona_aproximada: registro.zona_aproximada ?? "",
+      offline_activo: Boolean(registro.offline_activo ?? false),
       fotos: Array.isArray(registro.fotos)
         ? registro.fotos
         : [],
@@ -269,6 +271,7 @@ export function initCommunity({
       }
     }
 
+    // Orden cronológico estricto: de la publicación más reciente a la más vieja
     return [...mapa.values()].sort((a, b) => {
       const fechaA = new Date(
         a.creado_en ?? 0
@@ -306,6 +309,7 @@ export function initCommunity({
               "modalidad_intercambio",
               "que_necesita_a_cambio",
               "zona_aproximada",
+              "offline_activo",
               "fotos",
               "estado",
               "creado_en",
@@ -387,6 +391,7 @@ export function initCommunity({
 
     const nombreAutor = escaparHTML(publicacion.perfil_nombre || "Vecino");
     const autorId = publicacion.perfil_id || "";
+    const offlineActivo = Boolean(publicacion.offline_activo);
 
     tarjeta.innerHTML = `
       <div class="publicacion-cabecera">
@@ -430,6 +435,14 @@ export function initCommunity({
           : ""
       }
 
+      ${
+        offlineActivo
+          ? `<div style="margin: 8px 0; background: #0f172a; border: 1px solid #38bdf8; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+               <span>📡</span> <strong>Conectividad Offline Activa:</strong> Este vecino cuenta con apps alternativas (Bridgefy/Briar) para emergencias sin internet.
+             </div>`
+          : ""
+      }
+
       <small class="publicacion-fecha">${fecha}</small>
 
       <button 
@@ -468,6 +481,8 @@ export function initCommunity({
       filtroTipoInput?.value
     ).toLocaleLowerCase("es-AR");
 
+    const soloOffline = Boolean(filtroOfflineActivoInput?.checked);
+
     const filtradas = publicaciones.filter(publicacion => {
       const coincideTipo =
         !tipoFiltro ||
@@ -475,6 +490,8 @@ export function initCommunity({
         tipoFiltro === "todas" ||
         String(publicacion.tipo)
           .toLocaleLowerCase("es-AR") === tipoFiltro;
+
+      const coincideOffline = !soloOffline || Boolean(publicacion.offline_activo);
 
       const contenido = [
         publicacion.titulo,
@@ -488,7 +505,7 @@ export function initCommunity({
         .join(" ")
         .toLocaleLowerCase("es-AR");
 
-      return coincideTipo && contenido.includes(textoBusqueda);
+      return coincideTipo && coincideOffline && contenido.includes(textoBusqueda);
     });
 
     lista.replaceChildren();
@@ -498,7 +515,7 @@ export function initCommunity({
 
       mensaje.className = "sin-publicaciones";
       mensaje.textContent =
-        "Todavía no hay publicaciones que coincidan con tu búsqueda.";
+        "Todavía no hay publicaciones que coincidan con tu búsqueda o filtros de emergencia.";
 
       lista.appendChild(mensaje);
       return;
@@ -631,6 +648,7 @@ export function initCommunity({
       que_necesita_a_cambio:
         datos.que_necesita_a_cambio,
       zona_aproximada: datos.zona_aproximada,
+      offline_activo: Boolean(getItem("hm_offline_activo", false)),
       fotos: [],
       estado: "activa",
       actualizado_en: ahora
@@ -657,6 +675,7 @@ export function initCommunity({
             "modalidad_intercambio",
             "que_necesita_a_cambio",
             "zona_aproximada",
+            "offline_activo",
             "fotos",
             "estado",
             "creado_en",
@@ -771,6 +790,10 @@ export function initCommunity({
       filtroTipoInput.value = "todas";
     }
 
+    if (filtroOfflineActivoInput) {
+      filtroOfflineActivoInput.checked = false;
+    }
+
     renderizarPublicaciones();
   }
 
@@ -808,6 +831,10 @@ export function initCommunity({
       evento.preventDefault();
       manejarBusqueda();
     }
+  });
+
+  filtroOfflineActivoInput?.addEventListener("change", () => {
+    renderizarPublicaciones();
   });
 
   limpiarFiltrosBtn?.addEventListener(
@@ -876,6 +903,11 @@ export function initCommunity({
       );
 
       filtroTipoInput?.removeEventListener(
+        "change",
+        manejarBusqueda
+      );
+
+      filtroOfflineActivoInput?.removeEventListener(
         "change",
         manejarBusqueda
       );
