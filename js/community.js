@@ -120,20 +120,42 @@ export function initCommunity({
     return enlace;
   }
 
+  let modoListadoPerfiles = "directorio";
+  let destinoRadarComunitario = "";
+
+  function obtenerContenedorPerfiles() {
+    if (modoListadoPerfiles === "radar") {
+      return (
+        document.getElementById("radar-resultados") ||
+        document.getElementById("lista-radar") ||
+        listaVecinos
+      );
+    }
+    return (
+      document.getElementById("lista-comunidad") ||
+      document.getElementById("directorio-comunidad") ||
+      listaVecinos
+    );
+  }
+
   async function cargarVecinos() {
-    if (!listaVecinos) return;
+    const contenedor = obtenerContenedorPerfiles();
+    if (!contenedor) return;
 
-    listaVecinos.replaceChildren();
+    contenedor.replaceChildren();
+    const esRadar = modoListadoPerfiles === "radar";
+    const estado = esRadar
+      ? (document.getElementById("estado-radar") || estadoVecinos)
+      : (document.getElementById("estado-comunidad") || estadoVecinos);
 
-    if (estadoVecinos) {
-      estadoVecinos.textContent = "Buscando perfiles de vecinos…";
+    if (estado) {
+      estado.textContent = esRadar
+        ? "Buscando integrantes en la zona indicada…"
+        : "Cargando el directorio general de la comunidad…";
     }
 
     if (!navigator.onLine) {
-      if (estadoVecinos) {
-        estadoVecinos.textContent =
-          "El radar necesita conexión para consultar los perfiles comunitarios.";
-      }
+      if (estado) estado.textContent = "Necesitás conexión para consultar los perfiles comunitarios.";
       return;
     }
 
@@ -141,239 +163,166 @@ export function initCommunity({
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
         .select(
-          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, actualizado_en"
+          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, whatsapp, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, actualizado_en"
         );
-
       if (errorPerfiles) throw errorPerfiles;
 
-      const { data: publicacionesActivas, error: errorPublicaciones } =
-        await supabase
-          .from("publicaciones")
-          .select("perfil_id")
-          .eq("estado", "activa");
-
+      const { data: publicacionesActivas, error: errorPublicaciones } = await supabase
+        .from("publicaciones")
+        .select("perfil_id")
+        .eq("estado", "activa");
       if (errorPublicaciones) throw errorPublicaciones;
 
       const conteos = new Map();
-
       (publicacionesActivas || []).forEach((publicacion) => {
         const id = String(publicacion.perfil_id || "");
-
-        if (id) {
-          conteos.set(id, (conteos.get(id) || 0) + 1);
-        }
+        if (id) conteos.set(id, (conteos.get(id) || 0) + 1);
       });
 
       const usuario = await obtenerUsuarioActual();
-      const perfilPropio = await obtenerPerfilActual();
+      const idPropio = String(usuario?.id || "");
 
-      const modo = getItem("hm_modo_visualizacion", "barrio");
-
-      const zonaElegida = modo === "explorar"
-        ? getItem("hm_zona_explorar", "")
-        : (
-            getItem("hm_barrio", "") ||
-            perfilPropio?.zona_aproximada ||
-            perfilPropio?.localidad ||
-            ""
-          );
-
-      const zonaNormalizada = normalizarZonaRadar(zonaElegida);
-
+      // El directorio general no exige foto, presentación ni coincidencia de barrio.
       let vecinos = (perfiles || []).filter((perfil) =>
-        String(perfil.id) !== String(usuario?.id || "") &&
-        String(perfil.nombre_visible || "").trim() &&
-        String(perfil.presentacion || "").trim() &&
-        String(perfil.localidad || "").trim() &&
-        String(perfil.foto_url || "").trim()
+        String(perfil.id || "") !== idPropio
       );
 
-      if (zonaNormalizada) {
+      if (esRadar) {
+        const destino = normalizarZonaRadar(destinoRadarComunitario);
+        if (!destino) {
+          if (estado) estado.textContent = "Indicá una localidad o zona para iniciar la búsqueda del Radar.";
+          return;
+        }
         vecinos = vecinos.filter((perfil) => {
           const localidad = normalizarZonaRadar(perfil.localidad);
           const zona = normalizarZonaRadar(perfil.zona_aproximada);
-
-          return modo === "explorar"
-            ? localidad.includes(zonaNormalizada) ||
-              zona.includes(zonaNormalizada)
-            : zona === zonaNormalizada ||
-              localidad === zonaNormalizada;
+          return localidad.includes(destino) || zona.includes(destino) || destino.includes(localidad) || destino.includes(zona);
         });
-      } else {
-        vecinos = [];
       }
 
+      // actualizado_en ordena por actualización del perfil; no se presenta como último ingreso.
       vecinos.sort((a, b) => {
         const fechaA = new Date(a.actualizado_en || 0).getTime();
         const fechaB = new Date(b.actualizado_en || 0).getTime();
-
         return fechaB - fechaA;
       });
 
       if (!vecinos.length) {
-        if (estadoVecinos) {
-          estadoVecinos.textContent = zonaNormalizada
-            ? `Todavía no encontramos perfiles registrados en ${zonaElegida}.`
-            : "Para ver vecinos, guardá primero tu barrio o localidad en el selector de comunidad.";
-        }
-
+        if (estado) estado.textContent = esRadar
+          ? `No encontramos perfiles cuya localidad o zona coincida con “${destinoRadarComunitario}”.`
+          : "Todavía no hay otros perfiles para mostrar en el directorio comunitario.";
         return;
       }
 
       const fragmento = document.createDocumentFragment();
-
       vecinos.forEach((perfil) => {
         const tarjeta = document.createElement("article");
         tarjeta.className = "tarjeta-vecino";
 
         const encabezado = document.createElement("div");
         encabezado.className = "vecino-encabezado";
-
         const avatar = document.createElement("div");
         avatar.className = "vecino-avatar";
-
         if (perfil.foto_url) {
           const imagen = document.createElement("img");
           imagen.src = perfil.foto_url;
-          imagen.alt = `Foto de ${perfil.nombre_visible || "vecino"}`;
+          imagen.alt = `Foto de ${perfil.nombre_visible || "integrante"}`;
           imagen.loading = "lazy";
           avatar.appendChild(imagen);
         } else {
-          avatar.textContent =
-            String(perfil.nombre_visible || "H")
-              .trim()
-              .charAt(0)
-              .toUpperCase() || "H";
+          avatar.textContent = String(perfil.nombre_visible || "H").trim().charAt(0).toUpperCase() || "H";
         }
 
         const identidad = document.createElement("div");
         identidad.className = "vecino-identidad";
-
         const nombre = document.createElement("h3");
-        nombre.textContent =
-          perfil.nombre_visible || "Vecino de la comunidad";
-
+        nombre.textContent = perfil.nombre_visible || "Integrante de la comunidad";
         const ubicacion = document.createElement("p");
-        ubicacion.textContent = [
-          perfil.localidad,
-          perfil.zona_aproximada
-        ].filter(Boolean).join(" · ") || "Zona no especificada";
-
+        ubicacion.textContent = [perfil.localidad, perfil.zona_aproximada].filter(Boolean).join(" · ") || "Ubicación no especificada";
         identidad.append(nombre, ubicacion);
         encabezado.append(avatar, identidad);
         tarjeta.appendChild(encabezado);
 
         const presentacion = document.createElement("p");
         presentacion.className = "vecino-presentacion";
-        presentacion.textContent =
-          perfil.presentacion ||
-          "Este vecino todavía no agregó una presentación.";
-
+        presentacion.textContent = perfil.presentacion || "Este integrante todavía no agregó una presentación.";
         tarjeta.appendChild(presentacion);
 
         const datos = document.createElement("div");
         datos.className = "vecino-indicadores";
-
         const publicacionesVecino = document.createElement("span");
-        publicacionesVecino.textContent =
-          `📦 ${conteos.get(String(perfil.id)) || 0} publicaciones activas`;
-
+        publicacionesVecino.textContent = `📦 ${conteos.get(String(perfil.id)) || 0} publicaciones activas`;
         datos.appendChild(publicacionesVecino);
 
         if (perfil.conectividad_disponible) {
           const conectividad = document.createElement("span");
           conectividad.className = "vecino-conectividad";
-
-          const modalidad =
-            perfil.conectividad_modalidad || "solidaria";
-
-          conectividad.textContent =
-            `📡 Conectividad: ${modalidad}` +
-            (perfil.conectividad_emergencias ? " · Emergencias" : "");
-
+          const modalidad = perfil.conectividad_modalidad || "solidaria";
+          conectividad.textContent = `📡 Conectividad: ${modalidad}${perfil.conectividad_emergencias ? " · Emergencias" : ""}`;
           datos.appendChild(conectividad);
         }
-
         tarjeta.appendChild(datos);
 
-        // NUEVO: indicador de mensajería offline en el Radar.
-        // El enlace lleva directamente a Google Play.
-        const indicadorOffline =
-          crearIndicadorMensajeriaOffline(perfil);
-
-        if (indicadorOffline) {
-          tarjeta.appendChild(indicadorOffline);
-        }
+        const indicadorOffline = crearIndicadorMensajeriaOffline(perfil);
+        if (indicadorOffline) tarjeta.appendChild(indicadorOffline);
 
         const acciones = document.createElement("div");
         acciones.className = "vecino-acciones";
-
         const verPublicaciones = document.createElement("button");
         verPublicaciones.type = "button";
         verPublicaciones.className = "boton-secundario";
         verPublicaciones.textContent = "VER PUBLICACIONES";
-
         verPublicaciones.addEventListener("click", () => {
           perfilFiltroActivo = perfil.id;
-          perfilFiltroNombre = perfil.nombre_visible || "Vecino";
-
-          if (filtroVecinoActivo) {
-            filtroVecinoActivo.hidden = false;
-          }
-
-          if (textoFiltroVecino) {
-            textoFiltroVecino.textContent =
-              `Mostrando publicaciones de ${perfilFiltroNombre}`;
-          }
-
+          perfilFiltroNombre = perfil.nombre_visible || "Integrante";
+          if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
+          if (textoFiltroVecino) textoFiltroVecino.textContent = `Mostrando publicaciones de ${perfilFiltroNombre}`;
           cargarPublicacionesRemotas();
-
-          window.dispatchEvent(
-            new CustomEvent("abrirVistaGondola")
-          );
+          window.dispatchEvent(new CustomEvent("abrirVistaGondola"));
         });
-
         acciones.appendChild(verPublicaciones);
 
         const contactar = document.createElement("button");
         contactar.type = "button";
         contactar.className = "boton-accion";
         contactar.textContent = "CONTACTAR VECINO";
-
         contactar.addEventListener("click", () => {
           if (typeof window.abrirChatConVecino === "function") {
-            window.abrirChatConVecino(
-              perfil.nombre_visible || "Vecino",
-              perfil.id
-            );
+            window.abrirChatConVecino(perfil.nombre_visible || "Integrante", perfil.id);
           } else {
-            window.dispatchEvent(
-              new CustomEvent("abrirVistaComunicacion")
-            );
+            window.dispatchEvent(new CustomEvent("abrirVistaComunicacion"));
           }
         });
-
         acciones.appendChild(contactar);
         tarjeta.appendChild(acciones);
-
         fragmento.appendChild(tarjeta);
       });
 
-      listaVecinos.appendChild(fragmento);
-
-      if (estadoVecinos) {
-        estadoVecinos.textContent =
-          `${vecinos.length} vecino${vecinos.length === 1 ? "" : "s"} encontrado${vecinos.length === 1 ? "" : "s"} · ordenados por actividad reciente.`;
-      }
-
+      contenedor.appendChild(fragmento);
+      if (estado) estado.textContent = esRadar
+        ? `${vecinos.length} perfil${vecinos.length === 1 ? "" : "es"} encontrado${vecinos.length === 1 ? "" : "s"} para “${destinoRadarComunitario}”.`
+        : `${vecinos.length} integrante${vecinos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil.`;
     } catch (error) {
-      console.error("No se pudo cargar el radar de vecinos:", error);
-
-      if (estadoVecinos) {
-        estadoVecinos.textContent =
-          "No se pudo actualizar el radar. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
-      }
+      console.error("No se pudieron cargar los perfiles comunitarios:", error);
+      if (estado) estado.textContent = "No se pudieron cargar los perfiles. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
     }
+  }
+
+  function cargarDirectorioComunidad() {
+    modoListadoPerfiles = "directorio";
+    return cargarVecinos();
+  }
+
+  function cargarRadarComunitario(destino) {
+    modoListadoPerfiles = "radar";
+    if (typeof destino === "string") destinoRadarComunitario = destino.trim();
+    else {
+      const localidad = document.getElementById("zona-explorar")?.value || "";
+      const provincia = document.getElementById("radar-provincia")?.value || "";
+      const pais = document.getElementById("radar-pais")?.value || "";
+      destinoRadarComunitario = [localidad, provincia, pais].filter(Boolean).join(", ");
+    }
+    return cargarVecinos();
   }
 
   // --- NÚCLEO MATRIX: INDEXEDDB LOCAL ---
@@ -455,33 +404,17 @@ export function initCommunity({
   async function guardarMatrixCache(pubs) {
     try {
       const db = await abrirMatrixDB();
-
       const tx = db.transaction(
         [MATRIX_CONFIG.STORE_PUBLICACIONES],
         "readwrite"
       );
-
       const store = tx.objectStore(
         MATRIX_CONFIG.STORE_PUBLICACIONES
       );
 
-      pubs.forEach((pub) => {
-        if (pub?.id) store.put(pub);
-      });
-
-      return await new Promise((resolve) => {
-        tx.oncomplete = () => resolve(true);
-        tx.onerror = () => resolve(false);
-        tx.onabort = () => resolve(false);
-      });
-
+      pubs.forEach((pub) => store.put(pub));
     } catch (err) {
-      console.warn(
-        "Matrix: No se pudo guardar caché en IndexedDB",
-        err
-      );
-
-      return false;
+      console.warn("Matrix: No se pudo guardar caché en IndexedDB", err);
     }
   }
 
@@ -494,17 +427,14 @@ export function initCommunity({
           [MATRIX_CONFIG.STORE_PUBLICACIONES],
           "readonly"
         );
-
         const store = tx.objectStore(
           MATRIX_CONFIG.STORE_PUBLICACIONES
         );
-
         const req = store.getAll();
 
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => resolve([]);
       });
-
     } catch {
       return [];
     }
@@ -521,15 +451,9 @@ export function initCommunity({
   function obtenerLocales() {
     try {
       const resultado = getItem(STORAGE_KEY, []);
-
       return Array.isArray(resultado) ? resultado : [];
-
     } catch (error) {
-      console.error(
-        "Error leyendo publicaciones locales:",
-        error
-      );
-
+      console.error("Error leyendo publicaciones locales:", error);
       return [];
     }
   }
@@ -537,15 +461,9 @@ export function initCommunity({
   function guardarLocales(datos) {
     try {
       const resultado = setItem(STORAGE_KEY, datos);
-
       return resultado !== false;
-
     } catch (error) {
-      console.error(
-        "Error guardando publicaciones locales:",
-        error
-      );
-
+      console.error("Error guardando publicaciones locales:", error);
       return false;
     }
   }
@@ -555,7 +473,7 @@ export function initCommunity({
   }
 
   function escaparHTML(valor) {
-    return String(valor ?? "").replace(/[&<>"']/g, caracter => {
+    return String(valor ?? "").replace(/[&<>"']/g, (caracter) => {
       const entidades = {
         "&": "&amp;",
         "<": "&lt;",
@@ -588,23 +506,15 @@ export function initCommunity({
 
   function obtenerZona() {
     try {
-      const zonaGondola =
-        normalizarTexto(filtroZonaGondola?.value);
-
+      const zonaGondola = normalizarTexto(filtroZonaGondola?.value);
       if (zonaGondola) return zonaGondola;
 
       const modo = getItem("hm_modo_visualizacion", "barrio");
-
       if (modo === "explorar") {
-        return normalizarTexto(
-          getItem("hm_zona_explorar", "")
-        );
+        return normalizarTexto(getItem("hm_zona_explorar", ""));
       }
 
-      return normalizarTexto(
-        getItem("hm_barrio", "")
-      );
-
+      return normalizarTexto(getItem("hm_barrio", ""));
     } catch {
       return "";
     }
@@ -628,10 +538,7 @@ export function initCommunity({
   function actualizarCampoOtraCategoria() {
     if (!categoriaInput || !contenedorOtraCategoria) return;
 
-    const valor = normalizarTexto(
-      categoriaInput.value
-    ).toLowerCase();
-
+    const valor = normalizarTexto(categoriaInput.value).toLowerCase();
     const mostrar = valor === "otra" || valor === "otro";
 
     contenedorOtraCategoria.hidden = !mostrar;
@@ -659,7 +566,6 @@ export function initCommunity({
       descripcion: texto
         .replace(coincidencia[0], "")
         .trim(),
-
       condicion: normalizarTexto(coincidencia[1])
     };
   }
@@ -683,9 +589,7 @@ export function initCommunity({
       que_necesita_a_cambio:
         registro.que_necesita_a_cambio ?? "",
       zona_aproximada: registro.zona_aproximada ?? "",
-      offline_activo: Boolean(
-        registro.offline_activo ?? false
-      ),
+      offline_activo: Boolean(registro.offline_activo ?? false),
       fotos: Array.isArray(registro.fotos)
         ? registro.fotos
         : [],
@@ -734,17 +638,13 @@ export function initCommunity({
     if (destruido || cargando) return;
 
     cargando = true;
-
     const identificadorCarga = ++ultimaCarga;
 
     const zonaActualFiltro = obtenerZona();
-    const palabraClave = normalizarTexto(
-      busquedaInput?.value
-    );
+    const palabraClave = normalizarTexto(busquedaInput?.value);
 
     if (lista) {
-      lista.innerHTML =
-        "<p class='texto-ayuda' style='text-align: center; padding: 20px; color: #38bdf8;'>🔍 Buscando publicaciones en la red...</p>";
+      lista.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px; color: #38bdf8;'>🔍 Buscando publicaciones en la red...</p>";
     }
 
     try {
@@ -773,10 +673,7 @@ export function initCommunity({
           .eq("estado", "activa");
 
         if (perfilFiltroActivo) {
-          query = query.eq(
-            "perfil_id",
-            perfilFiltroActivo
-          );
+          query = query.eq("perfil_id", perfilFiltroActivo);
         }
 
         if (zonaActualFiltro && !perfilFiltroActivo) {
@@ -792,21 +689,16 @@ export function initCommunity({
           );
         }
 
-        const { data, error } = await query.order(
-          "creado_en",
-          { ascending: false }
-        );
+        const { data, error } = await query.order("creado_en", {
+          ascending: false
+        });
 
-        if (
-          destruido ||
-          identificadorCarga !== ultimaCarga
-        ) {
+        if (destruido || identificadorCarga !== ultimaCarga) {
           return;
         }
 
         if (!error && data) {
           const remotas = data.map(convertirRegistroRemoto);
-
           await guardarMatrixCache(remotas);
 
           publicaciones = combinarPublicaciones(
@@ -815,44 +707,30 @@ export function initCommunity({
           );
 
           renderizarPublicaciones();
-
           cargando = false;
           return;
-
         } else if (error) {
-          console.error(
-            "Error en consulta Supabase:",
-            error
-          );
+          console.error("Error en consulta Supabase:", error);
         }
       }
-
     } catch (error) {
       console.warn(
         "Red intermitente, cargando desde red de relevo local Matrix...",
         error
       );
-
     } finally {
       cargando = false;
     }
 
-    if (destruido) return;
-
-    // Fallback Matrix Cache local.
     const cacheLocal = await obtenerMatrixCache();
-
-    let remotasCache = cacheLocal.map(
-      convertirRegistroRemoto
-    );
+    let remotasCache = cacheLocal.map(convertirRegistroRemoto);
 
     if (perfilFiltroActivo) {
       remotasCache = remotasCache.filter(
-        p => String(p.perfil_id) === String(perfilFiltroActivo)
+        (p) => String(p.perfil_id) === String(perfilFiltroActivo)
       );
-
     } else if (zonaActualFiltro) {
-      remotasCache = remotasCache.filter(p =>
+      remotasCache = remotasCache.filter((p) =>
         String(p.zona_aproximada || "")
           .toLowerCase()
           .includes(zonaActualFiltro.toLowerCase())
@@ -861,10 +739,10 @@ export function initCommunity({
 
     if (palabraClave) {
       const q = palabraClave.toLowerCase();
-
-      remotasCache = remotasCache.filter(p =>
-        p.titulo.toLowerCase().includes(q) ||
-        p.descripcion.toLowerCase().includes(q)
+      remotasCache = remotasCache.filter(
+        (p) =>
+          p.titulo.toLowerCase().includes(q) ||
+          p.descripcion.toLowerCase().includes(q)
       );
     }
 
@@ -905,14 +783,8 @@ export function initCommunity({
     const nombreAutor = escaparHTML(
       publicacion.perfil_nombre || "Vecino"
     );
-
-    const autorId = escaparHTML(
-      publicacion.perfil_id || ""
-    );
-
-    const offlineActivo = Boolean(
-      publicacion.offline_activo
-    );
+    const autorId = publicacion.perfil_id || "";
+    const offlineActivo = Boolean(publicacion.offline_activo);
 
     let requiereRevalidar = false;
 
@@ -920,7 +792,6 @@ export function initCommunity({
       const tiempoCreacion = new Date(
         publicacion.creado_en
       ).getTime();
-
       const tiempoActual = Date.now();
 
       if (
@@ -1006,56 +877,43 @@ export function initCommunity({
 
   let contactoPendiente = null;
 
-  document.addEventListener("click", (e) => {
+  function manejarClickContactoTrueque(e) {
     const boton = e.target.closest?.(".btn-contactar-trueque");
-
     if (!boton) return;
 
-    const destinatarioId =
-      boton.getAttribute("data-id");
-
-    const destinatarioNombre =
-      boton.getAttribute("data-nombre");
+    const destinatarioId = boton.getAttribute("data-id");
+    const destinatarioNombre = boton.getAttribute("data-nombre");
 
     contactoPendiente = {
       destinatarioNombre,
       destinatarioId
     };
 
-    const modalWsp = document.getElementById(
-      "modal-whatsapp-seguro"
-    );
+    const modal = document.getElementById("modal-whatsapp-seguro");
 
-    if (modalWsp) {
-      modalWsp.hidden = false;
-
+    if (modal) {
+      modal.hidden = false;
     } else if (window.abrirChatConVecino) {
       window.abrirChatConVecino(
         destinatarioNombre,
         destinatarioId
       );
     }
-  });
+  }
 
-  const btnConfirmarWsp = document.getElementById(
-    "btn-confirmar-wsp"
+  document.addEventListener(
+    "click",
+    manejarClickContactoTrueque
   );
 
-  const btnCancelarWsp = document.getElementById(
-    "btn-cancelar-wsp"
-  );
+  const btnConfirmarWsp = document.getElementById("btn-confirmar-wsp");
+  const btnCancelarWsp = document.getElementById("btn-cancelar-wsp");
+  const modalWsp = document.getElementById("modal-whatsapp-seguro");
 
-  const modalWsp = document.getElementById(
-    "modal-whatsapp-seguro"
-  );
-
-  btnConfirmarWsp?.addEventListener("click", () => {
+  function confirmarContactoWsp() {
     if (modalWsp) modalWsp.hidden = true;
 
-    if (
-      contactoPendiente &&
-      window.abrirChatConVecino
-    ) {
+    if (contactoPendiente && window.abrirChatConVecino) {
       window.abrirChatConVecino(
         contactoPendiente.destinatarioNombre,
         contactoPendiente.destinatarioId
@@ -1063,12 +921,22 @@ export function initCommunity({
     }
 
     contactoPendiente = null;
-  });
+  }
 
-  btnCancelarWsp?.addEventListener("click", () => {
+  function cancelarContactoWsp() {
     if (modalWsp) modalWsp.hidden = true;
     contactoPendiente = null;
-  });
+  }
+
+  btnConfirmarWsp?.addEventListener(
+    "click",
+    confirmarContactoWsp
+  );
+
+  btnCancelarWsp?.addEventListener(
+    "click",
+    cancelarContactoWsp
+  );
 
   function renderizarPublicaciones() {
     if (!lista) return;
@@ -1081,7 +949,7 @@ export function initCommunity({
       filtroOfflineActivoInput?.checked
     );
 
-    const filtradas = publicaciones.filter(publicacion => {
+    const filtradas = publicaciones.filter((publicacion) => {
       const coincideTipo =
         !tipoFiltro ||
         tipoFiltro === "todos" ||
@@ -1090,26 +958,21 @@ export function initCommunity({
           .toLocaleLowerCase("es-AR") === tipoFiltro;
 
       const coincideOffline =
-        !soloOffline ||
-        Boolean(publicacion.offline_activo);
+        !soloOffline || Boolean(publicacion.offline_activo);
 
       const coincideAutor =
         !perfilFiltroActivo ||
         String(publicacion.perfil_id || "") ===
           String(perfilFiltroActivo);
 
-      return coincideTipo &&
-        coincideOffline &&
-        coincideAutor;
+      return coincideTipo && coincideOffline && coincideAutor;
     });
 
     lista.replaceChildren();
 
     if (filtradas.length === 0) {
       const mensaje = document.createElement("div");
-
       mensaje.className = "tarjeta-publicacion";
-
       mensaje.style.cssText =
         "text-align: center; padding: 25px; background: #17212b; border: 1px solid #2b3b4f; border-radius: 8px;";
 
@@ -1149,15 +1012,15 @@ export function initCommunity({
     const respuesta = await fetch(
       `https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`,
       {
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json"
+        },
         cache: "no-store"
       }
     );
 
     if (!respuesta.ok) {
-      throw new Error(
-        "No se pudo consultar OpenStreetMap."
-      );
+      throw new Error("No se pudo consultar OpenStreetMap.");
     }
 
     const datos = await respuesta.json();
@@ -1175,9 +1038,7 @@ export function initCommunity({
       direccion.county;
 
     if (!zona) {
-      throw new Error(
-        "No se pudo reconocer el barrio o localidad."
-      );
+      throw new Error("No se pudo reconocer el barrio o localidad.");
     }
 
     return String(zona).trim();
@@ -1222,7 +1083,6 @@ export function initCommunity({
             `Zona aproximada identificada: ${zona}. Revisala antes de publicar.`,
             "success"
           );
-
         } catch (error) {
           console.warn(
             "No se pudo identificar la zona de la publicación:",
@@ -1233,7 +1093,6 @@ export function initCommunity({
             "No se pudo identificar la zona. Podés escribirla manualmente.",
             "warning"
           );
-
         } finally {
           if (botonUbicacionPublicacion) {
             botonUbicacionPublicacion.disabled = false;
@@ -1279,22 +1138,15 @@ export function initCommunity({
       return null;
     }
 
-    const modalidad = normalizarTexto(
-      modalidadInput?.value
-    );
-
-    const necesita = normalizarTexto(
-      necesitaInput?.value
-    );
+    const modalidad = normalizarTexto(modalidadInput?.value);
+    const necesita = normalizarTexto(necesitaInput?.value);
 
     return {
       tipo,
       categoria,
       titulo,
       descripcion,
-      condicion: normalizarTexto(
-        condicionInput?.value
-      ),
+      condicion: normalizarTexto(condicionInput?.value),
       modalidad_intercambio: modalidad,
       que_necesita_a_cambio: necesita,
       zona_aproximada: normalizarTexto(
@@ -1349,7 +1201,6 @@ export function initCommunity({
     }
 
     const ahora = new Date().toISOString();
-
     let descripcionRemota = datos.descripcion;
 
     if (datos.condicion) {
@@ -1412,7 +1263,7 @@ export function initCommunity({
         [
           publicacionRemota,
           ...publicaciones.filter(
-            p => p.origen === "remoto"
+            (p) => p.origen === "remoto"
           )
         ]
       );
@@ -1441,7 +1292,6 @@ export function initCommunity({
         estadoPublicacion.textContent =
           "¡Publicado y visible en la red!";
       }
-
     } catch (error) {
       console.error(
         "Error inesperado al publicar:",
@@ -1450,48 +1300,56 @@ export function initCommunity({
 
       const publicacionLocal = {
         ...registro,
-        ...datos,
         id: generarIdLocal(),
         creado_en: ahora,
+        actualizado_en: ahora,
         origen: "local"
       };
 
       const locales = obtenerLocales();
-
       locales.unshift(publicacionLocal);
-      guardarLocales(locales);
 
-      publicaciones = combinarPublicaciones(
-        locales,
-        publicaciones.filter(p => p.origen === "remoto")
-      );
+      if (guardarLocales(locales)) {
+        publicaciones = combinarPublicaciones(
+          locales,
+          publicaciones.filter(
+            (p) => p.origen === "remoto"
+          )
+        );
 
-      renderizarPublicaciones();
+        renderizarPublicaciones();
 
-      window.dispatchEvent(
-        new CustomEvent("publicacionComunidadActualizada")
-      );
+        notificar(
+          "No se pudo conectar con la red. La publicación quedó guardada en este dispositivo para intentar compartirla más tarde.",
+          "warning"
+        );
 
-      notificar(
-        "No se pudo conectar con el servidor, guardado localmente en este dispositivo.",
-        "warning"
-      );
-
-      if (estadoPublicacion) {
-        estadoPublicacion.textContent =
-          "Guardado localmente en este dispositivo.";
+        if (estadoPublicacion) {
+          estadoPublicacion.textContent =
+            "Guardado localmente. Pendiente de conexión.";
+        }
+      } else {
+        notificar(
+          "No se pudo publicar ni guardar localmente. Revisá el espacio disponible en el dispositivo.",
+          "error"
+        );
       }
-
     } finally {
       if (botonSubmitForm) {
         botonSubmitForm.disabled = false;
-        botonSubmitForm.textContent =
-          "GUARDAR PUBLICACIÓN";
+        botonSubmitForm.textContent = "PUBLICAR";
       }
     }
   }
 
   function limpiarFiltros() {
+    if (busquedaInput) busquedaInput.value = "";
+    if (filtroZonaGondola) filtroZonaGondola.value = "";
+    if (filtroTipoInput) filtroTipoInput.value = "todos";
+    if (filtroOfflineActivoInput) {
+      filtroOfflineActivoInput.checked = false;
+    }
+
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
 
@@ -1499,132 +1357,132 @@ export function initCommunity({
       filtroVecinoActivo.hidden = true;
     }
 
-    if (busquedaInput) {
-      busquedaInput.value = "";
+    cargarPublicacionesRemotas();
+  }
+
+  function actualizarSelectorFicha() {
+    if (!tipoInput) return;
+
+    if (botonFichaOfrezco) {
+      botonFichaOfrezco.classList.toggle(
+        "activo",
+        tipoInput.value === "ofrezco"
+      );
     }
 
-    if (filtroZonaGondola) {
-      filtroZonaGondola.value = "";
+    if (botonFichaNecesito) {
+      botonFichaNecesito.classList.toggle(
+        "activo",
+        tipoInput.value === "necesito"
+      );
     }
+  }
 
-    if (filtroTipoInput) {
-      filtroTipoInput.value = "todas";
-    }
+  function seleccionarTipoFicha(tipo) {
+    if (!tipoInput) return;
 
-    if (filtroOfflineActivoInput) {
-      filtroOfflineActivoInput.checked = false;
+    tipoInput.value = tipo;
+    actualizarSelectorFicha();
+  }
+
+  function manejarBuscarPublicaciones() {
+    cargarPublicacionesRemotas();
+  }
+
+  function manejarActualizarRed() {
+    cargarPublicacionesRemotas();
+  }
+
+  function manejarActualizarVecinos() {
+    cargarDirectorioComunidad();
+  }
+
+  function quitarFiltroVecino() {
+    perfilFiltroActivo = null;
+    perfilFiltroNombre = "";
+
+    if (filtroVecinoActivo) {
+      filtroVecinoActivo.hidden = true;
     }
 
     cargarPublicacionesRemotas();
   }
 
-  function actualizarSelectorFicha(tipo) {
-    if (tipoInput) {
-      tipoInput.value = tipo;
-    }
-
-    const ofrece = tipo === "oferta";
-
-    botonFichaOfrezco?.classList.toggle(
-      "activa",
-      ofrece
-    );
-
-    botonFichaNecesito?.classList.toggle(
-      "activa",
-      !ofrece
-    );
-
-    botonFichaOfrezco?.setAttribute(
-      "aria-pressed",
-      String(ofrece)
-    );
-
-    botonFichaNecesito?.setAttribute(
-      "aria-pressed",
-      String(!ofrece)
-    );
+  function manejarFiltroCambio() {
+    renderizarPublicaciones();
   }
 
-  botonFichaOfrezco?.addEventListener(
-    "click",
-    () => actualizarSelectorFicha("oferta")
-  );
-
-  botonFichaNecesito?.addEventListener(
-    "click",
-    () => actualizarSelectorFicha("necesidad")
-  );
-
-  tipoInput?.addEventListener(
-    "change",
-    () => actualizarSelectorFicha(tipoInput.value)
-  );
-
-  actualizarSelectorFicha("oferta");
-
-  const manejarCategoria = () => {
+  function manejarCategoriaCambio() {
     actualizarCampoOtraCategoria();
-  };
+  }
 
-  const manejarBusqueda = () => {
+  function manejarModoRadar() {
+    const destino =
+      document.getElementById("zona-explorar")?.value || "";
+
+    destinoRadarComunitario = destino.trim();
+
+    try {
+      setItem("hm_radar_destino", destinoRadarComunitario);
+    } catch (error) {
+      console.warn("No se pudo guardar el destino del Radar:", error);
+    }
+
+    cargarRadarComunitario(destinoRadarComunitario);
+  }
+
+  function manejarMostrarDirectorio() {
+    cargarDirectorioComunidad();
+  }
+
+  function manejarOnline() {
     cargarPublicacionesRemotas();
-  };
+    if (modoListadoPerfiles === "directorio") {
+      cargarDirectorioComunidad();
+    } else {
+      cargarRadarComunitario(destinoRadarComunitario);
+    }
+  }
 
-  const manejarSubmit = evento => {
-    publicar(evento);
-  };
+  function manejarOffline() {
+    if (estadoPublicacion) {
+      estadoPublicacion.textContent =
+        "Sin conexión. Las publicaciones disponibles en caché siguen visibles.";
+    }
+  }
+
+  function manejarCambioAuth() {
+    perfilFiltroActivo = null;
+    perfilFiltroNombre = "";
+    cargarPublicacionesRemotas();
+    cargarDirectorioComunidad();
+  }
+
+  // --- EVENTOS ---
+
+  form?.addEventListener("submit", publicar);
+
+  botonFichaOfrezco?.addEventListener("click", () => {
+    seleccionarTipoFicha("ofrezco");
+  });
+
+  botonFichaNecesito?.addEventListener("click", () => {
+    seleccionarTipoFicha("necesito");
+  });
 
   categoriaInput?.addEventListener(
     "change",
-    manejarCategoria
+    manejarCategoriaCambio
   );
 
   buscarPublicacionesBtn?.addEventListener(
     "click",
-    manejarBusqueda
+    manejarBuscarPublicaciones
   );
 
-  actualizarRedBtn?.addEventListener("click", async () => {
-    notificar(
-      "Actualizando estado de la red...",
-      "info"
-    );
-
-    await cargarPublicacionesRemotas();
-
-    notificar(
-      "¡Estado de la red actualizado con éxito!",
-      "success"
-    );
-  });
-
-  busquedaInput?.addEventListener("keydown", (evento) => {
-    if (evento.key === "Enter") {
-      evento.preventDefault();
-      manejarBusqueda();
-    }
-  });
-
-  filtroZonaGondola?.addEventListener("keydown", (evento) => {
-    if (evento.key === "Enter") {
-      evento.preventDefault();
-      manejarBusqueda();
-    }
-  });
-
-  filtroTipoInput?.addEventListener("keydown", (evento) => {
-    if (evento.key === "Enter") {
-      evento.preventDefault();
-      manejarBusqueda();
-    }
-  });
-
-  filtroOfflineActivoInput?.addEventListener(
-    "change",
-    () => {
-      renderizarPublicaciones();
-    }
+  actualizarRedBtn?.addEventListener(
+    "click",
+    manejarActualizarRed
   );
 
   limpiarFiltrosBtn?.addEventListener(
@@ -1632,140 +1490,125 @@ export function initCommunity({
     limpiarFiltros
   );
 
-  form?.addEventListener(
-    "submit",
-    manejarSubmit
-  );
-
-  window.addEventListener(
-    "cambioZonaComunidad",
-    () => {
-      cargarPublicacionesRemotas();
-    }
-  );
-
-  actualizarCampoOtraCategoria();
-
-  if (
-    zonaPublicacionInput &&
-    !zonaPublicacionInput.value
-  ) {
-    zonaPublicacionInput.value =
-      getItem("hm_barrio", "") ||
-      getItem("hm_zona_explorar", "") ||
-      "";
-  }
-
   botonUbicacionPublicacion?.addEventListener(
     "click",
     usarUbicacionEnPublicacion
   );
 
+  busquedaInput?.addEventListener(
+    "keydown",
+    (evento) => {
+      if (evento.key === "Enter") {
+        evento.preventDefault();
+        cargarPublicacionesRemotas();
+      }
+    }
+  );
+
+  filtroTipoInput?.addEventListener(
+    "change",
+    manejarFiltroCambio
+  );
+
+  filtroOfflineActivoInput?.addEventListener(
+    "change",
+    manejarFiltroCambio
+  );
+
   botonActualizarVecinos?.addEventListener(
     "click",
-    cargarVecinos
+    manejarActualizarVecinos
   );
 
-  botonQuitarFiltroVecino?.addEventListener("click", () => {
-    perfilFiltroActivo = null;
-    perfilFiltroNombre = "";
-
-    if (filtroVecinoActivo) {
-      filtroVecinoActivo.hidden = true;
-    }
-
-    cargarPublicacionesRemotas();
-  });
-
-  window.addEventListener(
-    "cambioZonaComunidad",
-    cargarVecinos
+  botonQuitarFiltroVecino?.addEventListener(
+    "click",
+    quitarFiltroVecino
   );
 
   window.addEventListener(
-    "perfilComunidadActualizado",
-    cargarVecinos
+    "buscarRadarComunitario",
+    manejarModoRadar
   );
 
   window.addEventListener(
-    "online",
-    cargarVecinos
+    "mostrarDirectorioComunidad",
+    manejarMostrarDirectorio
   );
 
-  cargarVecinos();
+  window.addEventListener("online", manejarOnline);
+  window.addEventListener("offline", manejarOffline);
 
-  window.addEventListener("online", () => {
-    cargarPublicacionesRemotas();
-  });
+  // Recuperar destino del Radar sin modificar la ubicación propia.
+  try {
+    destinoRadarComunitario =
+      String(getItem("hm_radar_destino", "") || "");
+  } catch (error) {
+    console.warn("No se pudo recuperar el destino del Radar:", error);
+  }
 
-  abrirMatrixDB()
-    .then(() => {
-      return obtenerMatrixCache();
-    })
-    .then(cacheLocal => {
-      const remotasCache = cacheLocal.map(
-        convertirRegistroRemoto
-      );
-
-      publicaciones = combinarPublicaciones(
-        obtenerLocales(),
-        remotasCache
-      );
-
-      renderizarPublicaciones();
-      cargarPublicacionesRemotas();
-    })
-    .catch(() => {
-      publicaciones = combinarPublicaciones(
-        obtenerLocales(),
-        []
-      );
-
-      renderizarPublicaciones();
-      cargarPublicacionesRemotas();
-    });
+  // --- SUSCRIPCIÓN A CAMBIOS DE AUTENTICACIÓN ---
 
   try {
-    const resultado = supabase.auth.onAuthStateChange(() => {
-      cargarPublicacionesRemotas();
-      cargarVecinos();
-    });
+    const resultadoAuth = supabase.auth.onAuthStateChange(
+      () => {
+        if (!destruido) {
+          manejarCambioAuth();
+        }
+      }
+    );
 
     suscripcionAuth =
-      resultado?.data?.subscription ?? null;
-
+      resultadoAuth?.data?.subscription || null;
   } catch (error) {
-    console.error(
-      "No se pudo registrar el cambio de sesión:",
+    console.warn(
+      "No se pudo activar la actualización por autenticación:",
       error
     );
   }
 
+  // --- INICIALIZACIÓN ---
+
+  actualizarCampoOtraCategoria();
+  actualizarSelectorFicha();
+
+  cargarPublicacionesRemotas();
+  cargarDirectorioComunidad();
+
   return {
-    recargar: cargarPublicacionesRemotas,
+    cargarPublicaciones: cargarPublicacionesRemotas,
+    cargarVecinos: cargarDirectorioComunidad,
+    cargarDirectorioComunidad,
+    cargarRadarComunitario,
 
     destruir() {
       destruido = true;
       ultimaCarga++;
 
+      form?.removeEventListener("submit", publicar);
+
+      botonFichaOfrezco?.removeEventListener(
+        "click",
+        seleccionarTipoFicha
+      );
+
+      botonFichaNecesito?.removeEventListener(
+        "click",
+        seleccionarTipoFicha
+      );
+
       categoriaInput?.removeEventListener(
         "change",
-        manejarCategoria
+        manejarCategoriaCambio
       );
 
-      busquedaInput?.removeEventListener(
-        "input",
-        manejarBusqueda
+      buscarPublicacionesBtn?.removeEventListener(
+        "click",
+        manejarBuscarPublicaciones
       );
 
-      filtroTipoInput?.removeEventListener(
-        "change",
-        manejarBusqueda
-      );
-
-      filtroOfflineActivoInput?.removeEventListener(
-        "change",
-        manejarBusqueda
+      actualizarRedBtn?.removeEventListener(
+        "click",
+        manejarActualizarRed
       );
 
       limpiarFiltrosBtn?.removeEventListener(
@@ -1773,12 +1616,63 @@ export function initCommunity({
         limpiarFiltros
       );
 
-      form?.removeEventListener(
-        "submit",
-        manejarSubmit
+      botonUbicacionPublicacion?.removeEventListener(
+        "click",
+        usarUbicacionEnPublicacion
       );
 
-      suscripcionAuth?.unsubscribe();
+      filtroTipoInput?.removeEventListener(
+        "change",
+        manejarFiltroCambio
+      );
+
+      filtroOfflineActivoInput?.removeEventListener(
+        "change",
+        manejarFiltroCambio
+      );
+
+      botonActualizarVecinos?.removeEventListener(
+        "click",
+        manejarActualizarVecinos
+      );
+
+      botonQuitarFiltroVecino?.removeEventListener(
+        "click",
+        quitarFiltroVecino
+      );
+
+      document.removeEventListener(
+        "click",
+        manejarClickContactoTrueque
+      );
+
+      btnConfirmarWsp?.removeEventListener(
+        "click",
+        confirmarContactoWsp
+      );
+
+      btnCancelarWsp?.removeEventListener(
+        "click",
+        cancelarContactoWsp
+      );
+
+      window.removeEventListener(
+        "buscarRadarComunitario",
+        manejarModoRadar
+      );
+
+      window.removeEventListener(
+        "mostrarDirectorioComunidad",
+        manejarMostrarDirectorio
+      );
+
+      window.removeEventListener("online", manejarOnline);
+      window.removeEventListener("offline", manejarOffline);
+
+      if (suscripcionAuth) {
+        suscripcionAuth.unsubscribe();
+        suscripcionAuth = null;
+      }
 
       if (dbMatrixInstance) {
         dbMatrixInstance.close();
