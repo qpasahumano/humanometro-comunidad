@@ -296,6 +296,20 @@ input, textarea, select {
   background: var(--panel);
 }
 
+/* BADGE DE PUBLICACIONES ACTIVAS EN FICHA DE RADAR (ESTILO TINDER) */
+.badge-publicaciones-activas {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 4px 10px;
+  border: 1px solid rgba(139, 217, 238, 0.4);
+  border-radius: 999px;
+  color: var(--celeste);
+  background: rgba(83, 197, 235, 0.12);
+  font-size: 0.76rem;
+  font-weight: 750;
+  box-shadow: 0 0 10px rgba(83, 197, 235, 0.15);
+}
+
 .perfil-foto-bloque {
   display: flex;
   align-items: center;
