@@ -194,6 +194,23 @@ function prepararFormularioPerfil() {
     }
   });
 
+  // Preferencia voluntaria de mensajería offline externa
+  if (!$("hm-offline-messaging-available")) {
+    const bloqueOffline = document.createElement("fieldset");
+    bloqueOffline.className = "perfil-conectividad perfil-mensajeria-offline tarjeta";
+    bloqueOffline.innerHTML = `
+      <legend>Comunicación de emergencia</legend>
+      <label class="control-check" for="hm-offline-messaging-available">
+        <input id="hm-offline-messaging-available" type="checkbox">
+        Tengo mensajería offline para comunicarme sin Internet
+      </label>
+      <p class="texto-ayuda">Si activás esta opción, aparecerá un indicador en tu perfil comunitario. La mensajería funciona mediante una aplicación externa y requiere que la otra persona también la tenga instalada y configurada.</p>
+      <a class="boton-secundario enlace-mensajeria-offline" href="https://play.google.com/store/apps/details?id=me.bridgefy.main" target="_blank" rel="noopener noreferrer">CONOCER / DESCARGAR BRIDGEFY EN GOOGLE PLAY</a>
+    `;
+    if (boton) formulario.insertBefore(bloqueOffline, boton);
+    else formulario.appendChild(bloqueOffline);
+  }
+
   // Conectividad Solidaria y Emergencias
   if (!$("hm-connectivity-available")) {
     const bloque = document.createElement("fieldset");
@@ -255,7 +272,6 @@ function prepararFormularioPerfil() {
     const lector = new FileReader();
     lector.onload = () => {
       if (vista && typeof lector.result === "string") {
-        // Previsualización en Data URL (base64), sin alterar el archivo original.
         vista.src = lector.result;
         vista.style.objectFit = "cover";
         vista.style.objectPosition = "center";
@@ -311,11 +327,11 @@ function renderizarFichaVisual(contenedor) {
   const infoHumanidad = datos.indice_humanidad || { porcentaje: 100, total: 0 };
   const pct = infoHumanidad.porcentaje;
 
-  let colorPct = "#22c55e"; 
+  let colorPct = "#22c55e";
   if (pct < 60) {
-    colorPct = "#ef4444"; 
+    colorPct = "#ef4444";
   } else if (pct < 80) {
-    colorPct = "#eab308"; 
+    colorPct = "#eab308";
   }
 
   const wppRaw = datos.whatsapp ? String(datos.whatsapp).replace(/\D/g, "") : "";
@@ -365,6 +381,12 @@ function renderizarFichaVisual(contenedor) {
             ${datos.conectividad_disponible ? `🟢 Activo (${modalidadVisible})` : "🔴 Inactivo"}
           </span>
         </div>
+        ${datos.mensajeria_offline ? `
+          <a href="https://play.google.com/store/apps/details?id=me.bridgefy.main" target="_blank" rel="noopener noreferrer" style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(139,217,238,.35); color: #8bd9ee; text-decoration: none; font-size: 0.8rem;">
+            <span>📶 Mensajería offline:</span>
+            <strong>Bridgefy · Google Play ↗</strong>
+          </a>
+        ` : ""}
       </div>
 
       <p style="margin: 0 0 10px 0; font-size: 0.7rem; color: #64748b; text-align: center;">
@@ -433,11 +455,11 @@ export function seleccionarCategoriaPublicacion(categoriaSeleccionada) {
 
     if (!verificacion.permitido) {
       alert(verificacion.mensaje);
-      return false; // Bloquea la selección y la publicación en esa categoría
+      return false;
     }
   }
 
-  return true; // Permitido
+  return true;
 }
 
 function mostrarEstado(mensaje) {
@@ -593,15 +615,20 @@ function limpiarFormularioPerfil() {
   const modalidad = $("hm-connectivity-mode");
   const emergencia = $("hm-connectivity-emergency");
   const zonaConectividad = $("hm-connectivity-zone");
+  const mensajeriaOffline = $("hm-offline-messaging-available");
   const foto = $("foto-perfil-vista");
   const inicialFoto = $("foto-perfil-inicial");
 
-  if (foto) { foto.hidden = true; foto.removeAttribute("src"); }
+  if (foto) {
+    foto.hidden = true;
+    foto.removeAttribute("src");
+  }
   if (inicialFoto) inicialFoto.hidden = false;
   if (conectividad) conectividad.checked = false;
   if (modalidad) modalidad.value = "gratuito";
   if (emergencia) emergencia.checked = false;
   if (zonaConectividad) zonaConectividad.value = "";
+  if (mensajeriaOffline) mensajeriaOffline.checked = false;
   if (nombre) nombre.value = "";
   if (presentacion) presentacion.value = "";
   if (localidad) localidad.value = "";
@@ -613,13 +640,16 @@ async function cargarMisPublicaciones() {
   const contenedor = $("lista-mis-publicaciones");
   if (!contenedor) return;
   contenedor.replaceChildren();
+
   if (!usuarioActual || !perfilActual?.id) {
     contenedor.textContent = "Iniciá sesión y completá tu perfil para ver tus publicaciones.";
     return;
   }
+
   const aviso = document.createElement("p");
   aviso.textContent = "Cargando tus publicaciones…";
   contenedor.appendChild(aviso);
+
   try {
     const { data, error } = await supabase
       .from("publicaciones")
@@ -627,19 +657,23 @@ async function cargarMisPublicaciones() {
       .eq("perfil_id", perfilActual.id)
       .eq("estado", "activa")
       .order("creado_en", { ascending: false });
+
     contenedor.replaceChildren();
     if (error) throw error;
+
     const activas = (data || []).filter((publicacion) => publicacion.estado === "activa").length;
     const contador = document.createElement("p");
     contador.className = "texto-ayuda";
     contador.textContent = `${activas} publicación${activas === 1 ? "" : "es"} activa${activas === 1 ? "" : "s"}`;
     contenedor.appendChild(contador);
+
     if (!data?.length) {
       const vacio = document.createElement("p");
       vacio.textContent = "Todavía no publicaste productos ni servicios desde esta cuenta.";
       contenedor.appendChild(vacio);
       return;
     }
+
     data.forEach((publicacion) => {
       const tarjeta = document.createElement("article");
       tarjeta.className = "tarjeta-publicacion";
@@ -652,6 +686,7 @@ async function cargarMisPublicaciones() {
       tarjeta.append(titulo, detalle, estado);
       contenedor.appendChild(tarjeta);
     });
+
   } catch (error) {
     console.error("Error cargando publicaciones propias:", error);
     contenedor.textContent = "No se pudieron cargar tus publicaciones.";
@@ -660,7 +695,6 @@ async function cargarMisPublicaciones() {
 
 async function calcularPorcentajeHumanidad(perfilId) {
   try {
-    // Primera fuente: evaluaciones estructuradas que ya utiliza la matriz.
     const { data: evaluaciones, error } = await supabase
       .from("evaluaciones")
       .select("respeta_condiciones, cordialidad, puntualidad, comunicacion_clara")
@@ -669,20 +703,20 @@ async function calcularPorcentajeHumanidad(perfilId) {
     if (!error && Array.isArray(evaluaciones) && evaluaciones.length > 0) {
       let totalChecksPositivos = 0;
       const totalCriteriosPosibles = evaluaciones.length * 4;
+
       evaluaciones.forEach((ev) => {
         if (ev.respeta_condiciones) totalChecksPositivos++;
         if (ev.cordialidad) totalChecksPositivos++;
         if (ev.puntualidad) totalChecksPositivos++;
         if (ev.comunicacion_clara) totalChecksPositivos++;
       });
+
       return {
         porcentaje: Math.round((totalChecksPositivos / totalCriteriosPosibles) * 100),
         total: evaluaciones.length
       };
     }
 
-    // Segunda fuente ya existente en messages.js: mediciones_humanidad.
-    // Los cierres sin acuerdo/cancelación mutua no penalizan ni suman puntos.
     const { data: mediciones, error: errorMediciones } = await supabase
       .from("mediciones_humanidad")
       .select("resultado")
@@ -704,11 +738,13 @@ async function calcularPorcentajeHumanidad(perfilId) {
         );
         return { porcentaje: promedio, total: puntuaciones.length };
       }
+
       return { porcentaje: 100, total: 0 };
     }
 
     console.warn("No se pudieron consultar las fuentes de evaluaciones:", error || errorMediciones);
     return { porcentaje: 100, total: 0 };
+
   } catch (e) {
     console.error("Error calculando porcentaje de humanidad:", e);
     return { porcentaje: 100, total: 0 };
@@ -727,7 +763,7 @@ async function cargarPerfil() {
     const { data, error } = await supabase
       .from("perfiles")
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
+        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline"
       )
       .eq("id", usuarioActual.id)
       .maybeSingle();
@@ -753,6 +789,9 @@ async function cargarPerfil() {
     if ($("hm-connectivity-mode")) $("hm-connectivity-mode").value = data?.conectividad_modalidad || "gratuito";
     if ($("hm-connectivity-emergency")) $("hm-connectivity-emergency").checked = Boolean(data?.conectividad_emergencias);
     if ($("hm-connectivity-zone")) $("hm-connectivity-zone").value = data?.conectividad_zona || "";
+    if ($("hm-offline-messaging-available")) {
+      $("hm-offline-messaging-available").checked = Boolean(data?.mensajeria_offline);
+    }
 
     if ($("foto-perfil-vista") && data?.foto_url) {
       const vistaFoto = $("foto-perfil-vista");
@@ -795,6 +834,7 @@ async function guardarPerfil(evento) {
   const conectividadModalidad = $("hm-connectivity-mode")?.value || "gratuito";
   const conectividadEmergencias = Boolean($("hm-connectivity-emergency")?.checked);
   const conectividadZona = $("hm-connectivity-zone")?.value.trim() || "";
+  const mensajeriaOffline = Boolean($("hm-offline-messaging-available")?.checked);
   let fotoUrl = perfilActual?.foto_url || null;
 
   if (!nombre) {
@@ -833,6 +873,7 @@ async function guardarPerfil(evento) {
 
   try {
     const archivoFoto = archivoFotoSeleccionado;
+
     if (archivoFoto) {
       const extension = archivoFoto.type === "image/png" ? "png" : archivoFoto.type === "image/webp" ? "webp" : "jpg";
       const rutaFoto = `${usuarioActual.id}-${Date.now()}.${extension}`;
@@ -867,6 +908,7 @@ async function guardarPerfil(evento) {
       conectividad_modalidad: conectividadModalidad,
       conectividad_emergencias: conectividadEmergencias,
       conectividad_zona: conectividadZona || null,
+      mensajeria_offline: mensajeriaOffline,
       actualizado_en: new Date().toISOString()
     };
 
@@ -874,7 +916,7 @@ async function guardarPerfil(evento) {
       .from("perfiles")
       .upsert(registro, { onConflict: "id" })
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona"
+        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline"
       )
       .single();
 
