@@ -35,6 +35,7 @@ export function initCommunity({
     "que-necesita-a-cambio"
   );
   const busquedaInput = document.getElementById("buscar-publicaciones");
+  const filtroZonaGondola = document.getElementById("filtro-zona-gondola");
   const filtroTipoInput = document.getElementById("filtro-tipo");
   const filtroOfflineActivoInput = document.getElementById("filtro-offline-activo");
   const limpiarFiltrosBtn = document.getElementById(
@@ -161,9 +162,14 @@ export function initCommunity({
     });
   }
 
-  // --- LÓGICA DE ZONA INTELIGENTE (BARRIO ESTRICTO VS EXPLORACIÓN) ---
+  // --- LÓGICA DE ZONA INTELIGENTE (INCORPORA BÚSQUEDA DESDE GÓNDOLA O EXPLORACIÓN) ---
   function obtenerZona() {
     try {
+      // 1. Si el usuario escribió algo en el campo de zona específico de la Góndola, priorizarlo
+      const zonaGondola = normalizarTexto(filtroZonaGondola?.value);
+      if (zonaGondola) return zonaGondola;
+
+      // 2. Si no, verificar el modo general (barrio estricto o explorar)
       const modo = getItem("hm_modo_visualizacion", "barrio");
       if (modo === "explorar") {
         return normalizarTexto(getItem("hm_zona_explorar", ""));
@@ -275,7 +281,6 @@ export function initCommunity({
       }
     }
 
-    // Orden cronológico estricto: de la publicación más reciente a la más vieja
     return [...mapa.values()].sort((a, b) => {
       const fechaA = new Date(
         a.creado_en ?? 0
@@ -322,6 +327,7 @@ export function initCommunity({
           )
           .eq("estado", "activa");
 
+        // Búsqueda flexible con ilike para encontrar localidades aun escribiendo parcial (ej. "Kel" -> "Esquel")
         if (zonaActualFiltro) {
           query = query.ilike("zona_aproximada", `%${zonaActualFiltro}%`);
         }
@@ -353,7 +359,7 @@ export function initCommunity({
       cargando = false;
     }
 
-    // Fallback Matrix Cache local
+    // Fallback Matrix Cache local con filtro flexible
     const cacheLocal = await obtenerMatrixCache();
     let remotasCache = cacheLocal.map(convertirRegistroRemoto);
 
@@ -398,7 +404,6 @@ export function initCommunity({
     const autorId = publicacion.perfil_id || "";
     const offlineActivo = Boolean(publicacion.offline_activo);
 
-    // --- Control de Vigencia Temporal / Antienvejecimiento de Caché ---
     let requiereRevalidar = false;
     if (publicacion.creado_en) {
       const tiempoCreacion = new Date(publicacion.creado_en).getTime();
@@ -481,7 +486,6 @@ export function initCommunity({
     return tarjeta;
   }
 
-  // --- LÓGICA DE DOBLE CONFIRMACIÓN PARA WHATSAPP / CONTACTO SEGURO ---
   let contactoPendiente = null;
 
   document.addEventListener("click", (e) => {
@@ -491,7 +495,6 @@ export function initCommunity({
 
       contactoPendiente = { destinatarioNombre, destinatarioId };
 
-      // Mostrar modal de doble confirmación preventiva
       const modalWsp = document.getElementById("modal-whatsapp-seguro");
       if (modalWsp) {
         modalWsp.hidden = false;
@@ -501,7 +504,6 @@ export function initCommunity({
     }
   });
 
-  // Manejadores del modal de seguridad para WhatsApp
   const btnConfirmarWsp = document.getElementById("btn-confirmar-wsp");
   const btnCancelarWsp = document.getElementById("btn-cancelar-wsp");
   const modalWsp = document.getElementById("modal-whatsapp-seguro");
@@ -835,6 +837,10 @@ export function initCommunity({
       busquedaInput.value = "";
     }
 
+    if (filtroZonaGondola) {
+      filtroZonaGondola.value = "";
+    }
+
     if (filtroTipoInput) {
       filtroTipoInput.value = "todas";
     }
@@ -843,7 +849,7 @@ export function initCommunity({
       filtroOfflineActivoInput.checked = false;
     }
 
-    renderizarPublicaciones();
+    cargarPublicacionesRemotas();
   }
 
   const manejarCategoria = () => {
@@ -851,7 +857,7 @@ export function initCommunity({
   };
 
   const manejarBusqueda = () => {
-    renderizarPublicaciones();
+    cargarPublicacionesRemotas();
   };
 
   const manejarSubmit = evento => {
@@ -868,7 +874,6 @@ export function initCommunity({
     manejarBusqueda
   );
 
-  // Botón de revalidación forzada de caché / estado de la red
   actualizarRedBtn?.addEventListener("click", async () => {
     notificar("Actualizando estado de la red...", "info");
     await cargarPublicacionesRemotas();
@@ -876,6 +881,13 @@ export function initCommunity({
   });
 
   busquedaInput?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      manejarBusqueda();
+    }
+  });
+
+  filtroZonaGondola?.addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") {
       evento.preventDefault();
       manejarBusqueda();
@@ -903,7 +915,6 @@ export function initCommunity({
     manejarSubmit
   );
 
-  // Escuchar cuando el usuario cambia el selector de zona en app.js para refrescar el feed al instante
   window.addEventListener("cambioZonaComunidad", () => {
     cargarPublicacionesRemotas();
   });
