@@ -1,7 +1,8 @@
 import { supabase } from "./supabase.js";
 import {
   obtenerUsuarioActual,
-  obtenerPerfilActual
+  obtenerPerfilActual,
+  perfilEstaCompleto
 } from "./auth.js";
 
 const STORAGE_KEY = "hm_publicaciones";
@@ -22,6 +23,8 @@ export function initCommunity({
   const form = document.getElementById("form-publicacion");
   const lista = document.getElementById("lista-publicaciones");
   const tipoInput = document.getElementById("tipo-publicacion");
+  const botonFichaOfrezco = document.getElementById("btn-ficha-ofrezco");
+  const botonFichaNecesito = document.getElementById("btn-ficha-necesito");
   const categoriaInput = document.getElementById("categoria-publicacion");
   const otraCategoriaInput = document.getElementById("otra-categoria");
   const contenedorOtraCategoria = document.getElementById(
@@ -34,6 +37,8 @@ export function initCommunity({
   const necesitaInput = document.getElementById(
     "que-necesita-a-cambio"
   );
+  const zonaPublicacionInput = document.getElementById("zona-publicacion");
+  const botonUbicacionPublicacion = document.getElementById("btn-ubicacion-publicacion");
   const busquedaInput = document.getElementById("buscar-publicaciones");
   const filtroZonaGondola = document.getElementById("filtro-zona-gondola");
   const filtroTipoInput = document.getElementById("filtro-tipo");
@@ -47,13 +52,191 @@ export function initCommunity({
   const actualizarRedBtn = document.getElementById("btn-actualizar-red");
   const estadoPublicacion = document.getElementById("estado-publicacion");
   const botonSubmitForm = form?.querySelector("button[type='submit']");
+  const listaVecinos = document.getElementById("lista-vecinos");
+  const estadoVecinos = document.getElementById("estado-vecinos");
+  const botonActualizarVecinos = document.getElementById("btn-actualizar-vecinos");
+  const filtroVecinoActivo = document.getElementById("filtro-vecino-activo");
+  const textoFiltroVecino = document.getElementById("texto-filtro-vecino");
+  const botonQuitarFiltroVecino = document.getElementById("btn-quitar-filtro-vecino");
 
+  let perfilFiltroActivo = null;
+  let perfilFiltroNombre = "";
   let publicaciones = [];
   let cargando = false;
   let destruido = false;
   let suscripcionAuth = null;
   let ultimaCarga = 0;
   let dbMatrixInstance = null;
+
+  // --- RADAR DE VECINOS: usa las tablas existentes perfiles/publicaciones ---
+  function normalizarZonaRadar(valor) {
+    return String(valor || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLocaleLowerCase("es-AR");
+  }
+
+  async function cargarVecinos() {
+    if (!listaVecinos) return;
+    listaVecinos.replaceChildren();
+    if (estadoVecinos) estadoVecinos.textContent = "Buscando perfiles de vecinos…";
+
+    if (!navigator.onLine) {
+      if (estadoVecinos) estadoVecinos.textContent = "El radar necesita conexión para consultar los perfiles comunitarios.";
+      return;
+    }
+
+    try {
+      const { data: perfiles, error: errorPerfiles } = await supabase
+        .from("perfiles")
+        .select("id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, actualizado_en");
+
+      if (errorPerfiles) throw errorPerfiles;
+
+      const { data: publicacionesActivas, error: errorPublicaciones } = await supabase
+        .from("publicaciones")
+        .select("perfil_id")
+        .eq("estado", "activa");
+
+      if (errorPublicaciones) throw errorPublicaciones;
+
+      const conteos = new Map();
+      (publicacionesActivas || []).forEach((publicacion) => {
+        const id = String(publicacion.perfil_id || "");
+        if (id) conteos.set(id, (conteos.get(id) || 0) + 1);
+      });
+
+      const usuario = await obtenerUsuarioActual();
+      const perfilPropio = await obtenerPerfilActual();
+      const modo = getItem("hm_modo_visualizacion", "barrio");
+      const zonaElegida = modo === "explorar"
+        ? getItem("hm_zona_explorar", "")
+        : (getItem("hm_barrio", "") || perfilPropio?.zona_aproximada || perfilPropio?.localidad || "");
+      const zonaNormalizada = normalizarZonaRadar(zonaElegida);
+
+      let vecinos = (perfiles || []).filter((perfil) =>
+        String(perfil.id) !== String(usuario?.id || "") &&
+        String(perfil.nombre_visible || "").trim() &&
+        String(perfil.presentacion || "").trim() &&
+        String(perfil.localidad || "").trim() &&
+        String(perfil.foto_url || "").trim()
+      );
+      if (zonaNormalizada) {
+        vecinos = vecinos.filter((perfil) => {
+          const localidad = normalizarZonaRadar(perfil.localidad);
+          const zona = normalizarZonaRadar(perfil.zona_aproximada);
+          return modo === "explorar"
+            ? localidad.includes(zonaNormalizada) || zona.includes(zonaNormalizada)
+            : zona === zonaNormalizada || localidad === zonaNormalizada;
+        });
+      } else {
+        vecinos = [];
+      }
+
+      vecinos.sort((a, b) => {
+        const fechaA = new Date(a.actualizado_en || 0).getTime();
+        const fechaB = new Date(b.actualizado_en || 0).getTime();
+        return fechaB - fechaA;
+      });
+
+      if (!vecinos.length) {
+        if (estadoVecinos) {
+          estadoVecinos.textContent = zonaNormalizada
+            ? `Todavía no encontramos perfiles registrados en ${zonaElegida}.`
+            : "Para ver vecinos, guardá primero tu barrio o localidad en el selector de comunidad.";
+        }
+        return;
+      }
+
+      const fragmento = document.createDocumentFragment();
+      vecinos.forEach((perfil) => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "tarjeta-vecino";
+
+        const encabezado = document.createElement("div");
+        encabezado.className = "vecino-encabezado";
+
+        const avatar = document.createElement("div");
+        avatar.className = "vecino-avatar";
+        if (perfil.foto_url) {
+          const imagen = document.createElement("img");
+          imagen.src = perfil.foto_url;
+          imagen.alt = `Foto de ${perfil.nombre_visible || "vecino"}`;
+          imagen.loading = "lazy";
+          avatar.appendChild(imagen);
+        } else {
+          avatar.textContent = String(perfil.nombre_visible || "H").trim().charAt(0).toUpperCase() || "H";
+        }
+
+        const identidad = document.createElement("div");
+        identidad.className = "vecino-identidad";
+        const nombre = document.createElement("h3");
+        nombre.textContent = perfil.nombre_visible || "Vecino de la comunidad";
+        const ubicacion = document.createElement("p");
+        ubicacion.textContent = [perfil.localidad, perfil.zona_aproximada].filter(Boolean).join(" · ") || "Zona no especificada";
+        identidad.append(nombre, ubicacion);
+        encabezado.append(avatar, identidad);
+        tarjeta.appendChild(encabezado);
+
+        const presentacion = document.createElement("p");
+        presentacion.className = "vecino-presentacion";
+        presentacion.textContent = perfil.presentacion || "Este vecino todavía no agregó una presentación.";
+        tarjeta.appendChild(presentacion);
+
+        const datos = document.createElement("div");
+        datos.className = "vecino-indicadores";
+        const publicaciones = document.createElement("span");
+        publicaciones.textContent = `📦 ${conteos.get(String(perfil.id)) || 0} publicaciones activas`;
+        datos.appendChild(publicaciones);
+        if (perfil.conectividad_disponible) {
+          const conectividad = document.createElement("span");
+          conectividad.className = "vecino-conectividad";
+          const modalidad = perfil.conectividad_modalidad || "solidaria";
+          conectividad.textContent = `📡 Conectividad: ${modalidad}${perfil.conectividad_emergencias ? " · Emergencias" : ""}`;
+          datos.appendChild(conectividad);
+        }
+        tarjeta.appendChild(datos);
+
+        const acciones = document.createElement("div");
+        acciones.className = "vecino-acciones";
+        const verPublicaciones = document.createElement("button");
+        verPublicaciones.type = "button";
+        verPublicaciones.className = "boton-secundario";
+        verPublicaciones.textContent = "VER PUBLICACIONES";
+        verPublicaciones.addEventListener("click", () => {
+          perfilFiltroActivo = perfil.id;
+          perfilFiltroNombre = perfil.nombre_visible || "Vecino";
+          if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
+          if (textoFiltroVecino) textoFiltroVecino.textContent = `Mostrando publicaciones de ${perfilFiltroNombre}`;
+          cargarPublicacionesRemotas();
+          window.dispatchEvent(new CustomEvent("abrirVistaGondola"));
+        });
+        acciones.appendChild(verPublicaciones);
+
+        const contactar = document.createElement("button");
+        contactar.type = "button";
+        contactar.className = "boton-accion";
+        contactar.textContent = "CONTACTAR VECINO";
+        contactar.addEventListener("click", () => {
+          if (typeof window.abrirChatConVecino === "function") {
+            window.abrirChatConVecino(perfil.nombre_visible || "Vecino", perfil.id);
+          } else {
+            window.dispatchEvent(new CustomEvent("abrirVistaComunicacion"));
+          }
+        });
+        acciones.appendChild(contactar);
+        tarjeta.appendChild(acciones);
+        fragmento.appendChild(tarjeta);
+      });
+
+      listaVecinos.appendChild(fragmento);
+      if (estadoVecinos) estadoVecinos.textContent = `${vecinos.length} vecino${vecinos.length === 1 ? "" : "s"} encontrado${vecinos.length === 1 ? "" : "s"} · ordenados por actividad reciente.`;
+    } catch (error) {
+      console.error("No se pudo cargar el radar de vecinos:", error);
+      if (estadoVecinos) estadoVecinos.textContent = "No se pudo actualizar el radar. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
+    }
+  }
 
   // --- NÚCLEO MATRIX: INDEXEDDB LOCAL ---
   function abrirMatrixDB() {
@@ -332,8 +515,12 @@ export function initCommunity({
           )
           .eq("estado", "activa");
 
+        if (perfilFiltroActivo) {
+          query = query.eq("perfil_id", perfilFiltroActivo);
+        }
+
         // Filtro flexible por zona (ilike)
-        if (zonaActualFiltro) {
+        if (zonaActualFiltro && !perfilFiltroActivo) {
           query = query.ilike("zona_aproximada", `%${zonaActualFiltro}%`);
         }
 
@@ -353,7 +540,7 @@ export function initCommunity({
         if (!error && data) {
           const remotas = data.map(convertirRegistroRemoto);
           await guardarMatrixCache(remotas);
-          
+
           publicaciones = combinarPublicaciones(
             obtenerLocales(),
             remotas
@@ -375,9 +562,11 @@ export function initCommunity({
     const cacheLocal = await obtenerMatrixCache();
     let remotasCache = cacheLocal.map(convertirRegistroRemoto);
 
-    if (zonaActualFiltro) {
+    if (perfilFiltroActivo) {
+      remotasCache = remotasCache.filter(p => String(p.perfil_id) === String(perfilFiltroActivo));
+    } else if (zonaActualFiltro) {
       remotasCache = remotasCache.filter(p => 
-        p.zona_aproximada.toLowerCase().includes(zonaActualFiltro.toLowerCase())
+        String(p.zona_aproximada || "").toLowerCase().includes(zonaActualFiltro.toLowerCase())
       );
     }
 
@@ -387,7 +576,7 @@ export function initCommunity({
         p.titulo.toLowerCase().includes(q) || p.descripcion.toLowerCase().includes(q)
       );
     }
-    
+
     publicaciones = combinarPublicaciones(
       obtenerLocales(),
       remotasCache
@@ -416,8 +605,7 @@ export function initCommunity({
       fechaLegible(publicacion.creado_en)
     );
 
-    const esIntercambio =
-      String(publicacion.tipo).toLowerCase().includes("intercambio");
+    const esIntercambio = Boolean(publicacion.modalidad_intercambio || publicacion.que_necesita_a_cambio);
 
     const nombreAutor = escaparHTML(publicacion.perfil_nombre || "Vecino");
     const autorId = publicacion.perfil_id || "";
@@ -558,8 +746,9 @@ export function initCommunity({
           .toLocaleLowerCase("es-AR") === tipoFiltro;
 
       const coincideOffline = !soloOffline || Boolean(publicacion.offline_activo);
+      const coincideAutor = !perfilFiltroActivo || String(publicacion.perfil_id || "") === String(perfilFiltroActivo);
 
-      return coincideTipo && coincideOffline;
+      return coincideTipo && coincideOffline && coincideAutor;
     });
 
     lista.replaceChildren();
@@ -587,6 +776,65 @@ export function initCommunity({
     lista.appendChild(fragmento);
   }
 
+  async function obtenerZonaPorCoordenadas(latitud, longitud) {
+    const parametros = new URLSearchParams({
+      format: "jsonv2",
+      lat: String(latitud),
+      lon: String(longitud),
+      zoom: "14",
+      addressdetails: "1",
+      "accept-language": "es"
+    });
+    const respuesta = await fetch(`https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`, {
+      headers: { Accept: "application/json" },
+      cache: "no-store"
+    });
+    if (!respuesta.ok) throw new Error("No se pudo consultar OpenStreetMap.");
+    const datos = await respuesta.json();
+    const direccion = datos.address || {};
+    const zona = direccion.neighbourhood || direccion.suburb || direccion.quarter ||
+      direccion.city_district || direccion.village || direccion.town ||
+      direccion.city || direccion.municipality || direccion.county;
+    if (!zona) throw new Error("No se pudo reconocer el barrio o localidad.");
+    return String(zona).trim();
+  }
+
+  function usarUbicacionEnPublicacion() {
+    if (!navigator.geolocation) {
+      notificar("Este dispositivo no ofrece geolocalización.", "warning");
+      return;
+    }
+    if (!navigator.onLine) {
+      notificar("Necesitás conexión para identificar la zona con OpenStreetMap.", "warning");
+      return;
+    }
+    if (botonUbicacionPublicacion) {
+      botonUbicacionPublicacion.disabled = true;
+      botonUbicacionPublicacion.textContent = "IDENTIFICANDO ZONA…";
+    }
+    navigator.geolocation.getCurrentPosition(async (posicion) => {
+      try {
+        const zona = await obtenerZonaPorCoordenadas(posicion.coords.latitude, posicion.coords.longitude);
+        if (zonaPublicacionInput) zonaPublicacionInput.value = zona;
+        notificar(`Zona aproximada identificada: ${zona}. Revisala antes de publicar.`, "success");
+      } catch (error) {
+        console.warn("No se pudo identificar la zona de la publicación:", error);
+        notificar("No se pudo identificar la zona. Podés escribirla manualmente.", "warning");
+      } finally {
+        if (botonUbicacionPublicacion) {
+          botonUbicacionPublicacion.disabled = false;
+          botonUbicacionPublicacion.textContent = "USAR UBICACIÓN APROXIMADA";
+        }
+      }
+    }, (error) => {
+      if (botonUbicacionPublicacion) {
+        botonUbicacionPublicacion.disabled = false;
+        botonUbicacionPublicacion.textContent = "USAR UBICACIÓN APROXIMADA";
+      }
+      notificar(error.code === 1 ? "No autorizaste la ubicación." : "No se pudo obtener la ubicación. Escribí la zona manualmente.", "warning");
+    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
+  }
+
   function validarFormulario() {
     const tipo = normalizarTexto(tipoInput?.value);
     const categoria = obtenerCategoria();
@@ -602,37 +850,8 @@ export function initCommunity({
       return null;
     }
 
-    const esIntercambio = tipo
-      .toLocaleLowerCase("es-AR")
-      .includes("intercambio");
-
-    const modalidad = normalizarTexto(
-      modalidadInput?.value
-    );
-
-    const necesita = normalizarTexto(
-      necesitaInput?.value
-    );
-
-    if (esIntercambio && !modalidad) {
-      notificar(
-        "Indicá la modalidad del intercambio.",
-        "error"
-      );
-
-      modalidadInput?.focus();
-      return null;
-    }
-
-    if (esIntercambio && !necesita) {
-      notificar(
-        "Indicá qué necesitás a cambio.",
-        "error"
-      );
-
-      necesitaInput?.focus();
-      return null;
-    }
+    const modalidad = normalizarTexto(modalidadInput?.value);
+    const necesita = normalizarTexto(necesitaInput?.value);
 
     return {
       tipo,
@@ -640,13 +859,11 @@ export function initCommunity({
       titulo,
       descripcion,
       condicion: normalizarTexto(condicionInput?.value),
-      modalidad_intercambio: esIntercambio
-        ? modalidad
-        : "",
-      que_necesita_a_cambio: esIntercambio
-        ? necesita
-        : "",
-      zona_aproximada: normalizarTexto(getItem("hm_barrio", ""))
+      modalidad_intercambio: modalidad,
+      que_necesita_a_cambio: necesita,
+      zona_aproximada: normalizarTexto(
+        zonaPublicacionInput?.value || getItem("hm_barrio", "") || getItem("hm_zona_explorar", "")
+      )
     };
   }
 
@@ -673,9 +890,9 @@ export function initCommunity({
     const usuario = await obtenerUsuarioActual();
     const perfil = await obtenerPerfilActual();
 
-    if (!usuario || !perfil) {
+    if (!usuario || !perfil || !perfilEstaCompleto()) {
       notificar(
-        "Iniciá sesión y completá tu perfil para publicar en la comunidad.",
+        "Iniciá sesión y completá todos los datos obligatorios de tu perfil para publicar en la comunidad.",
         "error"
       );
 
@@ -759,7 +976,9 @@ export function initCommunity({
       );
 
       renderizarPublicaciones();
+      window.dispatchEvent(new CustomEvent("publicacionComunidadActualizada"));
       form.reset();
+      if (zonaPublicacionInput) zonaPublicacionInput.value = getItem("hm_barrio", "") || "";
       actualizarCampoOtraCategoria();
 
       notificar(
@@ -795,6 +1014,7 @@ export function initCommunity({
       );
 
       renderizarPublicaciones();
+      window.dispatchEvent(new CustomEvent("publicacionComunidadActualizada"));
 
       notificar(
         "No se pudo conectar con el servidor, guardado localmente en este dispositivo.",
@@ -814,6 +1034,9 @@ export function initCommunity({
   }
 
   function limpiarFiltros() {
+    perfilFiltroActivo = null;
+    perfilFiltroNombre = "";
+    if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
     if (busquedaInput) {
       busquedaInput.value = "";
     }
@@ -832,6 +1055,20 @@ export function initCommunity({
 
     cargarPublicacionesRemotas();
   }
+
+  function actualizarSelectorFicha(tipo) {
+    if (tipoInput) tipoInput.value = tipo;
+    const ofrece = tipo === "oferta";
+    botonFichaOfrezco?.classList.toggle("activa", ofrece);
+    botonFichaNecesito?.classList.toggle("activa", !ofrece);
+    botonFichaOfrezco?.setAttribute("aria-pressed", String(ofrece));
+    botonFichaNecesito?.setAttribute("aria-pressed", String(!ofrece));
+  }
+
+  botonFichaOfrezco?.addEventListener("click", () => actualizarSelectorFicha("oferta"));
+  botonFichaNecesito?.addEventListener("click", () => actualizarSelectorFicha("necesidad"));
+  tipoInput?.addEventListener("change", () => actualizarSelectorFicha(tipoInput.value));
+  actualizarSelectorFicha("oferta");
 
   const manejarCategoria = () => {
     actualizarCampoOtraCategoria();
@@ -901,6 +1138,23 @@ export function initCommunity({
   });
 
   actualizarCampoOtraCategoria();
+  if (zonaPublicacionInput && !zonaPublicacionInput.value) {
+    zonaPublicacionInput.value = getItem("hm_barrio", "") || getItem("hm_zona_explorar", "") || "";
+  }
+  botonUbicacionPublicacion?.addEventListener("click", usarUbicacionEnPublicacion);
+
+  botonActualizarVecinos?.addEventListener("click", cargarVecinos);
+  botonQuitarFiltroVecino?.addEventListener("click", () => {
+    perfilFiltroActivo = null;
+    perfilFiltroNombre = "";
+    if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
+    cargarPublicacionesRemotas();
+  });
+  window.addEventListener("cambioZonaComunidad", cargarVecinos);
+  window.addEventListener("perfilComunidadActualizado", cargarVecinos);
+  window.addEventListener("online", cargarVecinos);
+
+  cargarVecinos();
 
   window.addEventListener('online', () => {
     cargarPublicacionesRemotas();
@@ -922,6 +1176,7 @@ export function initCommunity({
   try {
     const resultado = supabase.auth.onAuthStateChange(() => {
       cargarPublicacionesRemotas();
+      cargarVecinos();
     });
 
     suscripcionAuth =
