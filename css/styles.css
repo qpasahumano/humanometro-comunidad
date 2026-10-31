@@ -6,7 +6,7 @@
   --blanco: #f3f8ff;
   --texto-suave: #b8c9da;
   --brillo: rgba(83, 197, 235, 0.12);
-  --radio: 16px;
+  --radio: 18px;
 }
 
 * {
@@ -107,7 +107,7 @@ button {
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
-  padding: 4px 0 10px;
+  padding: 6px 0 10px;
   border-bottom: 1px solid var(--borde);
 }
 
@@ -118,36 +118,45 @@ button {
 }
 
 .marca-titulo {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.09em;
 }
 
 .marca-subtitulo {
   color: var(--celeste);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 750;
   letter-spacing: 0.2em;
 }
 
-/* NAVEGACIÓN DE SOLAPAS FIJA Y LIMPIA PARA CELULAR */
+.boton-perfil {
+  padding: 8px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  color: var(--blanco);
+  background: rgba(7, 25, 44, 0.8);
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+/* NAVEGACIÓN DE SOLAPAS FIJA Y ADAPTADA A CELULAR */
 .navegacion-solapas {
   display: flex;
   gap: 6px;
   width: 100%;
   max-width: 760px;
-  margin: 10px auto 14px auto;
-  padding: 0;
+  margin: 10px auto 16px auto;
 }
 
 .boton-solapa {
   flex: 1;
-  padding: 8px 4px;
+  padding: 8px 6px;
   background: rgba(7, 25, 44, 0.9);
   color: var(--texto-suave);
   border: 1px solid var(--borde);
   border-radius: 10px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-align: center;
   white-space: nowrap;
@@ -161,7 +170,7 @@ button {
   color: var(--blanco);
   border-color: var(--celeste);
   font-weight: 800;
-  box-shadow: 0 0 10px rgba(83, 197, 235, 0.25);
+  box-shadow: 0 0 12px rgba(83, 197, 235, 0.25);
 }
 
 .bienvenida,
@@ -178,19 +187,19 @@ button {
 }
 
 .bienvenida {
-  padding: 8px 2px 10px;
+  padding: 12px 4px 10px;
 }
 
 .etiqueta {
   color: var(--celeste);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.16em;
 }
 
 .bienvenida h1 {
-  margin: 4px 0 0;
-  font-size: clamp(1.25rem, 4.5vw, 1.8rem);
+  margin: 6px 0;
+  font-size: clamp(1.4rem, 5vw, 2.1rem);
   line-height: 1.15;
 }
 
@@ -211,7 +220,7 @@ input, textarea, select {
   border-radius: 8px;
   color: var(--blanco);
   background: rgba(3, 15, 30, 0.92);
-  font-size: 0.86rem !important;
+  font-size: 0.88rem !important;
   margin-bottom: 6px !important;
 }
 
@@ -225,8 +234,8 @@ input, textarea, select {
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 68px;
-  padding: 10px 12px;
+  min-height: 72px;
+  padding: 12px 14px;
   border: 1px solid var(--borde);
   border-radius: var(--radio);
   color: var(--blanco);
@@ -237,8 +246,8 @@ input, textarea, select {
 .icono-modulo {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border: 1px solid var(--borde);
   border-radius: 50%;
   color: var(--celeste);
@@ -249,21 +258,21 @@ input, textarea, select {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .contenido-modulo strong {
-  font-size: 0.82rem;
+  font-size: 0.86rem;
 }
 
 .contenido-modulo small {
   color: var(--texto-suave);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .flecha {
   color: var(--celeste);
-  font-size: 1.3rem;
+  font-size: 1.5rem;
 }
 
 .boton-accion, .boton-secundario {
@@ -273,11 +282,11 @@ input, textarea, select {
   border-radius: 8px;
   color: var(--blanco);
   font-weight: 750;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
 }
 
 .boton-accion {
-  background: rgba(31, 100, 127, 0.85);
+  background: rgba(31, 100, 127, 0.8);
 }
 
 .boton-secundario {
@@ -286,7 +295,7 @@ input, textarea, select {
 
 .boton-ancho {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .lista-publicaciones {
@@ -297,7 +306,7 @@ input, textarea, select {
 .tarjeta-publicacion {
   padding: 12px;
   border: 1px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--panel);
 }
 
@@ -305,14 +314,44 @@ input, textarea, select {
 .badge-publicaciones-activas {
   display: inline-block;
   margin-top: 2px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border: 1px solid rgba(139, 217, 238, 0.4);
   border-radius: 999px;
   color: var(--celeste);
   background: rgba(83, 197, 235, 0.12);
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 750;
-  box-shadow: 0 0 8px rgba(83, 197, 235, 0.15);
+  box-shadow: 0 0 10px rgba(83, 197, 235, 0.15);
+}
+
+.perfil-foto-bloque {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.perfil-foto-marco {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid var(--celeste);
+  border-radius: 50%;
+  color: var(--blanco);
+  background: rgba(75, 170, 220, 0.12);
+  font-weight: 700;
+}
+
+.perfil-foto-marco img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .notificacion {
@@ -333,10 +372,10 @@ input, textarea, select {
 }
 
 .pie {
-  margin-top: 20px;
-  padding: 12px 0 0;
+  margin-top: 24px;
+  padding: 14px 0 0;
   border-top: 1px solid var(--borde);
   color: var(--texto-suave);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   text-align: center;
 }
