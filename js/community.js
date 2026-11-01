@@ -15,8 +15,8 @@ const MATRIX_CONFIG = {
   STORE_MEDICIONES: "mediciones_pendientes"
 };
 
-const BRIDGEFY_URL =
-  "https://play.google.com/store/apps/details?id=me.bridgefy.main";
+const BRIAR_URL =
+  "https://play.google.com/store/apps/details?id=org.briarproject.briar.android";
 
 // Umbral de vigencia temporal para la caché local (48 horas).
 const UMBRAL_VIGENCIA_CACHE_MS = 48 * 60 * 60 * 1000;
@@ -93,14 +93,14 @@ export function initCommunity({
 
     const enlace = document.createElement("a");
     enlace.className = "indicador-mensajeria-offline";
-    enlace.href = BRIDGEFY_URL;
+    enlace.href = BRIAR_URL;
     enlace.target = "_blank";
     enlace.rel = "noopener noreferrer";
     enlace.title =
-      "Este vecino declara contar con mensajería offline. Conocé Bridgefy.";
+      "Este vecino declara contar con mensajería offline. Conocé Briar.";
     enlace.setAttribute(
       "aria-label",
-      "Mensajería offline. Abrir Bridgefy en Google Play."
+      "Mensajería offline. Abrir Briar en Google Play."
     );
 
     const icono = document.createElement("span");
@@ -124,13 +124,7 @@ export function initCommunity({
   let destinoRadarComunitario = "";
 
   function obtenerContenedorPerfiles() {
-    if (modoListadoPerfiles === "radar") {
-      return (
-        document.getElementById("radar-resultados") ||
-        document.getElementById("lista-radar") ||
-        listaVecinos
-      );
-    }
+    // El Radar reutiliza el directorio: todos los resultados se muestran en Comunidad.
     return (
       document.getElementById("lista-comunidad") ||
       document.getElementById("directorio-comunidad") ||
@@ -163,7 +157,7 @@ export function initCommunity({
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
         .select(
-          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, whatsapp, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en"
+          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en"
         );
       if (errorPerfiles) throw errorPerfiles;
 
@@ -301,23 +295,33 @@ export function initCommunity({
         const contactar = document.createElement("button");
         contactar.type = "button";
         contactar.className = "boton-accion";
-        contactar.textContent = "CONTACTAR VECINO";
+        contactar.textContent = "ENVIAR MENSAJE";
+
+        const chatFicha = document.createElement("div");
+        chatFicha.className = "chat-vecino-en-ficha";
+        chatFicha.hidden = true;
+        chatFicha.dataset.perfilId = String(perfil.id || "");
+
         contactar.addEventListener("click", () => {
-          if (typeof window.abrirChatConVecino === "function") {
-            window.abrirChatConVecino(perfil.nombre_visible || "Integrante", perfil.id);
-          } else {
-            window.dispatchEvent(new CustomEvent("abrirVistaComunicacion"));
-          }
+          chatFicha.hidden = false;
+          window.dispatchEvent(new CustomEvent("abrirChatEnFicha", {
+            detail: {
+              perfilId: perfil.id,
+              nombre: perfil.nombre_visible || "Integrante",
+              contenedor: chatFicha,
+              tarjeta
+            }
+          }));
         });
         acciones.appendChild(contactar);
-        tarjeta.appendChild(acciones);
+        tarjeta.append(acciones, chatFicha);
         fragmento.appendChild(tarjeta);
       });
 
       contenedor.appendChild(fragmento);
       if (estado) estado.textContent = esRadar
         ? `${vecinos.length} perfil${vecinos.length === 1 ? "" : "es"} encontrado${vecinos.length === 1 ? "" : "s"} para “${destinoRadarComunitario}”.`
-        : `${vecinos.length} integrante${vecinos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil.`;
+        : `${vecinos.length} integrante${vecinos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil (no equivale al último ingreso).`;
     } catch (error) {
       console.error("No se pudieron cargar los perfiles comunitarios:", error);
       if (estado) estado.textContent = "No se pudieron cargar los perfiles. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
@@ -1383,14 +1387,14 @@ export function initCommunity({
     if (botonFichaOfrezco) {
       botonFichaOfrezco.classList.toggle(
         "activo",
-        tipoInput.value === "ofrezco"
+        tipoInput.value === "oferta"
       );
     }
 
     if (botonFichaNecesito) {
       botonFichaNecesito.classList.toggle(
         "activo",
-        tipoInput.value === "necesito"
+        tipoInput.value === "necesidad"
       );
     }
   }
@@ -1439,23 +1443,47 @@ export function initCommunity({
     actualizarCampoOtraCategoria();
   }
 
-  function manejarModoRadar() {
-    const destino =
-      document.getElementById("zona-explorar")?.value || "";
+  function manejarTipoPublicacionCambio() {
+    actualizarSelectorFicha();
+  }
+
+  function manejarModoRadar(evento) {
+    const detalle = evento?.detail || {};
+    const destinoDetalle = detalle.destino;
+    let destino = "";
+
+    if (typeof destinoDetalle === "string") {
+      destino = destinoDetalle;
+    } else if (destinoDetalle && typeof destinoDetalle === "object") {
+      destino = [
+        destinoDetalle.localidad,
+        destinoDetalle.provincia,
+        destinoDetalle.pais
+      ].filter(Boolean).join(", ");
+    } else {
+      const localidad = document.getElementById("zona-explorar")?.value || "";
+      const provincia = document.getElementById("radar-provincia")?.value || "";
+      const pais = document.getElementById("radar-pais")?.value || "";
+      destino = [localidad, provincia, pais].filter(Boolean).join(", ");
+    }
 
     destinoRadarComunitario = destino.trim();
+    modoListadoPerfiles = "radar";
 
     try {
       setItem("hm_radar_destino", destinoRadarComunitario);
     } catch (error) {
       console.warn("No se pudo guardar el destino del Radar:", error);
     }
-
-    cargarRadarComunitario(destinoRadarComunitario);
   }
 
-  function manejarMostrarDirectorio() {
-    cargarDirectorioComunidad();
+  function manejarMostrarDirectorio(evento) {
+    const detalle = evento?.detail || {};
+    if (detalle.modo === "radar") {
+      cargarRadarComunitario(detalle.destino ?? destinoRadarComunitario);
+    } else {
+      cargarDirectorioComunidad();
+    }
   }
 
   function manejarOnline() {
@@ -1485,13 +1513,17 @@ export function initCommunity({
 
   form?.addEventListener("submit", publicar);
 
-  botonFichaOfrezco?.addEventListener("click", () => {
-    seleccionarTipoFicha("ofrezco");
-  });
+  function manejarClickOfrezco() {
+    seleccionarTipoFicha("oferta");
+  }
 
-  botonFichaNecesito?.addEventListener("click", () => {
-    seleccionarTipoFicha("necesito");
-  });
+  function manejarClickNecesito() {
+    seleccionarTipoFicha("necesidad");
+  }
+
+  botonFichaOfrezco?.addEventListener("click", manejarClickOfrezco);
+  botonFichaNecesito?.addEventListener("click", manejarClickNecesito);
+  tipoInput?.addEventListener("change", manejarTipoPublicacionCambio);
 
   categoriaInput?.addEventListener(
     "change",
@@ -1609,15 +1641,9 @@ export function initCommunity({
 
       form?.removeEventListener("submit", publicar);
 
-      botonFichaOfrezco?.removeEventListener(
-        "click",
-        seleccionarTipoFicha
-      );
-
-      botonFichaNecesito?.removeEventListener(
-        "click",
-        seleccionarTipoFicha
-      );
+      botonFichaOfrezco?.removeEventListener("click", manejarClickOfrezco);
+      botonFichaNecesito?.removeEventListener("click", manejarClickNecesito);
+      tipoInput?.removeEventListener("change", manejarTipoPublicacionCambio);
 
       categoriaInput?.removeEventListener(
         "change",
