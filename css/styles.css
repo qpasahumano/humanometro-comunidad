@@ -1500,3 +1500,220 @@ select option {
     transition: none;
   }
 }
+
+/* =====================================================
+   AJUSTE INTEGRAL DE ESTILOS · CHECKLIST 1–6
+   Este bloque complementa los estilos existentes sin
+   eliminar reglas compartidas por otras pantallas.
+   ===================================================== */
+
+/* 1. Aviso de seguridad de medicamentos: legible y adaptable. */
+#aviso-seguridad-medicamentos[hidden] {
+  display: none !important;
+}
+
+#aviso-seguridad-medicamentos:not([hidden]) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+#aviso-seguridad-medicamentos a {
+  color: #8bd9ee;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* 2. Góndola: dos columnas en móvil, contenido íntegro. */
+#vista-gondola,
+#vista-gondola * {
+  min-width: 0;
+}
+
+#vista-gondola .lista-publicaciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: clamp(6px, 2vw, 10px);
+}
+
+#vista-gondola .publicacion,
+#vista-gondola .tarjeta-publicacion {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+#vista-gondola .publicacion img,
+#vista-gondola .tarjeta-publicacion img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+#vista-gondola .publicacion p,
+#vista-gondola .tarjeta-publicacion p,
+#vista-gondola .publicacion small,
+#vista-gondola .tarjeta-publicacion small,
+#vista-gondola .publicacion a,
+#vista-gondola .tarjeta-publicacion a {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: pre-wrap;
+}
+
+#vista-gondola .publicacion button,
+#vista-gondola .tarjeta-publicacion button {
+  max-width: 100%;
+  white-space: normal;
+}
+
+/* 3. Radar y zona explorada: textos y controles no desbordan. */
+#vista-radar,
+#radar-vecinos,
+#lista-radar,
+.lista-radar,
+.lista-vecinos {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#vista-radar input,
+#vista-radar select,
+#vista-radar button,
+#radar-vecinos input,
+#radar-vecinos select,
+#radar-vecinos button {
+  max-width: 100%;
+}
+
+.indicador-zona-comunidad {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 4. Contacto desde la ficha: WhatsApp visible y adaptable. */
+.tarjeta-vecino .vecino-acciones,
+.tarjeta-vecino .vecino-acciones a,
+.tarjeta-vecino .vecino-acciones button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tarjeta-vecino .vecino-acciones a,
+.tarjeta-vecino .vecino-acciones button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 5. Perfil: opción offline/Briar y Conectividad Solidaria. */
+.perfil-mensajeria-offline,
+.enlace-mensajeria-offline,
+.perfil-conectividad {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.enlace-mensajeria-offline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid rgba(139, 217, 238, 0.4);
+  border-radius: 10px;
+  color: var(--celeste);
+  background: rgba(83, 197, 235, 0.09);
+  text-decoration: none;
+  text-align: center;
+}
+
+.enlace-mensajeria-offline:focus-visible,
+.enlace-mensajeria-offline:hover {
+  border-color: var(--celeste);
+  background: rgba(83, 197, 235, 0.17);
+  text-decoration: underline;
+}
+
+/* 6. SOS Offline: alternativas externas diferenciadas y legibles. */
+#vista-sos-offline .tarjeta {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+#vista-sos-offline a {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Estado estable de OFREZCO / NECESITO, sin desplazamientos. */
+.selector-tipo-publicacion {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.selector-ficha {
+  width: 100%;
+  min-width: 0;
+  transform: none;
+  transition: background-color 160ms ease, border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.selector-ficha:active {
+  transform: none;
+}
+
+@media (max-width: 420px) {
+  #vista-gondola .lista-publicaciones {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #vista-gondola .publicacion,
+  #vista-gondola .tarjeta-publicacion {
+    padding: 9px;
+  }
+
+  #vista-gondola .publicacion h4,
+  #vista-gondola .tarjeta-publicacion h3 {
+    font-size: 0.84rem;
+  }
+
+  #vista-gondola .publicacion p,
+  #vista-gondola .tarjeta-publicacion p {
+    font-size: 0.76rem;
+  }
+
+  .tarjeta-vecino .vecino-acciones {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 340px) {
+  #vista-gondola .lista-publicaciones {
+    gap: 5px;
+  }
+
+  #vista-gondola .publicacion,
+  #vista-gondola .tarjeta-publicacion {
+    padding: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selector-ficha {
+    transition: none;
+  }
+}
