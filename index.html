@@ -64,6 +64,10 @@
       <button id="tab-radar" class="solapa-principal" type="button" data-tab="radar" aria-controls="vista-radar" aria-selected="false">
         <span aria-hidden="true">📡</span><span>Radar comunitario</span>
       </button>
+
+      <button id="tab-sos-offline" class="solapa-principal" type="button" data-tab="sos-offline" aria-controls="vista-sos-offline" aria-selected="false">
+        <span aria-hidden="true">🆘</span><span>Comunicación SOS Offline</span>
+      </button>
     </nav>
 
     <!-- =====================================================
@@ -78,6 +82,12 @@
           Recursos, comunicación y ayuda mutua para las personas de tu comunidad.
         </p>
       </section>
+
+      <!-- ZONA ACTUAL DEL DIRECTORIO -->
+      <div id="indicador-zona-comunidad" class="indicador-zona-comunidad" aria-live="polite">
+        <span aria-hidden="true">📍</span>
+        <span id="nombre-zona-comunidad">Explorando comunidad</span>
+      </div>
 
       <!-- DIRECTORIO DE INTEGRANTES DE LA COMUNIDAD -->
       <section id="radar-vecinos" class="tarjeta radar-vecinos">
@@ -403,15 +413,21 @@
         indicá su condición y qué necesitás a cambio.
       </p>
 
-      <!-- POLÍTICA DE SEGURIDAD Y MÓDULO DE MEDICAMENTOS -->
-      <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff; margin-bottom: 20px;">
-        <h3 style="color: #38bdf8; margin-top: 0;">🛡️ Política de Seguridad y Medicamentos</h3>
-        <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+      <!-- AVISO DE SEGURIDAD: SE MUESTRA SOLO ANTE UNA SELECCIÓN O MENCIÓN DE MEDICAMENTOS -->
+      <section
+        id="aviso-seguridad-medicamentos"
+        class="tarjeta aviso-seguridad-medicamentos"
+        hidden
+        role="alert"
+        aria-live="polite"
+      >
+        <h3>🛡️ Política de Seguridad y Medicamentos</h3>
+        <p>
           Por razones de salud pública, seguridad sanitaria y normativas legales,
           <strong>Humanómetro prohíbe terminantemente la publicación, oferta, donación, trueque o comercialización de medicamentos</strong>,
           fármacos o productos farmacéuticos entre particulares.
         </p>
-        <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+        <p>
           Para la gestión segura de fármacos, te sugerimos acudir exclusivamente a entidades oficiales y especializadas a través del directorio de
           <strong>Bancos de Medicamentos y Redes de Salud</strong>.
         </p>
@@ -447,6 +463,7 @@
           <option value="energia">Energía y carga de dispositivos</option>
           <option value="recursos">Recursos comunitarios</option>
           <option value="ayuda">Ayuda mutua</option>
+          <option value="medicamentos">Medicamentos (consulta de seguridad; no se permite publicar)</option>
           <option value="bancos_salud_oficial">💊 Bancos de Medicamentos y Redes de Salud (Directorio oficial)</option>
           <option value="otros">Otros</option>
           <option value="otra">Otra categoría</option>
@@ -640,36 +657,42 @@
 
     </section>
 
+
+
     <!-- =====================================================
-         COMUNICACIÓN
+         COMUNICACIÓN SOS OFFLINE
          ===================================================== -->
-    <section id="vista-comunicacion" class="vista-interna" hidden>
+    <section id="vista-sos-offline" class="vista-interna" hidden>
 
       <button class="boton-volver" data-volver type="button">
         ← Volver a la comunidad
       </button>
 
-      <h2>No pierdas la comunicación</h2>
+      <h2>Comunicación SOS Offline</h2>
 
       <div class="tarjeta">
-        <h3>Estado de conexión</h3>
-
-        <p id="estado-conexion" aria-live="polite">
-          Comprobando conexión...
-        </p>
-
+        <h3>Prepararse antes de una contingencia</h3>
         <p>
-          Si estás sin internet, podés preparar un mensaje y guardarlo
-          en este dispositivo para consultarlo después.
+          Cuando se interrumpen Internet, la red móvil o los servicios eléctricos,
+          una aplicación web como HUMANÓMETRO COMUNIDAD no puede reemplazar una
+          red de radio ni transmitir por sí sola entre teléfonos sin conectividad.
         </p>
-
+        <p>
+          Por eso conviene instalar, configurar y probar con anticipación herramientas
+          gratuitas o con versión gratuita. Para comunicarse sin Internet, las personas
+          cercanas deben tener instalada y preparada una aplicación compatible; el
+          alcance depende de los dispositivos, la tecnología inalámbrica, el entorno
+          y la cantidad de participantes. Ninguna herramienta garantiza cobertura
+          en cualquier lugar ni sustituye los servicios oficiales de emergencia.
+        </p>
         <p class="aviso-local">
-          Para enviar mensajes necesitás iniciar sesión y completar tu perfil.
-          Escribí el nombre visible exacto de la otra persona. Si no hay conexión,
-          el mensaje queda guardado localmente en la red de relevo y se envía al restablecerse la red.
+          No pagues ni compartas datos sensibles para usar estas alternativas.
+          Descargalas únicamente desde sus sitios oficiales o tiendas reconocidas,
+          y acordá previamente con tus vecinos cómo utilizarlas.
         </p>
       </div>
 
+      <!-- KIT PREVENTIVO ORIGINAL, REUBICADO EN SU SOLAPA PROPIA -->
       <!-- KIT DE COMUNICACIÓN PREVENTIVO -->
       <section class="tarjeta" style="background: #17212b; border: 1px solid #2b3b4f; color: #fff;">
         <h3 style="color: #38bdf8; margin-top: 0;">📡 Kit de Comunicación Táctico (Sin Internet)</h3>
@@ -719,6 +742,59 @@
           💡 <em>Recomendación preventiva:</em> Conectate con tus vecinos de confianza, instalen alguna de estas herramientas y mantengan handies o radios analógicas preparadas en el hogar.
         </p>
       </section>
+
+      <section class="tarjeta">
+        <h3>Otras alternativas para evaluar</h3>
+        <article class="alternativa-offline">
+          <h4>Knit</h4>
+          <p>Mensajería local entre dispositivos compatibles mediante Bluetooth y tecnologías Wi-Fi compatibles. El alcance depende de la presencia de otros dispositivos participantes y de la compatibilidad del teléfono.</p>
+          <p><strong>Costo:</strong> gratuita y de código abierto. <strong>Valoración:</strong> consultá las reseñas y compatibilidad vigentes antes de instalar.</p>
+          <a href="https://knit.social/" target="_blank" rel="noopener noreferrer">Sitio oficial de Knit</a>
+        </article>
+        <article class="alternativa-offline">
+          <h4>Bitchat</h4>
+          <p>Mensajería descentralizada que utiliza Bluetooth mesh para comunicar dispositivos cercanos y retransmitir mensajes mediante otros participantes. No ofrece alcance ilimitado: depende de la densidad de dispositivos y del entorno.</p>
+          <p><strong>Costo:</strong> gratuita y de código abierto. <strong>Valoración:</strong> consultá la ficha de descarga vigente; las reseñas pueden variar según la versión y la tienda.</p>
+          <a href="https://github.com/permissionlesstech/bitchat" target="_blank" rel="noopener noreferrer">Proyecto y descargas oficiales de Bitchat</a>
+        </article>
+        <p class="texto-ayuda">
+          Las valoraciones de las tiendas cambian con el tiempo. Revisá la puntuación,
+          fecha de actualización, permisos y requisitos de tu dispositivo en la ficha
+          oficial antes de instalar.
+        </p>
+      </section>
+
+    </section>
+
+    <!-- =====================================================
+         COMUNICACIÓN
+         ===================================================== -->
+    <section id="vista-comunicacion" class="vista-interna" hidden>
+
+      <button class="boton-volver" data-volver type="button">
+        ← Volver a la comunidad
+      </button>
+
+      <h2>No pierdas la comunicación</h2>
+
+      <div class="tarjeta">
+        <h3>Estado de conexión</h3>
+
+        <p id="estado-conexion" aria-live="polite">
+          Comprobando conexión...
+        </p>
+
+        <p>
+          Si estás sin internet, podés preparar un mensaje y guardarlo
+          en este dispositivo para consultarlo después.
+        </p>
+
+        <p class="aviso-local">
+          Para enviar mensajes necesitás iniciar sesión y completar tu perfil.
+          Escribí el nombre visible exacto de la otra persona. Si no hay conexión,
+          el mensaje queda guardado localmente en la red de relevo y se envía al restablecerse la red.
+        </p>
+      </div>
 
       <form id="form-mensaje" class="tarjeta">
 
