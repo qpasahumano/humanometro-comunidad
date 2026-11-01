@@ -1395,11 +1395,17 @@ export function initCommunity({
     }
   }
 
+  // --- PUNTO 4: CORRECCIÓN DE BOTONES EN LA GÓNDOLA ("OFREZCO" / "NECESITO") ---
   function seleccionarTipoFicha(tipo) {
     if (!tipoInput) return;
 
     tipoInput.value = tipo;
     actualizarSelectorFicha();
+
+    // Desplazamiento fluido y limpio hacia el formulario o contenedor superior sin scroll interminable
+    if (form) {
+      form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   }
 
   function manejarBuscarPublicaciones() {
