@@ -6,12 +6,11 @@ let escuchadorAutenticacion = null;
 let cargaPerfilEnCurso = false;
 let modoEdicionPerfil = false;
 
-// ==========================================
-// CONSTANTES DE SEGURIDAD: ALTA CONFIANZA
-// ==========================================
 const REQUISITO_MIN_EVALUACIONES = 20;
 const REQUISITO_MIN_CALIDAD = 95;
 const CATEGORIAS_ALTA_CONFIANZA = ["hospedaje", "cuidado_mascotas_casa"];
+
+const BRIAR_URL = "https://briarproject.org/download/";
 
 const $ = (id) => document.getElementById(id);
 
@@ -129,7 +128,6 @@ function prepararFormularioPerfil() {
   const campos = [
     {
       id: "hm-profile-presentation",
-      nombre: "Presentación",
       etiqueta: "Presentación",
       tipo: "textarea",
       max: 600,
@@ -137,7 +135,6 @@ function prepararFormularioPerfil() {
     },
     {
       id: "hm-profile-locality",
-      nombre: "Localidad",
       etiqueta: "Localidad",
       tipo: "input",
       max: 100,
@@ -145,7 +142,6 @@ function prepararFormularioPerfil() {
     },
     {
       id: "hm-profile-zone",
-      nombre: "Zona aproximada",
       etiqueta: "Zona aproximada",
       tipo: "input",
       max: 120,
@@ -155,11 +151,13 @@ function prepararFormularioPerfil() {
 
   const boton = $("btn-guardar-perfil");
   const campoWhatsApp = $("whatsapp-usuario");
+
   if (campoWhatsApp) {
     campoWhatsApp.required = true;
     campoWhatsApp.autocomplete = "tel";
     campoWhatsApp.placeholder = "Ej.: +5491112345678";
   }
+
   if ($("nombre-usuario")) $("nombre-usuario").required = true;
 
   campos.forEach((campo) => {
@@ -182,7 +180,11 @@ function prepararFormularioPerfil() {
     control.id = campo.id;
     control.maxLength = campo.max;
     control.placeholder = campo.placeholder;
-    if (campo.id === "hm-profile-presentation" || campo.id === "hm-profile-locality") {
+
+    if (
+      campo.id === "hm-profile-presentation" ||
+      campo.id === "hm-profile-locality"
+    ) {
       control.required = true;
     }
 
@@ -194,52 +196,89 @@ function prepararFormularioPerfil() {
     }
   });
 
-  // Preferencia voluntaria de mensajería offline externa
+  // Preferencia voluntaria de mensajería offline.
   if (!$("hm-offline-messaging-available")) {
     const bloqueOffline = document.createElement("fieldset");
-    bloqueOffline.className = "perfil-conectividad perfil-mensajeria-offline tarjeta";
+    bloqueOffline.className =
+      "perfil-conectividad perfil-mensajeria-offline tarjeta";
+
     bloqueOffline.innerHTML = `
       <legend>Comunicación de emergencia</legend>
+
       <label class="control-check" for="hm-offline-messaging-available">
         <input id="hm-offline-messaging-available" type="checkbox">
         Tengo mensajería offline para comunicarme sin Internet
       </label>
-      <p class="texto-ayuda">Si activás esta opción, aparecerá un indicador en tu perfil comunitario. La mensajería funciona mediante una aplicación externa y requiere que la otra persona también la tenga instalada y configurada.</p>
-      <a class="boton-secundario enlace-mensajeria-offline" href="https://play.google.com/store/apps/details?id=me.bridgefy.main" target="_blank" rel="noopener noreferrer">CONOCER / DESCARGAR BRIDGEFY EN GOOGLE PLAY</a>
+
+      <p class="texto-ayuda">
+        Si activás esta opción, aparecerá un indicador en tu perfil comunitario.
+        La mensajería funciona mediante una aplicación externa y requiere que
+        la otra persona también la tenga instalada y configurada.
+      </p>
+
+      <a
+        class="boton-secundario enlace-mensajeria-offline"
+        href="${BRIAR_URL}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        CONOCER / DESCARGAR BRIAR
+      </a>
     `;
+
     if (boton) formulario.insertBefore(bloqueOffline, boton);
     else formulario.appendChild(bloqueOffline);
   }
 
-  // Conectividad Solidaria y Emergencias
+  // Conectividad Solidaria y Emergencias.
   if (!$("hm-connectivity-available")) {
     const bloque = document.createElement("fieldset");
     bloque.className = "perfil-conectividad tarjeta";
+
     bloque.innerHTML = `
       <legend>Conectividad Solidaria</legend>
+
       <label class="control-check" for="hm-connectivity-available">
         <input id="hm-connectivity-available" type="checkbox">
         Puedo ofrecer acceso a Internet voluntariamente
       </label>
+
       <label for="hm-connectivity-mode">Modalidad</label>
+
       <select id="hm-connectivity-mode">
         <option value="gratuito">Gratuito / solidario</option>
         <option value="intercambio">Por intercambio</option>
         <option value="ambas">Ambas modalidades</option>
       </select>
+
       <label class="control-check" for="hm-connectivity-emergency">
         <input id="hm-connectivity-emergency" type="checkbox">
         Podría ofrecerlo durante una emergencia si tengo conexión y energía
       </label>
-      <label for="hm-connectivity-zone">Zona aproximada para ofrecer conectividad</label>
-      <input id="hm-connectivity-zone" type="text" maxlength="120" placeholder="Ej.: zona centro de mi localidad">
-      <p class="texto-ayuda">La oferta es voluntaria. No publiques contraseñas ni tu dirección exacta. Podés pausar o desactivar esta opción cuando quieras.</p>
+
+      <label for="hm-connectivity-zone">
+        Zona aproximada para ofrecer conectividad
+      </label>
+
+      <input
+        id="hm-connectivity-zone"
+        type="text"
+        maxlength="120"
+        placeholder="Ej.: zona centro de mi localidad"
+      >
+
+      <p class="texto-ayuda">
+        La oferta es voluntaria. No publiques contraseñas ni tu dirección exacta.
+        Podés pausar o desactivar esta opción cuando quieras.
+      </p>
     `;
+
     if (boton) formulario.insertBefore(bloque, boton);
     else formulario.appendChild(bloque);
   }
 
   let fichaVisual = $("hm-perfil-ficha");
+
   if (!fichaVisual) {
     fichaVisual = document.createElement("div");
     fichaVisual.id = "hm-perfil-ficha";
@@ -248,28 +287,34 @@ function prepararFormularioPerfil() {
   }
 
   const vistaFoto = $("foto-perfil-vista");
+
   if (vistaFoto) {
     vistaFoto.style.objectFit = "cover";
     vistaFoto.style.objectPosition = "center";
   }
 
   const selectorFoto = $("foto-perfil-archivo");
+
   selectorFoto?.addEventListener("change", () => {
     const archivo = selectorFoto.files?.[0];
     if (!archivo) return;
+
     if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type)) {
       mostrarEstadoPerfil("Elegí una imagen JPG, PNG o WebP.");
       selectorFoto.value = "";
       return;
     }
+
     if (archivo.size > 5 * 1024 * 1024) {
       mostrarEstadoPerfil("La foto debe pesar 5 MB o menos.");
       selectorFoto.value = "";
       return;
     }
+
     const vista = $("foto-perfil-vista");
     const inicial = $("foto-perfil-inicial");
     const lector = new FileReader();
+
     lector.onload = () => {
       if (vista && typeof lector.result === "string") {
         vista.src = lector.result;
@@ -277,9 +322,16 @@ function prepararFormularioPerfil() {
         vista.style.objectPosition = "center";
         vista.hidden = false;
       }
+
       if (inicial) inicial.hidden = true;
     };
-    lector.onerror = () => mostrarEstadoPerfil("No se pudo previsualizar la fotografía seleccionada.");
+
+    lector.onerror = () => {
+      mostrarEstadoPerfil(
+        "No se pudo previsualizar la fotografía seleccionada."
+      );
+    };
+
     lector.readAsDataURL(archivo);
   });
 
@@ -302,11 +354,17 @@ function actualizarModoVisualizacion() {
   if (!perfilEstaCompleto()) modoEdicionPerfil = true;
 
   if (modoEdicionPerfil) {
-    if (botonGuardar) botonGuardar.textContent = perfilActual?.id ? "GUARDAR CAMBIOS" : "GUARDAR / CREAR PERFIL";
+    if (botonGuardar) {
+      botonGuardar.textContent = perfilActual?.id
+        ? "GUARDAR CAMBIOS"
+        : "GUARDAR / CREAR PERFIL";
+    }
+
     if (formulario) formulario.hidden = false;
     if (ficha) ficha.hidden = true;
   } else {
     if (formulario) formulario.hidden = true;
+
     if (ficha) {
       ficha.hidden = false;
       renderizarFichaVisual(ficha);
@@ -316,87 +374,158 @@ function actualizarModoVisualizacion() {
 
 function renderizarFichaVisual(contenedor) {
   const datos = perfilActual || {};
+
   const fotoSrc = escaparHTML(datos.foto_url || "");
   const nombreVisible = escaparHTML(datos.nombre_visible || "Sin nombre");
   const localidadVisible = escaparHTML(datos.localidad || "Sin localidad");
   const zonaVisible = escaparHTML(datos.zona_aproximada || "");
-  const presentacionVisible = escaparHTML(datos.presentacion || "Sin presentación detallada.");
-  const modalidadVisible = escaparHTML(datos.conectividad_modalidad || "");
-  const inicial = nombreVisible !== "Sin nombre" ? nombreVisible.charAt(0).toUpperCase() : "H";
+  const presentacionVisible = escaparHTML(
+    datos.presentacion || "Sin presentación detallada."
+  );
+  const modalidadVisible = escaparHTML(
+    datos.conectividad_modalidad || ""
+  );
 
-  const infoHumanidad = datos.indice_humanidad || { porcentaje: 100, total: 0 };
+  const inicial =
+    nombreVisible !== "Sin nombre"
+      ? nombreVisible.charAt(0).toUpperCase()
+      : "H";
+
+  const infoHumanidad = datos.indice_humanidad || {
+    porcentaje: 100,
+    total: 0
+  };
+
   const pct = infoHumanidad.porcentaje;
 
   let colorPct = "#22c55e";
+
   if (pct < 60) {
     colorPct = "#ef4444";
   } else if (pct < 80) {
     colorPct = "#eab308";
   }
 
-  const wppRaw = datos.whatsapp ? String(datos.whatsapp).replace(/\D/g, "") : "";
-  const wppLink = wppRaw ? `https://wa.me/${wppRaw}` : "";
+  const wppRaw = datos.whatsapp
+    ? String(datos.whatsapp).replace(/\D/g, "")
+    : "";
+
+  const wppLink = wppRaw
+    ? `https://wa.me/${wppRaw}`
+    : "";
 
   contenedor.innerHTML = `
-    <div style="background: #0b0f19; border: 1px solid #334155; border-radius: 12px; padding: 12px; font-family: inherit;">
+    <div style="background:#0b0f19;border:1px solid #334155;border-radius:12px;padding:12px;font-family:inherit;">
 
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-        <div style="width: 55px; height: 55px; border-radius: 50%; overflow: hidden; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; font-weight: bold; flex-shrink: 0; border: 2px solid #38bdf8;">
-          ${fotoSrc ? `<img src="${fotoSrc}" alt="Foto" style="width: 100%; height: 100%; object-fit: cover;">` : inicial}
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="width:55px;height:55px;border-radius:50%;overflow:hidden;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;font-weight:bold;flex-shrink:0;border:2px solid #38bdf8;">
+          ${
+            fotoSrc
+              ? `<img src="${fotoSrc}" alt="Foto" style="width:100%;height:100%;object-fit:cover;">`
+              : inicial
+          }
         </div>
-        <div style="overflow: hidden; flex-grow: 1;">
-          <h3 style="margin: 0; color: #38bdf8; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nombreVisible}</h3>
-          <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #94a3b8;">📍 ${localidadVisible} ${zonaVisible ? `(${zonaVisible})` : ""}</p>
+
+        <div style="overflow:hidden;flex-grow:1;">
+          <h3 style="margin:0;color:#38bdf8;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${nombreVisible}
+          </h3>
+
+          <p style="margin:2px 0 0 0;font-size:0.8rem;color:#94a3b8;">
+            📍 ${localidadVisible} ${zonaVisible ? `(${zonaVisible})` : ""}
+          </p>
         </div>
       </div>
 
-      <div style="background: #1e293b; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #475569;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: ${colorPct}; box-shadow: 0 0 6px ${colorPct}; display: inline-block;"></span>
-          <span style="font-size: 0.8rem; color: #e2e8f0; font-weight: bold;">Calidad Humana: ${pct}% (${infoHumanidad.total} ev.)</span>
+      <div style="background:#1e293b;padding:8px 10px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid #475569;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${colorPct};box-shadow:0 0 6px ${colorPct};display:inline-block;"></span>
+
+          <span style="font-size:0.8rem;color:#e2e8f0;font-weight:bold;">
+            Calidad Humana: ${pct}% (${infoHumanidad.total} ev.)
+          </span>
         </div>
-        <button id="btn-medicion-humanidad" class="boton-secundario" type="button" style="font-size: 0.75rem; padding: 4px 8px; margin: 0;">
+
+        <button
+          id="btn-medicion-humanidad"
+          class="boton-secundario"
+          type="button"
+          style="font-size:0.75rem;padding:4px 8px;margin:0;"
+        >
           MEDIR HUMANIDAD
         </button>
       </div>
 
-      <div style="background: #0f172a; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1e293b;">
-        <span style="font-size: 0.8rem; color: #e2e8f0;">Reputación comunitaria</span>
-        <strong style="font-size: 0.82rem; color: #8bd9ee;">${infoHumanidad.total} evaluaciones recibidas</strong>
+      <div style="background:#0f172a;padding:8px 10px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid #1e293b;">
+        <span style="font-size:0.8rem;color:#e2e8f0;">
+          Reputación comunitaria
+        </span>
+
+        <strong style="font-size:0.82rem;color:#8bd9ee;">
+          ${infoHumanidad.total} evaluaciones recibidas
+        </strong>
       </div>
 
-      <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
-        <p style="margin: 0; font-style: italic; color: #94a3b8; font-size: 0.8rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+      <div style="font-size:0.85rem;color:#cbd5e1;display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+
+        <p style="margin:0;font-style:italic;color:#94a3b8;font-size:0.8rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
           "${presentacionVisible}"
         </p>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
-          <span style="font-size: 0.8rem;">📱 WhatsApp:</span>
-          ${wppLink ? `<a href="${wppLink}" target="_blank" style="color: #4ade80; text-decoration: none; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">💬 Chatear</a>` : `<span style="color: #64748b; font-size: 0.8rem;">No vinculado</span>`}
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#0f172a;padding:6px 8px;border-radius:6px;border:1px solid #1e293b;">
+          <span style="font-size:0.8rem;">📱 WhatsApp:</span>
+
+          ${
+            wppLink
+              ? `<a href="${wppLink}" target="_blank" rel="noopener noreferrer" style="color:#4ade80;text-decoration:none;font-weight:bold;font-size:0.8rem;display:flex;align-items:center;gap:4px;">💬 Chatear</a>`
+              : `<span style="color:#64748b;font-size:0.8rem;">No vinculado</span>`
+          }
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
-          <span style="font-size: 0.8rem;">📡 Wi-Fi Solidario:</span>
-          <span style="font-size: 0.8rem; color: ${datos.conectividad_disponible ? "#4ade80" : "#f87171"}; font-weight: bold;">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#0f172a;padding:6px 8px;border-radius:6px;border:1px solid #1e293b;">
+          <span style="font-size:0.8rem;">📡 Wi-Fi Solidario:</span>
+
+          <span style="font-size:0.8rem;color:${datos.conectividad_disponible ? "#4ade80" : "#f87171"};font-weight:bold;">
             ${datos.conectividad_disponible ? `🟢 Activo (${modalidadVisible})` : "🔴 Inactivo"}
           </span>
         </div>
-        ${datos.mensajeria_offline ? `
-          <a href="https://play.google.com/store/apps/details?id=me.bridgefy.main" target="_blank" rel="noopener noreferrer" style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(139,217,238,.35); color: #8bd9ee; text-decoration: none; font-size: 0.8rem;">
-            <span>📶 Mensajería offline:</span>
-            <strong>Bridgefy · Google Play ↗</strong>
-          </a>
-        ` : ""}
+
+        ${
+          datos.mensajeria_offline
+            ? `
+              <a
+                href="${BRIAR_URL}"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="display:flex;justify-content:space-between;align-items:center;background:#0f172a;padding:6px 8px;border-radius:6px;border:1px solid rgba(139,217,238,.35);color:#8bd9ee;text-decoration:none;font-size:0.8rem;"
+              >
+                <span>📶 Mensajería offline:</span>
+                <strong>Briar · Descarga oficial ↗</strong>
+              </a>
+            `
+            : ""
+        }
       </div>
 
-      <p style="margin: 0 0 10px 0; font-size: 0.7rem; color: #64748b; text-align: center;">
+      <p style="margin:0 0 10px 0;font-size:0.7rem;color:#64748b;text-align:center;">
         💡 El nexo es aquí: acordá como quieras, pero medí la humanidad para cuidar la comunidad.
       </p>
 
-      <button id="btn-activar-edicion" class="boton-secundario" type="button" style="width: 100%; font-size: 0.8rem; padding: 8px; margin-bottom: 8px;">
+      <button
+        id="btn-activar-edicion"
+        class="boton-secundario"
+        type="button"
+        style="width:100%;font-size:0.8rem;padding:8px;margin-bottom:8px;"
+      >
         EDITAR MI PERFIL
       </button>
-      <button id="btn-entrar-aplicacion" class="boton-accion" type="button" style="width: 100%; font-size: 0.85rem; padding: 10px;">
+
+      <button
+        id="btn-entrar-aplicacion"
+        class="boton-accion"
+        type="button"
+        style="width:100%;font-size:0.85rem;padding:10px;"
+      >
         INGRESAR A HUMANÓMETRO COMUNIDAD →
       </button>
 
@@ -410,45 +539,59 @@ function renderizarFichaVisual(contenedor) {
 
   $("btn-entrar-aplicacion")?.addEventListener("click", () => {
     if (!perfilEstaCompleto()) {
-      mostrarEstadoPerfil("Completá y guardá todos los datos obligatorios antes de ingresar.");
+      mostrarEstadoPerfil(
+        "Completá y guardá todos los datos obligatorios antes de ingresar."
+      );
+
       modoEdicionPerfil = true;
       actualizarModoVisualizacion();
       return;
     }
+
     window.dispatchEvent(new CustomEvent("abrirPanelPrincipal"));
   });
 
   $("btn-medicion-humanidad")?.addEventListener("click", () => {
     const botonHumanometroNav = $("btn-humanometro");
+
     if (botonHumanometroNav) {
       botonHumanometroNav.click();
     } else {
-      alert("Sección Humanómetro de Humanidad disponible en el menú principal.");
+      alert(
+        "Sección Humanómetro de Humanidad disponible en el menú principal."
+      );
     }
   });
 }
 
-// ==========================================
-// NUEVO: VALIDACIÓN DE NIVEL DE ALTA CONFIANZA
-// ==========================================
 export function verificarAccesoAltaConfianza() {
-  const infoHumanidad = perfilActual?.indice_humanidad || { porcentaje: 100, total: 0 };
+  const infoHumanidad = perfilActual?.indice_humanidad || {
+    porcentaje: 100,
+    total: 0
+  };
+
   const totalEvals = infoHumanidad.total;
   const porcentaje = infoHumanidad.porcentaje;
 
-  if (totalEvals < REQUISITO_MIN_EVALUACIONES || porcentaje < REQUISITO_MIN_CALIDAD) {
+  if (
+    totalEvals < REQUISITO_MIN_EVALUACIONES ||
+    porcentaje < REQUISITO_MIN_CALIDAD
+  ) {
     return {
       permitido: false,
-      mensaje: `🔒 Zona de Alta Confianza\n\nPara ofrecer o solicitar estadías y cuidado de animales en propiedades, necesitás al menos ${REQUISITO_MIN_EVALUACIONES} evaluaciones comunitarias (tenés ${totalEvals}) y un ${REQUISITO_MIN_CALIDAD}% de Calidad Humana (tenés ${porcentaje}%).\n\nSumá reputación con intercambios cotidianos para desbloquear este nivel automáticamente.`
+      mensaje:
+        `🔒 Zona de Alta Confianza\n\n` +
+        `Para ofrecer o solicitar estadías y cuidado de animales en propiedades, ` +
+        `necesitás al menos ${REQUISITO_MIN_EVALUACIONES} evaluaciones comunitarias ` +
+        `(tenés ${totalEvals}) y un ${REQUISITO_MIN_CALIDAD}% de Calidad Humana ` +
+        `(tenés ${porcentaje}%).\n\n` +
+        `Sumá reputación con intercambios cotidianos para desbloquear este nivel automáticamente.`
     };
   }
 
   return { permitido: true };
 }
 
-// ==========================================
-// NUEVO: INTERCEPTOR DE CATEGORÍA AL PUBLICAR
-// ==========================================
 export function seleccionarCategoriaPublicacion(categoriaSeleccionada) {
   if (CATEGORIAS_ALTA_CONFIANZA.includes(categoriaSeleccionada)) {
     const verificacion = verificarAccesoAltaConfianza();
@@ -510,7 +653,9 @@ async function iniciarSesion() {
 
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
-    mostrarEstado("No se pudo completar el inicio de sesión. Probá nuevamente.");
+    mostrarEstado(
+      "No se pudo completar el inicio de sesión. Probá nuevamente."
+    );
   } finally {
     if (boton) boton.disabled = false;
   }
@@ -543,7 +688,9 @@ async function crearCuenta() {
 
   } catch (error) {
     console.error("Error al crear la cuenta:", error);
-    mostrarEstado("No se pudo completar el registro. Probá nuevamente.");
+    mostrarEstado(
+      "No se pudo completar el registro. Probá nuevamente."
+    );
   } finally {
     if (boton) boton.disabled = false;
   }
@@ -566,13 +713,16 @@ async function cerrarSesion() {
     usuarioActual = null;
     perfilActual = null;
     modoEdicionPerfil = false;
+
     limpiarFormularioPerfil();
     actualizarModoVisualizacion();
     mostrarEstado("Sesión cerrada.");
 
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
-    mostrarEstado("No se pudo cerrar la sesión. Probá nuevamente.");
+    mostrarEstado(
+      "No se pudo cerrar la sesión. Probá nuevamente."
+    );
   } finally {
     if (boton) boton.disabled = false;
   }
@@ -594,8 +744,10 @@ function actualizarInterfazUsuario() {
   if (!autenticado) {
     perfilActual = null;
     modoEdicionPerfil = false;
+
     limpiarFormularioPerfil();
     actualizarModoVisualizacion();
+
     mostrarEstado("Ingresá o creá tu cuenta para participar.");
     mostrarEstadoPerfil("");
     return;
@@ -623,6 +775,7 @@ function limpiarFormularioPerfil() {
     foto.hidden = true;
     foto.removeAttribute("src");
   }
+
   if (inicialFoto) inicialFoto.hidden = false;
   if (conectividad) conectividad.checked = false;
   if (modalidad) modalidad.value = "gratuito";
@@ -639,10 +792,12 @@ function limpiarFormularioPerfil() {
 async function cargarMisPublicaciones() {
   const contenedor = $("lista-mis-publicaciones");
   if (!contenedor) return;
+
   contenedor.replaceChildren();
 
   if (!usuarioActual || !perfilActual?.id) {
-    contenedor.textContent = "Iniciá sesión y completá tu perfil para ver tus publicaciones.";
+    contenedor.textContent =
+      "Iniciá sesión y completá tu perfil para ver tus publicaciones.";
     return;
   }
 
@@ -659,17 +814,24 @@ async function cargarMisPublicaciones() {
       .order("creado_en", { ascending: false });
 
     contenedor.replaceChildren();
+
     if (error) throw error;
 
-    const activas = (data || []).filter((publicacion) => publicacion.estado === "activa").length;
+    const activas = (data || []).filter(
+      (publicacion) => publicacion.estado === "activa"
+    ).length;
+
     const contador = document.createElement("p");
     contador.className = "texto-ayuda";
-    contador.textContent = `${activas} publicación${activas === 1 ? "" : "es"} activa${activas === 1 ? "" : "s"}`;
+    contador.textContent =
+      `${activas} publicación${activas === 1 ? "" : "es"} activa${activas === 1 ? "" : "s"}`;
+
     contenedor.appendChild(contador);
 
     if (!data?.length) {
       const vacio = document.createElement("p");
-      vacio.textContent = "Todavía no publicaste productos ni servicios desde esta cuenta.";
+      vacio.textContent =
+        "Todavía no publicaste productos ni servicios desde esta cuenta.";
       contenedor.appendChild(vacio);
       return;
     }
@@ -677,19 +839,28 @@ async function cargarMisPublicaciones() {
     data.forEach((publicacion) => {
       const tarjeta = document.createElement("article");
       tarjeta.className = "tarjeta-publicacion";
+
       const titulo = document.createElement("h4");
-      titulo.textContent = publicacion.titulo || "Publicación sin título";
+      titulo.textContent =
+        publicacion.titulo || "Publicación sin título";
+
       const detalle = document.createElement("p");
       detalle.textContent = publicacion.descripcion || "";
+
       const estado = document.createElement("small");
-      estado.textContent = `${publicacion.tipo === "oferta" ? "OFREZCO" : "BUSCO"} · ${publicacion.categoria || "Sin categoría"} · Estado: ${publicacion.estado || "sin especificar"}`;
+      estado.textContent =
+        `${publicacion.tipo === "oferta" ? "OFREZCO" : "BUSCO"} · ` +
+        `${publicacion.categoria || "Sin categoría"} · ` +
+        `Estado: ${publicacion.estado || "sin especificar"}`;
+
       tarjeta.append(titulo, detalle, estado);
       contenedor.appendChild(tarjeta);
     });
 
   } catch (error) {
     console.error("Error cargando publicaciones propias:", error);
-    contenedor.textContent = "No se pudieron cargar tus publicaciones.";
+    contenedor.textContent =
+      "No se pudieron cargar tus publicaciones.";
   }
 }
 
@@ -697,10 +868,16 @@ async function calcularPorcentajeHumanidad(perfilId) {
   try {
     const { data: evaluaciones, error } = await supabase
       .from("evaluaciones")
-      .select("respeta_condiciones, cordialidad, puntualidad, comunicacion_clara")
+      .select(
+        "respeta_condiciones, cordialidad, puntualidad, comunicacion_clara"
+      )
       .eq("evaluado_id", perfilId);
 
-    if (!error && Array.isArray(evaluaciones) && evaluaciones.length > 0) {
+    if (
+      !error &&
+      Array.isArray(evaluaciones) &&
+      evaluaciones.length > 0
+    ) {
       let totalChecksPositivos = 0;
       const totalCriteriosPosibles = evaluaciones.length * 4;
 
@@ -712,12 +889,17 @@ async function calcularPorcentajeHumanidad(perfilId) {
       });
 
       return {
-        porcentaje: Math.round((totalChecksPositivos / totalCriteriosPosibles) * 100),
+        porcentaje: Math.round(
+          (totalChecksPositivos / totalCriteriosPosibles) * 100
+        ),
         total: evaluaciones.length
       };
     }
 
-    const { data: mediciones, error: errorMediciones } = await supabase
+    const {
+      data: mediciones,
+      error: errorMediciones
+    } = await supabase
       .from("mediciones_humanidad")
       .select("resultado")
       .eq("evaluado_id", perfilId);
@@ -734,15 +916,24 @@ async function calcularPorcentajeHumanidad(perfilId) {
 
       if (puntuaciones.length) {
         const promedio = Math.round(
-          puntuaciones.reduce((suma, valor) => suma + valor, 0) / puntuaciones.length
+          puntuaciones.reduce((suma, valor) => suma + valor, 0) /
+          puntuaciones.length
         );
-        return { porcentaje: promedio, total: puntuaciones.length };
+
+        return {
+          porcentaje: promedio,
+          total: puntuaciones.length
+        };
       }
 
       return { porcentaje: 100, total: 0 };
     }
 
-    console.warn("No se pudieron consultar las fuentes de evaluaciones:", error || errorMediciones);
+    console.warn(
+      "No se pudieron consultar las fuentes de evaluaciones:",
+      error || errorMediciones
+    );
+
     return { porcentaje: 100, total: 0 };
 
   } catch (e) {
@@ -770,27 +961,62 @@ async function cargarPerfil() {
 
     if (error) {
       console.error("Error al consultar el perfil:", error);
-      mostrarEstadoPerfil("No se pudo consultar tu perfil: " + error.message);
+      mostrarEstadoPerfil(
+        "No se pudo consultar tu perfil: " + error.message
+      );
       return;
     }
 
     perfilActual = data || null;
 
     if (perfilActual) {
-      perfilActual.indice_humanidad = await calcularPorcentajeHumanidad(usuarioActual.id);
+      perfilActual.indice_humanidad =
+        await calcularPorcentajeHumanidad(usuarioActual.id);
     }
 
-    if ($("nombre-usuario")) $("nombre-usuario").value = data?.nombre_visible || "";
-    if ($("hm-profile-presentation")) $("hm-profile-presentation").value = data?.presentacion || "";
-    if ($("hm-profile-locality")) $("hm-profile-locality").value = data?.localidad || "";
-    if ($("hm-profile-zone")) $("hm-profile-zone").value = data?.zona_aproximada || "";
-    if ($("whatsapp-usuario")) $("whatsapp-usuario").value = data?.whatsapp || "";
-    if ($("hm-connectivity-available")) $("hm-connectivity-available").checked = Boolean(data?.conectividad_disponible);
-    if ($("hm-connectivity-mode")) $("hm-connectivity-mode").value = data?.conectividad_modalidad || "gratuito";
-    if ($("hm-connectivity-emergency")) $("hm-connectivity-emergency").checked = Boolean(data?.conectividad_emergencias);
-    if ($("hm-connectivity-zone")) $("hm-connectivity-zone").value = data?.conectividad_zona || "";
+    if ($("nombre-usuario")) {
+      $("nombre-usuario").value = data?.nombre_visible || "";
+    }
+
+    if ($("hm-profile-presentation")) {
+      $("hm-profile-presentation").value = data?.presentacion || "";
+    }
+
+    if ($("hm-profile-locality")) {
+      $("hm-profile-locality").value = data?.localidad || "";
+    }
+
+    if ($("hm-profile-zone")) {
+      $("hm-profile-zone").value = data?.zona_aproximada || "";
+    }
+
+    if ($("whatsapp-usuario")) {
+      $("whatsapp-usuario").value = data?.whatsapp || "";
+    }
+
+    if ($("hm-connectivity-available")) {
+      $("hm-connectivity-available").checked =
+        Boolean(data?.conectividad_disponible);
+    }
+
+    if ($("hm-connectivity-mode")) {
+      $("hm-connectivity-mode").value =
+        data?.conectividad_modalidad || "gratuito";
+    }
+
+    if ($("hm-connectivity-emergency")) {
+      $("hm-connectivity-emergency").checked =
+        Boolean(data?.conectividad_emergencias);
+    }
+
+    if ($("hm-connectivity-zone")) {
+      $("hm-connectivity-zone").value =
+        data?.conectividad_zona || "";
+    }
+
     if ($("hm-offline-messaging-available")) {
-      $("hm-offline-messaging-available").checked = Boolean(data?.mensajeria_offline);
+      $("hm-offline-messaging-available").checked =
+        Boolean(data?.mensajeria_offline);
     }
 
     if ($("foto-perfil-vista") && data?.foto_url) {
@@ -799,7 +1025,10 @@ async function cargarPerfil() {
       vistaFoto.style.objectFit = "cover";
       vistaFoto.style.objectPosition = "center";
       vistaFoto.hidden = false;
-      if ($("foto-perfil-inicial")) $("foto-perfil-inicial").hidden = true;
+
+      if ($("foto-perfil-inicial")) {
+        $("foto-perfil-inicial").hidden = true;
+      }
     }
 
     modoEdicionPerfil = !perfilEstaCompleto();
@@ -825,16 +1054,30 @@ async function guardarPerfil(evento) {
   }
 
   const nombre = $("nombre-usuario")?.value.trim() || "";
-  const presentacion = $("hm-profile-presentation")?.value.trim() || "";
+  const presentacion =
+    $("hm-profile-presentation")?.value.trim() || "";
   const localidad = $("hm-profile-locality")?.value.trim() || "";
   const zona = $("hm-profile-zone")?.value.trim() || "";
   const whatsapp = $("whatsapp-usuario")?.value.trim() || "";
-  const archivoFotoSeleccionado = $("foto-perfil-archivo")?.files?.[0] || null;
-  const conectividadDisponible = Boolean($("hm-connectivity-available")?.checked);
-  const conectividadModalidad = $("hm-connectivity-mode")?.value || "gratuito";
-  const conectividadEmergencias = Boolean($("hm-connectivity-emergency")?.checked);
-  const conectividadZona = $("hm-connectivity-zone")?.value.trim() || "";
-  const mensajeriaOffline = Boolean($("hm-offline-messaging-available")?.checked);
+
+  const archivoFotoSeleccionado =
+    $("foto-perfil-archivo")?.files?.[0] || null;
+
+  const conectividadDisponible =
+    Boolean($("hm-connectivity-available")?.checked);
+
+  const conectividadModalidad =
+    $("hm-connectivity-mode")?.value || "gratuito";
+
+  const conectividadEmergencias =
+    Boolean($("hm-connectivity-emergency")?.checked);
+
+  const conectividadZona =
+    $("hm-connectivity-zone")?.value.trim() || "";
+
+  const mensajeriaOffline =
+    Boolean($("hm-offline-messaging-available")?.checked);
+
   let fotoUrl = perfilActual?.foto_url || null;
 
   if (!nombre) {
@@ -842,28 +1085,37 @@ async function guardarPerfil(evento) {
     $("nombre-usuario")?.focus();
     return;
   }
+
   if (!whatsapp) {
     mostrarEstadoPerfil("El número de WhatsApp es obligatorio.");
     $("whatsapp-usuario")?.focus();
     return;
   }
+
   if (!presentacion) {
     mostrarEstadoPerfil("Completá tu presentación comunitaria.");
     $("hm-profile-presentation")?.focus();
     return;
   }
+
   if (!localidad) {
-    mostrarEstadoPerfil("Indicá tu localidad para participar del radar vecinal.");
+    mostrarEstadoPerfil(
+      "Indicá tu localidad para participar del radar vecinal."
+    );
     $("hm-profile-locality")?.focus();
     return;
   }
+
   if (!perfilActual?.foto_url && !archivoFotoSeleccionado) {
-    mostrarEstadoPerfil("Subí una fotografía para completar tu perfil.");
+    mostrarEstadoPerfil(
+      "Subí una fotografía para completar tu perfil."
+    );
     $("foto-perfil-archivo")?.focus();
     return;
   }
 
   const boton = $("btn-guardar-perfil");
+
   if (boton) {
     boton.disabled = true;
     boton.textContent = "GUARDANDO…";
@@ -872,27 +1124,38 @@ async function guardarPerfil(evento) {
   mostrarEstadoPerfil("Guardando perfil en tu cuenta…");
 
   try {
-    const archivoFoto = archivoFotoSeleccionado;
+    if (archivoFotoSeleccionado) {
+      const extension =
+        archivoFotoSeleccionado.type === "image/png"
+          ? "png"
+          : archivoFotoSeleccionado.type === "image/webp"
+            ? "webp"
+            : "jpg";
 
-    if (archivoFoto) {
-      const extension = archivoFoto.type === "image/png" ? "png" : archivoFoto.type === "image/webp" ? "webp" : "jpg";
-      const rutaFoto = `${usuarioActual.id}-${Date.now()}.${extension}`;
+      const rutaFoto =
+        `${usuarioActual.id}-${Date.now()}.${extension}`;
 
       const { error: errorSubida } = await supabase.storage
         .from("fotos-perfil")
-        .upload(rutaFoto, archivoFoto, {
+        .upload(rutaFoto, archivoFotoSeleccionado, {
           upsert: true,
-          contentType: archivoFoto.type,
+          contentType: archivoFotoSeleccionado.type,
           cacheControl: "3600"
         });
 
       if (errorSubida) {
         console.error("Detalle del error de Storage:", errorSubida);
-        mostrarEstadoPerfil("No se pudo subir la foto: " + (errorSubida.message || errorSubida.error));
+        mostrarEstadoPerfil(
+          "No se pudo subir la foto: " +
+          (errorSubida.message || errorSubida.error)
+        );
         return;
       }
 
-      const { data: urlFoto } = supabase.storage.from("fotos-perfil").getPublicUrl(rutaFoto);
+      const { data: urlFoto } = supabase.storage
+        .from("fotos-perfil")
+        .getPublicUrl(rutaFoto);
+
       fotoUrl = urlFoto?.publicUrl || null;
     }
 
@@ -922,29 +1185,44 @@ async function guardarPerfil(evento) {
 
     if (error) {
       console.error("Error al guardar el perfil en tabla:", error);
-      mostrarEstadoPerfil("No se pudo guardar el perfil: " + error.message);
+      mostrarEstadoPerfil(
+        "No se pudo guardar el perfil: " + error.message
+      );
       return;
     }
 
     perfilActual = data;
-    perfilActual.indice_humanidad = await calcularPorcentajeHumanidad(usuarioActual.id);
+
+    perfilActual.indice_humanidad =
+      await calcularPorcentajeHumanidad(usuarioActual.id);
+
     modoEdicionPerfil = false;
     actualizarModoVisualizacion();
 
-    if ($("foto-perfil-archivo")) $("foto-perfil-archivo").value = "";
+    if ($("foto-perfil-archivo")) {
+      $("foto-perfil-archivo").value = "";
+    }
+
     await cargarMisPublicaciones();
-    window.dispatchEvent(new CustomEvent("perfilComunidadActualizado"));
+
+    window.dispatchEvent(
+      new CustomEvent("perfilComunidadActualizado")
+    );
 
     mostrarEstadoPerfil("¡Perfil guardado correctamente!");
     mostrarEstado("Sesión activa: " + usuarioActual.email);
 
   } catch (error) {
     console.error("Error inesperado en guardado:", error);
-    mostrarEstadoPerfil("Error de red al guardar. Verificá tu conexión.");
+    mostrarEstadoPerfil(
+      "Error de red al guardar. Verificá tu conexión."
+    );
   } finally {
     if (boton) {
       boton.disabled = false;
-      boton.textContent = perfilActual?.id ? "GUARDAR CAMBIOS" : "GUARDAR / CREAR PERFIL";
+      boton.textContent = perfilActual?.id
+        ? "GUARDAR CAMBIOS"
+        : "GUARDAR / CREAR PERFIL";
     }
   }
 }
@@ -960,16 +1238,23 @@ export function obtenerPerfilActual() {
 export async function iniciarAutenticacion() {
   crearInterfazAcceso();
   prepararFormularioPerfil();
-  window.addEventListener("publicacionComunidadActualizada", cargarMisPublicaciones);
+
+  window.addEventListener(
+    "publicacionComunidadActualizada",
+    cargarMisPublicaciones
+  );
 
   const { data, error } = await supabase.auth.getSession();
 
   if (error) {
-    mostrarEstado("No se pudo consultar la sesión: " + error.message);
+    mostrarEstado(
+      "No se pudo consultar la sesión: " + error.message
+    );
     return;
   }
 
   usuarioActual = data.session?.user || null;
+
   actualizarInterfazUsuario();
 
   if (usuarioActual) {
@@ -977,16 +1262,18 @@ export async function iniciarAutenticacion() {
   }
 
   if (!escuchadorAutenticacion) {
-    const resultado = supabase.auth.onAuthStateChange((_evento, sesion) => {
-      usuarioActual = sesion?.user || null;
-      actualizarInterfazUsuario();
+    const resultado = supabase.auth.onAuthStateChange(
+      (_evento, sesion) => {
+        usuarioActual = sesion?.user || null;
+        actualizarInterfazUsuario();
 
-      if (usuarioActual) {
-        window.setTimeout(() => {
-          cargarPerfil();
-        }, 0);
+        if (usuarioActual) {
+          window.setTimeout(() => {
+            cargarPerfil();
+          }, 0);
+        }
       }
-    });
+    );
 
     escuchadorAutenticacion = resultado.data.subscription;
   }
