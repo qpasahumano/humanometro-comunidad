@@ -59,13 +59,15 @@ function mostrarVista(nombre = null, opciones = {}) {
     "vista-ayuda",
     "vista-perfil",
     "vista-humanometro",
-    "vista-radar"
+    "vista-radar",
+    "vista-sos-offline"
   ];
 
   const requierePerfil = nombre !== "vista-perfil";
 
   if (requierePerfil && !opciones.forzar && !usuarioPuedeEntrar()) {
     nombre = "vista-perfil";
+
     mostrarNotificacion(
       "Ingresá a tu cuenta y completá tu perfil para acceder a la comunidad."
     );
@@ -88,6 +90,8 @@ function mostrarVista(nombre = null, opciones = {}) {
     actualizarSolapaActiva("gondola");
   } else if (nombre === "vista-radar") {
     actualizarSolapaActiva("radar");
+  } else if (nombre === "vista-sos-offline") {
+    actualizarSolapaActiva("sos-offline");
   } else {
     actualizarSolapaActiva("comunidad");
   }
@@ -110,17 +114,13 @@ function abrirDirectorioComunidad() {
 
   if (!usuarioPuedeEntrar()) return;
 
-  /*
-   * NUEVO:
-   * Solicita al módulo community.js mostrar el directorio general.
-   * El directorio debe incluir todos los perfiles y ordenarlos
-   * desde el ingreso más reciente al más antiguo.
-   */
   window.dispatchEvent(
     new CustomEvent("mostrarDirectorioComunidad", {
       detail: {
         modo: "comunidad",
-        destino: getItem("hm_radar_destino", null)
+        destino: getItem("hm_radar_destino", null),
+        ordenarPor: "ultimo_ingreso_desc",
+        incluirPerfilesAntiguos: true
       }
     })
   );
@@ -144,9 +144,26 @@ function configurarNavegacion() {
     abrirDirectorioComunidad();
   });
 
-  /* NUEVA SOLAPA: RADAR COMUNITARIO */
+  /* RADAR COMUNITARIO */
+
   $("tab-radar")?.addEventListener("click", () => {
     mostrarVista("vista-radar");
+  });
+
+  /*
+   * NUEVA SOLAPA INDEPENDIENTE:
+   * COMUNICACIÓN SOS OFFLINE.
+   *
+   * No se mezcla con la mensajería habitual.
+   * No reemplaza la solapa Comunidad.
+   */
+
+  $("tab-sos-offline")?.addEventListener("click", () => {
+    mostrarVista("vista-sos-offline");
+
+    window.dispatchEvent(
+      new CustomEvent("abrirVistaSOSOffline")
+    );
   });
 
   $("btn-gondola")?.addEventListener("click", () => {
@@ -173,6 +190,10 @@ function configurarNavegacion() {
     boton.addEventListener("click", () => mostrarVista(null));
   });
 
+  /*
+   * EVENTOS DE NAVEGACIÓN ENTRE MÓDULOS.
+   */
+
   window.addEventListener("abrirPanelPrincipal", () => {
     abrirDirectorioComunidad();
   });
@@ -187,6 +208,20 @@ function configurarNavegacion() {
 
   window.addEventListener("abrirVistaRadar", () => {
     mostrarVista("vista-radar");
+  });
+
+  window.addEventListener("abrirVistaSOSOffline", () => {
+    mostrarVista("vista-sos-offline");
+  });
+
+  /*
+   * REGRESO AL DIRECTORIO:
+   * permite que los módulos soliciten volver a Comunidad
+   * sin perder el destino seleccionado del Radar.
+   */
+
+  window.addEventListener("volverAComunidad", () => {
+    abrirDirectorioComunidad();
   });
 }
 
@@ -246,7 +281,7 @@ async function buscarBarrioPorCoordenadas(latitud, longitud) {
 }
 
 /* =========================
-   BARRIO Y LOCALIDAD ACTUAL (UNIFICADO EN RADAR / LOCALIDAD)
+   BARRIO Y LOCALIDAD ACTUAL
 ========================= */
 
 function configurarBarrio() {
@@ -259,7 +294,7 @@ function configurarBarrio() {
   const ubicacion = $("btn-ubicacion");
 
   const modoVisualizacion = $("modo-visualizacion");
-  const contenedorExplorarZona = $("contenedor-explorar-zona");
+  const contenedorExplorar = $("contenedor-explorar-zona");
   const inputZonaExplorar = $("zona-explorar-compatibilidad");
 
   if (!input || !boton) return;
@@ -281,8 +316,8 @@ function configurarBarrio() {
   function actualizarVisibilidadExploracion() {
     const esExplorar = modoVisualizacion?.value === "explorar";
 
-    if (contenedorExplorarZona) {
-      contenedorExplorarZona.hidden = !esExplorar;
+    if (contenedorExplorar) {
+      contenedorExplorar.hidden = !esExplorar;
     }
   }
 
@@ -447,6 +482,7 @@ function configurarRadarComunitario() {
    * Recupera el último destino buscado.
    * No modifica el barrio actual ni la ubicación del dispositivo.
    */
+
   const destinoGuardado = getItem("hm_radar_destino", null);
 
   if (destinoGuardado && typeof destinoGuardado === "object") {
@@ -477,6 +513,7 @@ function configurarRadarComunitario() {
      * Se guarda en una clave independiente.
      * Nunca se sobrescribe hm_barrio ni la geolocalización actual.
      */
+
     if (!setItem("hm_radar_destino", destino)) {
       mostrarNotificacion(
         "No se pudo guardar el destino de búsqueda."
@@ -496,9 +533,10 @@ function configurarRadarComunitario() {
     }
 
     /*
-     * El módulo community.js recibe el destino y realiza la consulta
-     * de perfiles y publicaciones correspondiente.
+     * El módulo community.js recibe el destino.
+     * Los resultados deben aparecer dentro del directorio Comunidad.
      */
+
     window.dispatchEvent(
       new CustomEvent("buscarRadarComunitario", {
         detail: {
@@ -510,10 +548,12 @@ function configurarRadarComunitario() {
     );
 
     /*
-     * La búsqueda lleva a la solapa Comunidad.
-     * El módulo community.js debe aplicar el destino como filtro
-     * geográfico sin modificar la ubicación propia del usuario.
+     * La búsqueda lleva a Comunidad.
+     * Se conserva la separación entre:
+     * - Ubicación propia.
+     * - Destino de búsqueda.
      */
+
     mostrarVista(null);
 
     window.dispatchEvent(
@@ -784,7 +824,7 @@ function configurarEvaluaciones() {
         <div style="background: #7f1d1d; border: 1px solid #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; color: #fca5a5;">
           <strong>⚠️ ATENCIÓN: Perfil en zona de riesgo comunitario</strong>
           <p style="font-size: 0.85rem; margin: 5px 0 0 0;">
-            Tu medidor se encuentra por debajo del 70% requerido tras ${totalIntercambios} intercambios. Para mantener la pertenencia y confianza en la red, debés mejorar el cumplimiento y respeto en tus próximas experiencias.
+            Tu medidor se encuentra por debajo del 70% requerido tras ${totalIntercambios} intercambios. Para mantener la pertenencia y confianza en la red, debés mejorar el cumplimiento y respeto en tus próximas experiencias comunitarias.
           </p>
         </div>
       `;
