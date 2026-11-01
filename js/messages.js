@@ -1,5 +1,8 @@
 import { supabase } from "./supabase.js";
-import { obtenerUsuarioActual, obtenerPerfilActual } from "./auth.js";
+import {
+  obtenerUsuarioActual,
+  obtenerPerfilActual
+} from "./auth.js";
 
 const STORAGE_KEY = "hm_mensajes_pendientes";
 const MATRIX_CONFIG = {
@@ -18,6 +21,8 @@ export function initMessages({ getItem, setItem, mostrarNotificacion }) {
   const botonEnviar = formulario?.querySelector('button[type="submit"]');
 
   let dbMatrixInstance = null;
+  let suscripcionMensajesRealtime = null;
+  let destruido = false;
 
   // --- NÚCLEO MATRIX: INDEXEDDB LOCAL PARA MENSAJES Y MEDICIONES ---
   function abrirMatrixDB() {
@@ -438,6 +443,41 @@ export function initMessages({ getItem, setItem, mostrarNotificacion }) {
     }
   }
 
+  // =========================================================================
+  // --- PUNTO 5: SUSCRIPCIÓN EN TIEMPO REAL CON SUPABASE REALTIME (CHAT) ---
+  // =========================================================================
+  async function configurarSuscripcionRealtimeMensajes() {
+    try {
+      const usuario = await obtenerUsuarioActual();
+      if (!usuario || destruido) return;
+
+      if (suscripcionMensajesRealtime) {
+        supabase.removeChannel(suscripcionMensajesRealtime);
+      }
+
+      suscripcionMensajesRealtime = supabase
+        .channel('mensajes-privados-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'mensajes',
+            filter: `destinatario_id.eq.${usuario.id}`
+          },
+          async (payload) => {
+            if (!destruido) {
+              console.warn("Nuevo mensaje recibido en tiempo real:", payload.new);
+              await cargarMensajesRemotos();
+            }
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn("No se pudo activar la sincronización Realtime de mensajes:", err);
+    }
+  }
+
   if (destinatarioInput) {
     destinatarioInput.placeholder = "Nombre visible exacto de la persona";
     destinatarioInput.required = true;
@@ -541,10 +581,24 @@ export function initMessages({ getItem, setItem, mostrarNotificacion }) {
     await renderizarLocales();
     await cargarMensajesRemotos();
     await sincronizarColaMensajes();
+    await configurarSuscripcionRealtimeMensajes();
   }).catch(async () => {
     await renderizarLocales();
     await cargarMensajesRemotos();
   });
 
-  return { cargarMensajes: cargarMensajesRemotos };
+  return {
+    cargarMensajes: cargarMensajesRemotos,
+    destruir() {
+      destruido = true;
+      if (suscripcionMensajesRealtime) {
+        supabase.removeChannel(suscripcionMensajesRealtime);
+        suscripcionMensajesRealtime = null;
+      }
+      if (dbMatrixInstance) {
+        dbMatrixInstance.close();
+        dbMatrixInstance = null;
+      }
+    }
+  };
 }
