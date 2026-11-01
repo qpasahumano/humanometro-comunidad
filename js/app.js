@@ -1,6 +1,5 @@
 import { initCommunity } from "./community.js";
 import { initConnectivity } from "./connectivity.js";
-import { initMessages } from "./messages.js";
 import {
   iniciarAutenticacion,
   obtenerUsuarioActual,
@@ -55,7 +54,6 @@ function usuarioPuedeEntrar() {
 function mostrarVista(nombre = null, opciones = {}) {
   const vistas = [
     "vista-gondola",
-    "vista-comunicacion",
     "vista-ayuda",
     "vista-perfil",
     "vista-humanometro",
@@ -170,10 +168,6 @@ function configurarNavegacion() {
     mostrarVista("vista-gondola");
   });
 
-  $("btn-comunicacion")?.addEventListener("click", () => {
-    mostrarVista("vista-comunicacion");
-  });
-
   $("btn-ayuda")?.addEventListener("click", () => {
     mostrarVista("vista-ayuda");
   });
@@ -196,10 +190,6 @@ function configurarNavegacion() {
 
   window.addEventListener("abrirPanelPrincipal", () => {
     abrirDirectorioComunidad();
-  });
-
-  window.addEventListener("abrirVistaComunicacion", () => {
-    mostrarVista("vista-comunicacion");
   });
 
   window.addEventListener("abrirVistaGondola", () => {
@@ -1280,12 +1270,6 @@ async function iniciarAplicacion() {
           : "Sin conexión. Red de relevo local e IndexedDB operando en segundo plano.";
       }
     }
-  });
-
-  initMessages({
-    getItem,
-    setItem,
-    mostrarNotificacion
   });
 
   if (
