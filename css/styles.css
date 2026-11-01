@@ -1367,3 +1367,136 @@ select option {
     grid-template-columns: 0.8fr 1.2fr 0.9fr 1.1fr;
   }
 }
+
+
+/* =====================================================
+   AJUSTES DEL CHECKLIST · HUMANÓMETRO COMUNIDAD
+   Navegación de cinco solapas, góndola móvil y avisos
+   ===================================================== */
+
+/* La navegación ahora incluye la solapa independiente SOS Offline. */
+.navegacion-principal {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 420px) {
+  .navegacion-principal {
+    gap: 3px;
+    padding: 5px;
+  }
+
+  .solapa-principal {
+    min-height: 46px;
+    padding: 5px 2px;
+    font-size: clamp(0.49rem, 1.85vw, 0.62rem);
+    line-height: 1.12;
+  }
+
+  .solapa-principal > span:first-child {
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .navegacion-principal {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* Góndola: dos columnas también en teléfonos.
+   No se recorta texto ni se oculta información de las tarjetas. */
+#vista-gondola .lista-publicaciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 9px;
+  width: 100%;
+}
+
+#vista-gondola .publicacion,
+#vista-gondola .tarjeta-publicacion {
+  min-width: 0;
+  height: auto;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+#vista-gondola .publicacion p,
+#vista-gondola .tarjeta-publicacion p,
+#vista-gondola .publicacion small,
+#vista-gondola .tarjeta-publicacion small {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 340px) {
+  #vista-gondola .lista-publicaciones {
+    gap: 6px;
+  }
+
+  #vista-gondola .publicacion,
+  #vista-gondola .tarjeta-publicacion {
+    padding: 8px;
+  }
+}
+
+/* Aviso sanitario: aparece únicamente cuando JavaScript lo activa. */
+.aviso-seguridad-medicamentos {
+  margin: 12px 0 16px;
+  border: 1px solid rgba(56, 189, 248, 0.42);
+  background: rgba(23, 33, 43, 0.96);
+  color: #fff;
+}
+
+.aviso-seguridad-medicamentos h3 {
+  margin-top: 0;
+  color: #38bdf8;
+}
+
+.aviso-seguridad-medicamentos p {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Indicador discreto de la zona seleccionada en Comunidad. */
+.indicador-zona-comunidad {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px 0 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(139, 217, 238, 0.2);
+  border-radius: 999px;
+  color: var(--texto-suave);
+  background: rgba(5, 20, 37, 0.62);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.indicador-zona-comunidad [aria-hidden="true"] {
+  flex: 0 0 auto;
+}
+
+/* Contenido de la solapa Comunicación SOS Offline. */
+#vista-sos-offline .tarjeta {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#vista-sos-offline a {
+  overflow-wrap: anywhere;
+}
+
+#vista-sos-offline .aviso-local {
+  margin-top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solapa-principal {
+    transition: none;
+  }
+}
