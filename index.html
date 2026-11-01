@@ -153,7 +153,7 @@
           <span class="flecha" aria-hidden="true">›</span>
         </button>
 
-        <!-- ICONO: COMUNICACIÓN -->
+        <!-- ICONO: COMUNICACIÓN EXTERNA Y SOS OFFLINE -->
         <button
           id="btn-comunicacion"
           class="boton-modulo"
@@ -171,7 +171,7 @@
 
           <span class="contenido-modulo">
             <strong>NO PIERDAS LA COMUNICACIÓN</strong>
-            <small>Prepará mensajes, chat y kit de emergencia.</small>
+            <small>Contactá por WhatsApp y prepará alternativas de comunicación sin Internet.</small>
           </span>
 
           <span class="flecha" aria-hidden="true">›</span>
@@ -710,29 +710,16 @@
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
 
-          <!-- Bridgefy -->
-          <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
-            <strong style="color: #38bdf8; font-size: 0.95rem;">Bridgefy (Red Mesh por Bluetooth)</strong>
-
-            <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 8px 0;">
-              Permite chatear de celular a celular saltando de dispositivo en dispositivo sin internet ni red celular en tu zona.
-            </p>
-
-            <a href="https://play.google.com/store/apps/details?id=com.bridgefy.android" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
-              Descargar Bridgefy (Android / iOS)
-            </a>
-          </div>
-
           <!-- Briar -->
           <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
-            <strong style="color: #38bdf8; font-size: 0.95rem;">Briar (Mensajería P2P Segura)</strong>
+            <strong style="color: #38bdf8; font-size: 0.95rem;">Briar (gratuita y de código abierto)</strong>
 
             <p style="font-size: 0.85rem; color: #94a3b8; margin: 4px 0 8px 0;">
-              Diseñado para crisis y zonas incomunicadas. Sincroniza mensajes vía Bluetooth, Wi-Fi local o redes de relevo punto a punto.
+              Aplicación gratuita y de código abierto para mensajería segura. Puede sincronizar mensajes mediante Bluetooth o Wi-Fi local cuando no hay Internet. Las personas deben tener Briar instalado y preparado; el alcance depende de la cercanía, los dispositivos y el entorno.
             </p>
 
             <a href="https://briarproject.org/" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
-              Sitio oficial y descarga de Briar
+              Información y descarga oficial de Briar
             </a>
           </div>
 
@@ -766,82 +753,9 @@
 
     </section>
 
-    <!-- =====================================================
-         COMUNICACIÓN
-         ===================================================== -->
-    <section id="vista-comunicacion" class="vista-interna" hidden>
-
-      <button class="boton-volver" data-volver type="button">
-        ← Volver a la comunidad
-      </button>
-
-      <h2>No pierdas la comunicación</h2>
-
-      <div class="tarjeta">
-        <h3>Estado de conexión</h3>
-
-        <p id="estado-conexion" aria-live="polite">
-          Comprobando conexión...
-        </p>
-
-        <p>
-          Si estás sin internet, podés preparar un mensaje y guardarlo
-          en este dispositivo para consultarlo después.
-        </p>
-
-        <p class="aviso-local">
-          Para enviar mensajes necesitás iniciar sesión y completar tu perfil.
-          Escribí el nombre visible exacto de la otra persona. Si no hay conexión,
-          el mensaje queda guardado localmente en la red de relevo y se envía al restablecerse la red.
-        </p>
-      </div>
-
-      <form id="form-mensaje" class="tarjeta">
-
-        <h3>Preparar mensaje</h3>
-
-        <label for="destinatario-mensaje">
-          Nombre visible exacto del destinatario
-        </label>
-
-        <input
-          id="destinatario-mensaje"
-          type="text"
-          maxlength="100"
-          placeholder="Nombre visible exacto de la persona"
-        >
-
-        <label for="texto-mensaje">Mensaje</label>
-
-        <textarea
-          id="texto-mensaje"
-          rows="4"
-          maxlength="2000"
-          placeholder="Escribí lo que necesitás comunicar..."
-          required
-        ></textarea>
-
-        <button class="boton-accion" type="submit">
-          ENVIAR MENSAJE
-        </button>
-
-        <p
-          id="estado-mensaje"
-          class="texto-ayuda"
-          aria-live="polite"
-        ></p>
-
-      </form>
-
-      <h3>Mensajes guardados en este dispositivo</h3>
-
-      <div
-        id="lista-mensajes"
-        class="lista-publicaciones"
-        aria-live="polite"
-      ></div>
-
-    </section>
+    <!-- La mensajería privada interna fue retirada.
+         El contacto entre integrantes se realiza por WhatsApp desde su ficha.
+         Las alternativas sin Internet se explican en la pestaña SOS Offline. -->
 
     <!-- =====================================================
          RED HUMANA
@@ -1169,13 +1083,14 @@
         <h3 id="titulo-modal-contacto">Antes de contactar</h3>
 
         <p>
-          Vas a abrir una conversación con este integrante dentro de
-          HUMANÓMETRO COMUNIDAD. No compartas contraseñas, códigos ni datos privados.
+          Vas a abrir WhatsApp para contactar directamente a este integrante.
+          HUMANÓMETRO COMUNIDAD no almacena ni administra esa conversación.
+          No compartas contraseñas, códigos ni datos privados.
         </p>
 
         <div class="acciones-busqueda">
           <button id="btn-confirmar-wsp" class="boton-accion" type="button">
-            CONTINUAR A COMUNICACIÓN
+            CONTINUAR A WHATSAPP
           </button>
 
           <button id="btn-cancelar-wsp" class="boton-secundario" type="button">
