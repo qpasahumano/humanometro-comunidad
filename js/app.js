@@ -62,7 +62,7 @@ function mostrarVista(nombre = null, opciones = {}) {
     "vista-humanometro",
     "vista-radar",
     "vista-sos-offline",
-    "vista-intercambios" // Nueva vista agregada para los intercambios en curso
+    "vista-intercambios"
   ];
 
   const requierePerfil = nombre !== "vista-perfil";
@@ -97,6 +97,9 @@ function mostrarVista(nombre = null, opciones = {}) {
   } else if (nombre === "vista-intercambios") {
     actualizarSolapaActiva("intercambios");
     cargarPanelIntercambios();
+  } else if (nombre === "vista-humanometro") {
+    actualizarSolapaActiva("humanometro");
+    configurarEvaluaciones();
   } else {
     actualizarSolapaActiva("comunidad");
   }
@@ -149,13 +152,10 @@ function configurarNavegacion() {
     abrirDirectorioComunidad();
   });
 
-  /* RADAR COMUNITARIO */
-
   $("tab-radar")?.addEventListener("click", () => {
     mostrarVista("vista-radar");
   });
 
-  /* SOLAPA INTERCAMBIOS */
   $("tab-intercambios")?.addEventListener("click", () => {
     mostrarVista("vista-intercambios");
   });
@@ -337,7 +337,6 @@ function configurarIntercambiosGlobales() {
         return;
       }
 
-      // Verificar si ambas partes ya evaluaron para cerrar el intercambio y la publicación
       const { data: evals } = await supabase.from("evaluaciones").select("id").eq("intercambio_id", inter.id);
       if (evals && evals.length >= 2) {
         await supabase.from("intercambios").update({ estado: "completado" }).eq("id", inter.id);
@@ -872,192 +871,111 @@ function configurarAyuda() {
 }
 
 /* =========================
-   EVALUACIONES DE INTERCAMBIOS
+   HUMANÓMETRO Y EVALUACIONES (DINÁMICO DESDE SUPABASE)
 ========================= */
 
-function configurarEvaluaciones() {
-  if (evaluacionesConfiguradas) return;
-  evaluacionesConfiguradas = true;
+async function configurarEvaluaciones() {
+  const contenedor = $("lista-evaluaciones") || $("vista-humanometro");
+  if (!contenedor) return;
 
-  const formulario = $("form-evaluacion");
-  const lista = $("lista-evaluaciones");
-  const estado = $("estado-evaluacion");
-  const clave = "hm_evaluaciones";
-
-  function obtenerRegistros() {
-    const registros = getItem(clave, []);
-    return Array.isArray(registros) ? registros : [];
+  const usuario = await obtenerUsuarioActual();
+  if (!usuario) {
+    contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px;'>Iniciá sesión para ver tu medidor de humanidad.</p>";
+    return;
   }
 
-  function calcularPorcentajeHumanidad(registros) {
-    if (!Array.isArray(registros) || registros.length === 0) return 0;
+  contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px; color: #38bdf8;'>Calculando medidor de humanidad desde la red...</p>";
 
-    let puntajeAcumulado = 0;
+  // Consultar evaluaciones donde el usuario actual es el evaluado
+  const { data: evaluaciones, error } = await supabase
+    .from("evaluaciones")
+    .select("*")
+    .eq("evaluado_id", usuario.id);
 
-    registros.forEach((reg) => {
-      if (reg.resultado === "buena") puntajeAcumulado += 100;
-      else if (reg.resultado === "intermedia") puntajeAcumulado += 50;
-      else if (reg.resultado === "cancelacion-mutua") puntajeAcumulado += 75;
-      else if (reg.resultado === "sin-acuerdo") puntajeAcumulado += 40;
+  if (error) {
+    console.error("Error al cargar evaluaciones:", error);
+    contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; color: #f87171;'>No se pudo cargar el medidor de humanidad.</p>";
+    return;
+  }
+
+  const totalIntercambios = evaluaciones ? evaluaciones.length : 0;
+  let porcentajeActual = 0;
+
+  if (totalIntercambios > 0) {
+    let puntosTotales = 0;
+    evaluaciones.forEach((ev) => {
+      let criteriosAprobados = 0;
+      if (ev.respeta_condiciones) criteriosAprobados++;
+      if (ev.cordialidad) criteriosAprobados++;
+      if (ev.puntualidad) criteriosAprobados++;
+      if (ev.comunicacion_clara) criteriosAprobados++;
+      puntosTotales += (criteriosAprobados / 4) * 100;
     });
-
-    const promedio = Math.round(
-      puntajeAcumulado / registros.length
-    );
-
-    return Math.min(Math.max(promedio, 0), 100);
+    porcentajeActual = Math.round(puntosTotales / totalIntercambios);
   }
 
-  function renderizar() {
-    if (!lista) return;
+  const umbralMinimoIntercambiosParaRiesgo = 3;
+  const estaEnRiesgo = totalIntercambios >= umbralMinimoIntercambiosParaRiesgo && porcentajeActual < 70;
 
-    lista.replaceChildren();
+  contenedor.replaceChildren();
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "display: flex; flex-direction: column; gap: 15px; padding: 10px;";
 
-    const registros = obtenerRegistros();
-    const porcentajeActual = calcularPorcentajeHumanidad(registros);
-    const totalIntercambios = registros.length;
+  const tarjetaProgreso = document.createElement("article");
+  tarjetaProgreso.className = "tarjeta";
 
-    const umbralMinimoIntercambiosParaRiesgo = 3;
-
-    const estaEnRiesgo =
-      totalIntercambios >= umbralMinimoIntercambiosParaRiesgo &&
-      porcentajeActual < 70;
-
-    const tarjetaProgreso = document.createElement("article");
-    tarjetaProgreso.className = "tarjeta";
-
-    let htmlAlertaRiesgo = "";
-
-    if (estaEnRiesgo) {
-      htmlAlertaRiesgo = `
-        <div style="background: #7f1d1d; border: 1px solid #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; color: #fca5a5;">
-          <strong>⚠️ ATENCIÓN: Perfil en zona de riesgo comunitario</strong>
-          <p style="font-size: 0.85rem; margin: 5px 0 0 0;">
-            Tu medidor se encuentra por debajo del 70% requerido tras ${totalIntercambios} intercambios. Para mantener la pertenencia y confianza en la red, debés mejorar el cumplimiento y respeto en tus próximas experiencias comunitarias.
-          </p>
-        </div>
-      `;
-    }
-
-    tarjetaProgreso.innerHTML = `
-      <h3>Progreso del Humanómetro</h3>
-      <p style="font-size: 2rem; font-weight: bold; color: ${estaEnRiesgo ? "#f87171" : "#38bdf8"}; margin: 5px 0;">${porcentajeActual}%</p>
-      <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 8px;">
-        Medición basada en <strong>${totalIntercambios}</strong> ${totalIntercambios === 1 ? "intercambio registrado" : "intercambios registrados"}.
-      </p>
-      ${htmlAlertaRiesgo}
-      <p class="texto-ayuda">El contador inicia por defecto en 0% y evoluciona de forma progresiva según el desarrollo y la valoración de tus experiencias comunitarias (requiere un mínimo de 70% para mantener estatus óptimo).</p>
+  let htmlAlertaRiesgo = "";
+  if (estaEnRiesgo) {
+    htmlAlertaRiesgo = `
+      <div style="background: #7f1d1d; border: 1px solid #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; color: #fca5a5;">
+        <strong>⚠️ ATENCIÓN: Perfil en zona de riesgo comunitario</strong>
+        <p style="font-size: 0.85rem; margin: 5px 0 0 0;">
+          Tu medidor se encuentra por debajo del 70% requerido tras ${totalIntercambios} evaluaciones. Para mantener la pertenencia y confianza en la red, debés mejorar el cumplimiento en tus próximas experiencias.
+        </p>
+      </div>
     `;
+  }
 
-    lista.appendChild(tarjetaProgreso);
+  tarjetaProgreso.innerHTML = `
+    <h3>Progreso del Humanómetro</h3>
+    <p style="font-size: 2rem; font-weight: bold; color: ${estaEnRiesgo ? "#f87171" : "#38bdf8"}; margin: 5px 0;">${porcentajeActual}%</p>
+    <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 8px;">
+      Medición basada en <strong>${totalIntercambios}</strong> ${totalIntercambios === 1 ? "evaluación recibida" : "evaluaciones recibidas"}.
+    </p>
+    ${htmlAlertaRiesgo}
+    <p class="texto-ayuda">El contador inicia por defecto en 0% y evoluciona de forma progresiva según la valoración real de las contrapartes al finalizar los intercambios.</p>
+  `;
 
-    if (!registros.length) {
-      lista.appendChild(
-        crearTarjeta(
-          "Todavía no hay evaluaciones guardadas. Tu medidor está en 0% (período inicial de adaptación)."
-        )
-      );
-      return;
-    }
+  wrapper.appendChild(tarjetaProgreso);
 
-    registros.slice().reverse().forEach((registro) => {
-      lista.appendChild(
-        crearTarjeta(registro.referencia || "Intercambio", [
-          `Participante evaluado: ${registro.usuarioEvaluado || "No especificado"}`,
-          `Resultado: ${registro.resultadoTexto || "Sin especificar"}`,
-          registro.detalle || "",
-          registro.fecha
-            ? `Fecha: ${new Date(registro.fecha).toLocaleString("es-AR")}`
-            : "",
-          "Evaluación comunitaria registrada."
-        ])
-      );
+  if (totalIntercambios === 0) {
+    const tarjetaVacia = document.createElement("article");
+    tarjetaVacia.className = "tarjeta";
+    tarjetaVacia.innerHTML = `<p class="texto-ayuda" style="text-align: center;">Todavía no hay evaluaciones registradas en la red. Tu medidor se encuentra en 0% (período inicial de adaptación) hasta completar tu primer intercambio.</p>`;
+    wrapper.appendChild(tarjetaVacia);
+  } else {
+    evaluaciones.slice().reverse().forEach((reg) => {
+      const tarjetaEval = document.createElement("article");
+      tarjetaEval.className = "tarjeta-publicacion";
+      tarjetaEval.style.cssText = "background: #17212b; border: 1px solid #2b3b4f; padding: 12px; border-radius: 8px; color: #fff;";
+      
+      tarjetaEval.innerHTML = `
+        <h4 style="color: #38bdf8; margin-bottom: 6px;">Evaluación de Contraparte</h4>
+        <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Respetó condiciones:</strong> ${reg.respeta_condiciones ? "✓ Sí" : "✕ No"}</p>
+        <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Cordialidad:</strong> ${reg.cordialidad ? "✓ Sí" : "✕ No"}</p>
+        <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Puntualidad:</strong> ${reg.puntualidad ? "✓ Sí" : "✕ No"}</p>
+        <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Comunicación clara:</strong> ${reg.comunicacion_clara ? "✓ Sí" : "✕ No"}</p>
+        <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">Fecha: ${new Date(reg.creado_en || Date.now()).toLocaleString("es-AR")}</p>
+      `;
+      wrapper.appendChild(tarjetaEval);
     });
   }
 
-  formulario?.addEventListener("submit", (evento) => {
-    evento.preventDefault();
-
-    const usuarioEvaluado =
-      $("usuario-evaluado")?.value.trim() || "";
-
-    const referencia =
-      $("referencia-evaluacion")?.value.trim() || "";
-
-    const resultado =
-      $("resultado-evaluacion")?.value || "";
-
-    const detalle =
-      $("detalle-evaluacion")?.value.trim() || "";
-
-    const nombreUsuarioActual =
-      getItem("hm_nombre_usuario", "").trim().toLowerCase();
-
-    if (
-      usuarioEvaluado &&
-      nombreUsuarioActual &&
-      usuarioEvaluado.toLowerCase() === nombreUsuarioActual
-    ) {
-      mostrarNotificacion(
-        "No podés evaluarte a vos mismo. Las evaluaciones deben ser realizadas por la contraparte del intercambio."
-      );
-
-      if (estado) {
-        estado.textContent =
-          "Error: No está permitida la autoevaluación de perfiles.";
-      }
-
-      return;
-    }
-
-    if (!usuarioEvaluado || !referencia || !detalle) {
-      mostrarNotificacion(
-        "Completá el nombre de la contraparte, la referencia y la explicación."
-      );
-      return;
-    }
-
-    const textos = {
-      buena: "BUENA",
-      intermedia: "INTERMEDIA",
-      mala: "MALA",
-      "sin-acuerdo": "NO LLEGAMOS A UN ACUERDO",
-      "cancelacion-mutua": "CANCELACIÓN DE COMÚN ACUERDO"
-    };
-
-    const registros = obtenerRegistros();
-
-    registros.push({
-      id: crearId(),
-      usuarioEvaluado,
-      referencia,
-      resultado,
-      resultadoTexto: textos[resultado] || resultado,
-      detalle,
-      fecha: new Date().toISOString()
-    });
-
-    if (!setItem(clave, registros)) {
-      mostrarNotificacion("No se pudo guardar la evaluación.");
-      return;
-    }
-
-    formulario.reset();
-
-    if (estado) {
-      estado.textContent =
-        "Evaluación guardada localmente. El medidor progresivo ha sido actualizado.";
-    }
-
-    renderizar();
-    mostrarNotificacion("Evaluación guardada con éxito.");
-  });
-
-  renderizar();
+  contenedor.appendChild(wrapper);
 }
 
 /* =========================
-   GESTIÓN DE PERFIL (ACTUALIZADA CON SUPABASE)
+   GESTIÓN DE PERFIL (SIN AUTOEVALUACIÓN)
 ========================= */
 
 function configurarPerfil() {
