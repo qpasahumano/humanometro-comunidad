@@ -1,5 +1,6 @@
 import { initCommunity } from "./community.js";
 import { initConnectivity } from "./connectivity.js";
+import { initMessages } from "./messages.js";
 import {
   iniciarAutenticacion,
   obtenerUsuarioActual,
@@ -1255,6 +1256,14 @@ async function iniciarAplicacion() {
   }
 
   initCommunity({
+    getItem,
+    setItem,
+    mostrarNotificacion
+  });
+
+  // Inicializa únicamente el módulo de mediciones de humanidad.
+  // La mensajería privada fue retirada de HUMANÓMETRO COMUNIDAD.
+  initMessages({
     getItem,
     setItem,
     mostrarNotificacion
