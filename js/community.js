@@ -163,15 +163,41 @@ export function initCommunity({
 
       const { data: publicacionesActivas, error: errorPublicaciones } = await supabase
         .from("publicaciones")
-        .select("perfil_id")
-        .eq("estado", "activa");
+        .select(
+          [
+            "id",
+            "perfil_id",
+            "tipo",
+            "categoria",
+            "titulo",
+            "descripcion",
+            "modalidad",
+            "modalidad_intercambio",
+            "que_necesita_a_cambio",
+            "zona_aproximada",
+            "offline_activo",
+            "fotos",
+            "estado",
+            "creado_en",
+            "actualizado_en"
+          ].join(",")
+        )
+        .eq("estado", "activa")
+        .order("creado_en", { ascending: false });
       if (errorPublicaciones) throw errorPublicaciones;
 
-      const conteos = new Map();
-      (publicacionesActivas || []).forEach((publicacion) => {
-        const id = String(publicacion.perfil_id || "");
-        if (id) conteos.set(id, (conteos.get(id) || 0) + 1);
+      // Agrupar publicaciones activas por propietario para mostrarlas en su tarjeta.
+      const publicacionesPorPerfil = new Map();
+      (publicacionesActivas || []).forEach((registro) => {
+        const id = String(registro.perfil_id || "");
+        if (!id) return;
+        if (!publicacionesPorPerfil.has(id)) publicacionesPorPerfil.set(id, []);
+        publicacionesPorPerfil.get(id).push(convertirRegistroRemoto(registro));
       });
+
+      const conteos = new Map(
+        [...publicacionesPorPerfil.entries()].map(([id, items]) => [id, items.length])
+      );
 
       const usuario = await obtenerUsuarioActual();
       const idPropio = String(usuario?.id || "");
@@ -245,31 +271,24 @@ export function initCommunity({
         const datos = document.createElement("div");
         datos.className = "vecino-indicadores";
         
-        // --- PUNTO 3: CONTADOR DE PUBLICACIONES ACTIVAS EN TIEMPO REAL ---
+        // Las publicaciones activas solo se anuncian cuando existen.
+        const publicacionesDeEstePerfil =
+          publicacionesPorPerfil.get(String(perfil.id)) || [];
         const totalPubs = conteos.get(String(perfil.id)) || 0;
-        const publicacionesVecino = document.createElement("span");
-        publicacionesVecino.textContent = `📦 ${totalPubs} ${totalPubs === 1 ? "publicación activa" : "publicaciones activas"}`;
-        datos.appendChild(publicacionesVecino);
 
-        // --- PUNTO 3: MEDIDOR DE HUMANIDAD EN FICHA AJENA ---
-        const humanometroVecino = document.createElement("button");
+        if (totalPubs > 0) {
+          const publicacionesVecino = document.createElement("span");
+          publicacionesVecino.className = "vecino-publicaciones-conteo";
+          publicacionesVecino.textContent = `📦 ${totalPubs} ${totalPubs === 1 ? "publicación activa" : "publicaciones activas"}`;
+          datos.appendChild(publicacionesVecino);
+        }
+
+        // El porcentaje permanece visible; no se permite iniciar una medición
+        // desde la tarjeta de otra persona.
+        const humanometroVecino = document.createElement("span");
         const porcentajeHumanidad = perfil.porcentaje_humanidad ?? 0;
-        humanometroVecino.type = "button";
         humanometroVecino.className = "vecino-humanometro-badge";
-        humanometroVecino.style.cssText = "border:0;cursor:pointer;font:inherit;text-align:left;background:transparent;color:inherit;padding:0;";
-        humanometroVecino.textContent = `🤝 Humanómetro: ${porcentajeHumanidad}% · Medir`;
-        humanometroVecino.addEventListener("click", () => {
-          if (typeof window.abrirMedicionHumanidad !== "function") {
-            if (typeof mostrarNotificacion === "function") {
-              mostrarNotificacion("El módulo de medición todavía no está disponible.");
-            }
-            return;
-          }
-          window.abrirMedicionHumanidad(
-            perfil.nombre_visible || "Integrante de la comunidad",
-            perfil.id
-          );
-        });
+        humanometroVecino.textContent = `🤝 Humanómetro: ${porcentajeHumanidad}%`;
         datos.appendChild(humanometroVecino);
 
         if (perfil.conectividad_disponible) {
@@ -280,6 +299,36 @@ export function initCommunity({
           datos.appendChild(conectividad);
         }
         tarjeta.appendChild(datos);
+
+        // Publicaciones desplegables dentro de la tarjeta del propietario.
+        // Se reutiliza la tarjeta de publicación existente para conservar
+        // todos sus detalles, avisos y el contacto específico por trueque.
+        if (publicacionesDeEstePerfil.length > 0) {
+          const seccionPublicaciones = document.createElement("section");
+          seccionPublicaciones.className = "vecino-publicaciones";
+          const tituloPublicaciones = document.createElement("h4");
+          tituloPublicaciones.className = "vecino-publicaciones-titulo";
+          tituloPublicaciones.textContent = "PUBLICACIONES ACTIVAS";
+          seccionPublicaciones.appendChild(tituloPublicaciones);
+
+          publicacionesDeEstePerfil.forEach((publicacion) => {
+            const desplegable = document.createElement("details");
+            desplegable.className = "vecino-publicacion-desplegable";
+            const resumen = document.createElement("summary");
+            resumen.textContent = `${publicacion.tipo || "Publicación"} · ${publicacion.titulo || "Ver detalles"}`;
+            desplegable.appendChild(resumen);
+
+            const detallePublicacion = crearTarjeta({
+              ...publicacion,
+              perfil_nombre: perfil.nombre_visible || "Integrante"
+            });
+            detallePublicacion.classList.add("vecino-publicacion-detalle");
+            desplegable.appendChild(detallePublicacion);
+            seccionPublicaciones.appendChild(desplegable);
+          });
+
+          tarjeta.appendChild(seccionPublicaciones);
+        }
 
         const indicadorOffline = crearIndicadorMensajeriaOffline(perfil);
         if (indicadorOffline) tarjeta.appendChild(indicadorOffline);
@@ -1624,6 +1673,20 @@ export function initCommunity({
   window.addEventListener("online", manejarOnline);
   window.addEventListener("offline", manejarOffline);
 
+  // Refrescar tarjetas y Góndola ante cambios de publicaciones o perfiles.
+  function manejarPublicacionActualizada() {
+    if (destruido) return;
+    cargarPublicacionesRemotas();
+    if (modoListadoPerfiles === "directorio") {
+      cargarDirectorioComunidad();
+    } else {
+      cargarRadarComunitario(destinoRadarComunitario);
+    }
+  }
+
+  window.addEventListener("publicacionComunidadActualizada", manejarPublicacionActualizada);
+  window.addEventListener("perfilComunidadActualizado", manejarPublicacionActualizada);
+
   // Recuperar destino del Radar sin modificar la ubicación propia.
   try {
     destinoRadarComunitario =
@@ -1748,6 +1811,8 @@ export function initCommunity({
 
       window.removeEventListener("online", manejarOnline);
       window.removeEventListener("offline", manejarOffline);
+      window.removeEventListener("publicacionComunidadActualizada", manejarPublicacionActualizada);
+      window.removeEventListener("perfilComunidadActualizado", manejarPublicacionActualizada);
 
       if (suscripcionAuth) {
         suscripcionAuth.unsubscribe();
