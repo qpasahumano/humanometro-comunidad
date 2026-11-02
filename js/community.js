@@ -340,16 +340,12 @@ export function initCommunity({
         verPublicaciones.className = "boton-secundario";
         verPublicaciones.textContent = "VER PUBLICACIONES";
         
-        // =====================================================
-        // AJUSTE PUNTO 2: ACCIÓN DIRECTA DEL BOTÓN "VER PUBLICACIONES"
-        // =====================================================
         verPublicaciones.addEventListener("click", () => {
           perfilFiltroActivo = perfil.id;
           perfilFiltroNombre = perfil.nombre_visible || "Integrante";
           if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
           if (textoFiltroVecino) textoFiltroVecino.textContent = `Mostrando publicaciones de ${perfilFiltroNombre}`;
           
-          // Aseguramos cargar las publicaciones específicas de este usuario y dirigirnos a su vista filtrada en Góndola
           cargarPublicacionesRemotas();
           window.dispatchEvent(new CustomEvent("abrirVistaGondola"));
         });
@@ -813,6 +809,7 @@ export function initCommunity({
 
     tarjeta.className = "tarjeta-publicacion";
 
+    const idPublicacion = escaparHTML(publicacion.id);
     const tipo = escaparHTML(publicacion.tipo);
     const categoria = escaparHTML(publicacion.categoria);
     const titulo = escaparHTML(publicacion.titulo);
@@ -916,18 +913,84 @@ export function initCommunity({
 
       <small class="publicacion-fecha">${fecha}</small>
 
-      <button
-        class="boton-secundario btn-contactar-trueque"
-        data-id="${autorId}"
-        data-nombre="${nombreAutor}"
-        style="margin-top: 10px; width: 100%; font-size: 0.85rem; cursor: pointer;"
-      >
-        Contactar por este trueque
-      </button>
+      <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+        <button
+          class="boton-secundario btn-contactar-trueque"
+          data-id="${autorId}"
+          data-nombre="${nombreAutor}"
+          style="flex: 1; font-size: 0.85rem; cursor: pointer;"
+        >
+          Contactar por este trueque
+        </button>
+
+        <button
+          class="boton-accion btn-iniciar-intercambio-card"
+          data-pub-id="${idPublicacion}"
+          data-autor-id="${autorId}"
+          style="flex: 1; font-size: 0.85rem; cursor: pointer; background: #0284c7; color: #fff;"
+        >
+          Iniciar Intercambio
+        </button>
+      </div>
     `;
 
     return tarjeta;
   }
+
+  // --- LÓGICA DE INICIAR INTERCAMBIO DESDE TARJETA ---
+  async function manejarInicioIntercambioDesdeCard(e) {
+    const boton = e.target.closest(".btn-iniciar-intercambio-card");
+    if (!boton) return;
+
+    e.preventDefault();
+    const publicacionId = boton.getAttribute("data-pub-id");
+    const perfilDuenhoId = boton.getAttribute("data-autor-id");
+
+    const usuarioActual = await obtenerUsuarioActual();
+    if (!usuarioActual) {
+      notificar("Debes iniciar sesión para realizar un intercambio.", "error");
+      return;
+    }
+
+    if (String(usuarioActual.id) === String(perfilDuenhoId)) {
+      notificar("No puedes iniciar un intercambio con tu propia publicación.", "warning");
+      return;
+    }
+
+    const horasStr = prompt("Ingresa el plazo estimado en horas para el intercambio (ej: 24, 48 o 72):", "24");
+    if (!horasStr) return;
+
+    const horas = parseInt(horasStr, 10);
+    if (isNaN(horas) || horas <= 0) {
+      notificar("Por favor, ingresa un número válido de horas.", "error");
+      return;
+    }
+
+    const fechaLimite = new Date();
+    fechaLimite.setHours(fechaLimite.getHours() + horas);
+
+    try {
+      const { error } = await supabase.from("intercambios").insert([{
+        publicacion_id: publicacionId,
+        usuario_a: perfilDuenhoId,
+        usuario_b: usuarioActual.id,
+        estado: "en_proceso",
+        fecha_limite: fechaLimite.toISOString(),
+        confirmado_a: false,
+        confirmado_b: false
+      }]);
+
+      if (error) throw error;
+
+      notificar("¡Intercambio iniciado con éxito!", "success");
+      cargarPublicacionesRemotas();
+    } catch (error) {
+      console.error("Error al iniciar el intercambio:", error);
+      notificar("Error al iniciar el intercambio: " + error.message, "error");
+    }
+  }
+
+  document.addEventListener("click", manejarInicioIntercambioDesdeCard);
 
   let contactoPendiente = null;
 
@@ -1005,7 +1068,6 @@ export function initCommunity({
     if (modalWsp) modalWsp.hidden = true;
 
     if (contactoPendiente?.url) {
-      // La apertura ocurre directamente en el gesto del usuario para evitar bloqueos emergentes.
       window.open(contactoPendiente.url, "_blank", "noopener,noreferrer");
     }
 
@@ -1468,7 +1530,6 @@ export function initCommunity({
     }
   }
 
-  // Los botones cambian únicamente el valor del selector: no desplazan ni reinician la ficha.
   function seleccionarTipoFicha(tipo) {
     if (!tipoInput) return;
     tipoInput.value = tipo;
@@ -1673,7 +1734,6 @@ export function initCommunity({
   window.addEventListener("online", manejarOnline);
   window.addEventListener("offline", manejarOffline);
 
-  // Refrescar tarjetas y Góndola ante cambios de publicaciones o perfiles.
   function manejarPublicacionActualizada() {
     if (destruido) return;
     cargarPublicacionesRemotas();
@@ -1687,15 +1747,12 @@ export function initCommunity({
   window.addEventListener("publicacionComunidadActualizada", manejarPublicacionActualizada);
   window.addEventListener("perfilComunidadActualizado", manejarPublicacionActualizada);
 
-  // Recuperar destino del Radar sin modificar la ubicación propia.
   try {
     destinoRadarComunitario =
       String(getItem("hm_radar_destino", "") || "");
   } catch (error) {
     console.warn("No se pudo recuperar el destino del Radar:", error);
   }
-
-  // --- SUSCRIPCIÓN A CAMBIOS DE AUTENTICACIÓN ---
 
   try {
     const resultadoAuth = supabase.auth.onAuthStateChange(
@@ -1788,6 +1845,7 @@ export function initCommunity({
       );
 
       document.removeEventListener("click", manejarClickContacto);
+      document.removeEventListener("click", manejarInicioIntercambioDesdeCard);
 
       btnConfirmarWsp?.removeEventListener(
         "click",
