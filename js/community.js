@@ -11,7 +11,6 @@ const MATRIX_CONFIG = {
   DB_NAME: "HumanometroComunidadDB",
   DB_VERSION: 2,
   STORE_PUBLICACIONES: "publicaciones_cache",
-  STORE_MENSAJES: "mensajes_pendientes",
   STORE_MEDICIONES: "mediciones_pendientes"
 };
 
@@ -32,6 +31,7 @@ export function initCommunity({
   const botonFichaOfrezco = document.getElementById("btn-ficha-ofrezco");
   const botonFichaNecesito = document.getElementById("btn-ficha-necesito");
   const categoriaInput = document.getElementById("categoria-publicacion");
+  const avisoMedicamentos = document.getElementById("aviso-seguridad-medicamentos");
   const otraCategoriaInput = document.getElementById("otra-categoria");
   const contenedorOtraCategoria = document.getElementById(
     "contenedor-otra-categoria"
@@ -294,27 +294,12 @@ export function initCommunity({
 
         const contactar = document.createElement("button");
         contactar.type = "button";
-        contactar.className = "boton-accion";
-        contactar.textContent = "ENVIAR MENSAJE";
-
-        const chatFicha = document.createElement("div");
-        chatFicha.className = "chat-vecino-en-ficha";
-        chatFicha.hidden = true;
-        chatFicha.dataset.perfilId = String(perfil.id || "");
-
-        contactar.addEventListener("click", () => {
-          chatFicha.hidden = false;
-          window.dispatchEvent(new CustomEvent("abrirChatEnFicha", {
-            detail: {
-              perfilId: perfil.id,
-              nombre: perfil.nombre_visible || "Integrante",
-              contenedor: chatFicha,
-              tarjeta
-            }
-          }));
-        });
+        contactar.className = "boton-accion btn-contactar-whatsapp";
+        contactar.dataset.id = String(perfil.id || "");
+        contactar.dataset.nombre = perfil.nombre_visible || "Integrante";
+        contactar.textContent = "CONTACTAR POR WHATSAPP";
         acciones.appendChild(contactar);
-        tarjeta.append(acciones, chatFicha);
+        tarjeta.appendChild(acciones);
         fragmento.appendChild(tarjeta);
       });
 
@@ -897,34 +882,71 @@ export function initCommunity({
 
   let contactoPendiente = null;
 
-  function manejarClickContactoTrueque(e) {
-    const boton = e.target.closest?.(".btn-contactar-trueque");
-    if (!boton) return;
+  function normalizarTelefonoWhatsApp(valor) {
+    return String(valor || "").replace(/\D/g, "");
+  }
 
-    const destinatarioId = boton.getAttribute("data-id");
-    const destinatarioNombre = boton.getAttribute("data-nombre");
+  async function prepararContactoWhatsApp(perfilId, nombre) {
+    if (!perfilId) {
+      notificar("No se pudo identificar el perfil de contacto.", "error");
+      return;
+    }
 
-    contactoPendiente = {
-      destinatarioNombre,
-      destinatarioId
-    };
+    try {
+      const { data: perfil, error } = await supabase
+        .from("perfiles")
+        .select("whatsapp")
+        .eq("id", perfilId)
+        .maybeSingle();
 
-    const modal = document.getElementById("modal-whatsapp-seguro");
+      if (error) throw error;
 
-    if (modal) {
-      modal.hidden = false;
-    } else if (window.abrirChatConVecino) {
-      window.abrirChatConVecino(
-        destinatarioNombre,
-        destinatarioId
-      );
+      const telefono = normalizarTelefonoWhatsApp(perfil?.whatsapp);
+      if (!telefono) {
+        notificar("Este integrante todavía no tiene un número de WhatsApp disponible.", "warning");
+        return;
+      }
+
+      contactoPendiente = {
+        nombre: nombre || "integrante",
+        url: `https://wa.me/${telefono}`
+      };
+
+      const modal = document.getElementById("modal-whatsapp-seguro");
+      const titulo = document.getElementById("titulo-modal-contacto");
+      const texto = modal?.querySelector("p");
+      const confirmar = document.getElementById("btn-confirmar-wsp");
+
+      if (titulo) titulo.textContent = "Antes de contactar por WhatsApp";
+      if (texto) {
+        texto.textContent = `Vas a abrir WhatsApp para comunicarte directamente con ${contactoPendiente.nombre}. No compartas contraseñas, códigos ni datos privados.`;
+      }
+      if (confirmar) confirmar.textContent = "ABRIR WHATSAPP";
+
+      if (modal) {
+        modal.hidden = false;
+      } else {
+        window.open(contactoPendiente.url, "_blank", "noopener,noreferrer");
+        contactoPendiente = null;
+      }
+    } catch (error) {
+      console.error("No se pudo preparar el contacto por WhatsApp:", error);
+      notificar("No se pudo consultar el contacto. Verificá la conexión y los permisos del perfil.", "error");
     }
   }
 
-  document.addEventListener(
-    "click",
-    manejarClickContactoTrueque
-  );
+  function manejarClickContacto(e) {
+    const boton = e.target.closest?.(".btn-contactar-whatsapp, .btn-contactar-trueque");
+    if (!boton) return;
+
+    e.preventDefault();
+    prepararContactoWhatsApp(
+      boton.getAttribute("data-id"),
+      boton.getAttribute("data-nombre")
+    );
+  }
+
+  document.addEventListener("click", manejarClickContacto);
 
   const btnConfirmarWsp = document.getElementById("btn-confirmar-wsp");
   const btnCancelarWsp = document.getElementById("btn-cancelar-wsp");
@@ -933,11 +955,9 @@ export function initCommunity({
   function confirmarContactoWsp() {
     if (modalWsp) modalWsp.hidden = true;
 
-    if (contactoPendiente && window.abrirChatConVecino) {
-      window.abrirChatConVecino(
-        contactoPendiente.destinatarioNombre,
-        contactoPendiente.destinatarioId
-      );
+    if (contactoPendiente?.url) {
+      // La apertura ocurre directamente en el gesto del usuario para evitar bloqueos emergentes.
+      window.open(contactoPendiente.url, "_blank", "noopener,noreferrer");
     }
 
     contactoPendiente = null;
@@ -948,15 +968,8 @@ export function initCommunity({
     contactoPendiente = null;
   }
 
-  btnConfirmarWsp?.addEventListener(
-    "click",
-    confirmarContactoWsp
-  );
-
-  btnCancelarWsp?.addEventListener(
-    "click",
-    cancelarContactoWsp
-  );
+  btnConfirmarWsp?.addEventListener("click", confirmarContactoWsp);
+  btnCancelarWsp?.addEventListener("click", cancelarContactoWsp);
 
   function renderizarPublicaciones() {
     if (!lista) return;
@@ -1193,6 +1206,12 @@ export function initCommunity({
 
   async function publicar(evento) {
     evento.preventDefault();
+    actualizarAvisoMedicamentos();
+
+    if (normalizarTexto(categoriaInput?.value).toLowerCase() === "medicamentos") {
+      notificar("No se pueden publicar, ofrecer, donar ni intercambiar medicamentos particulares. Consultá el directorio de entidades oficiales.", "error");
+      return;
+    }
 
     const datos = validarFormulario();
 
@@ -1296,6 +1315,8 @@ export function initCommunity({
       );
 
       form.reset();
+      actualizarAvisoMedicamentos();
+      actualizarSelectorFicha();
 
       if (zonaPublicacionInput) {
         zonaPublicacionInput.value =
@@ -1384,32 +1405,25 @@ export function initCommunity({
   function actualizarSelectorFicha() {
     if (!tipoInput) return;
 
+    const esOferta = tipoInput.value === "oferta" || tipoInput.value === "ofrezco";
+    const esNecesidad = tipoInput.value === "necesidad" || tipoInput.value === "necesito";
+
     if (botonFichaOfrezco) {
-      botonFichaOfrezco.classList.toggle(
-        "activo",
-        tipoInput.value === "oferta"
-      );
+      botonFichaOfrezco.classList.toggle("activa", esOferta);
+      botonFichaOfrezco.setAttribute("aria-pressed", String(esOferta));
     }
 
     if (botonFichaNecesito) {
-      botonFichaNecesito.classList.toggle(
-        "activo",
-        tipoInput.value === "necesidad"
-      );
+      botonFichaNecesito.classList.toggle("activa", esNecesidad);
+      botonFichaNecesito.setAttribute("aria-pressed", String(esNecesidad));
     }
   }
 
-  // --- PUNTO 4: CORRECCIÓN DE BOTONES EN LA GÓNDOLA ("OFREZCO" / "NECESITO") ---
+  // Los botones cambian únicamente el valor del selector: no desplazan ni reinician la ficha.
   function seleccionarTipoFicha(tipo) {
     if (!tipoInput) return;
-
     tipoInput.value = tipo;
     actualizarSelectorFicha();
-
-    // Desplazamiento fluido y limpio hacia el formulario o contenedor superior sin scroll interminable
-    if (form) {
-      form.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
   }
 
   function manejarBuscarPublicaciones() {
@@ -1439,8 +1453,23 @@ export function initCommunity({
     renderizarPublicaciones();
   }
 
+  function actualizarAvisoMedicamentos() {
+    if (!avisoMedicamentos) return;
+
+    const categoria = normalizarTexto(categoriaInput?.value).toLowerCase();
+    const texto = [tituloInput?.value, detalleInput?.value]
+      .map((valor) => normalizarTexto(valor).toLowerCase())
+      .join(" ");
+    const mencionaMedicamentos = /\b(medicamento|medicamentos|f[aá]rmaco|f[aá]rmacos|pastillas|antibi[oó]tico|antibi[oó]ticos)\b/i.test(texto);
+    const seleccionMedicamentos = categoria === "medicamentos";
+    const esDirectorioOficial = categoria === "bancos_salud_oficial";
+
+    avisoMedicamentos.hidden = esDirectorioOficial || !(seleccionMedicamentos || mencionaMedicamentos);
+  }
+
   function manejarCategoriaCambio() {
     actualizarCampoOtraCategoria();
+    actualizarAvisoMedicamentos();
   }
 
   function manejarTipoPublicacionCambio() {
@@ -1529,6 +1558,8 @@ export function initCommunity({
     "change",
     manejarCategoriaCambio
   );
+  tituloInput?.addEventListener("input", actualizarAvisoMedicamentos);
+  detalleInput?.addEventListener("input", actualizarAvisoMedicamentos);
 
   buscarPublicacionesBtn?.addEventListener(
     "click",
@@ -1625,6 +1656,7 @@ export function initCommunity({
 
   actualizarCampoOtraCategoria();
   actualizarSelectorFicha();
+  actualizarAvisoMedicamentos();
 
   cargarPublicacionesRemotas();
   cargarDirectorioComunidad();
@@ -1649,6 +1681,8 @@ export function initCommunity({
         "change",
         manejarCategoriaCambio
       );
+      tituloInput?.removeEventListener("input", actualizarAvisoMedicamentos);
+      detalleInput?.removeEventListener("input", actualizarAvisoMedicamentos);
 
       buscarPublicacionesBtn?.removeEventListener(
         "click",
@@ -1690,10 +1724,7 @@ export function initCommunity({
         quitarFiltroVecino
       );
 
-      document.removeEventListener(
-        "click",
-        manejarClickContactoTrueque
-      );
+      document.removeEventListener("click", manejarClickContacto);
 
       btnConfirmarWsp?.removeEventListener(
         "click",
