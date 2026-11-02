@@ -1057,7 +1057,7 @@ function configurarEvaluaciones() {
 }
 
 /* =========================
-   GESTIÓN DE PERFIL
+   GESTIÓN DE PERFIL (ACTUALIZADA CON SUPABASE)
 ========================= */
 
 function configurarPerfil() {
@@ -1076,7 +1076,7 @@ function configurarPerfil() {
     inputWhatsapp.value = getItem("hm_whatsapp_usuario", "");
   }
 
-  formulario.addEventListener("submit", (evento) => {
+  formulario.addEventListener("submit", async (evento) => {
     evento.preventDefault();
 
     const nombre = inputNombre?.value.trim() || "";
@@ -1102,22 +1102,50 @@ function configurarPerfil() {
       return;
     }
 
-    const guardadoNombre = setItem("hm_nombre_usuario", nombre);
-    const guardadoWhatsapp = setItem("hm_whatsapp_usuario", whatsapp);
+    try {
+      const usuario = await obtenerUsuarioActual();
 
-    if (!guardadoNombre || !guardadoWhatsapp) {
-      mostrarNotificacion(
-        "No se pudieron guardar los datos del perfil en este dispositivo."
-      );
-      return;
+      if (!usuario) {
+        mostrarNotificacion("Debes iniciar sesión para guardar tu perfil.");
+        return;
+      }
+
+      if (estadoPerfil) {
+        estadoPerfil.textContent = "Guardando perfil en la red...";
+      }
+
+      const { error: errorSupabase } = await supabase
+        .from("perfiles")
+        .upsert({
+          id: usuario.id,
+          nombre: nombre,
+          whatsapp: whatsapp,
+          actualizado_en: new Date().toISOString()
+        });
+
+      if (errorSupabase) {
+        throw errorSupabase;
+      }
+
+      setItem("hm_nombre_usuario", nombre);
+      setItem("hm_whatsapp_usuario", whatsapp);
+
+      if (estadoPerfil) {
+        estadoPerfil.textContent =
+          "¡Perfil guardado correctamente en la red y validado!";
+      }
+
+      mostrarNotificacion("Perfil guardado con éxito.");
+
+    } catch (error) {
+      console.error("Error al guardar el perfil en Supabase:", error);
+
+      if (estadoPerfil) {
+        estadoPerfil.textContent = "Error al guardar en el servidor. Verificá los datos.";
+      }
+
+      mostrarNotificacion("No se pudo guardar el perfil en la red: " + error.message);
     }
-
-    if (estadoPerfil) {
-      estadoPerfil.textContent =
-        "¡Perfil guardado correctamente con validación de WhatsApp!";
-    }
-
-    mostrarNotificacion("Perfil guardado con éxito.");
   });
 }
 
