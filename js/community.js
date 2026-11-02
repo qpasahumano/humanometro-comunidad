@@ -189,10 +189,6 @@ export function initCommunity({
         publicacionesPorPerfil.get(id).push(convertirRegistroRemoto(registro));
       });
 
-      const conteos = new Map(
-        [...publicacionesPorPerfil.entries()].map(([id, items]) => [id, items.length])
-      );
-
       const usuario = await obtenerUsuarioActual();
       const idPropio = String(usuario?.id || "");
 
@@ -265,7 +261,7 @@ export function initCommunity({
         
         const publicacionesDeEstePerfil =
           publicacionesPorPerfil.get(String(perfil.id)) || [];
-        const totalPubs = conteos.get(String(perfil.id)) || 0;
+        const totalPubs = publicacionesDeEstePerfil.length;
 
         if (totalPubs > 0) {
           const publicacionesVecino = document.createElement("span");
@@ -334,6 +330,8 @@ export function initCommunity({
           
           if (form) form.style.display = "none";
 
+          if (busquedaInput) busquedaInput.value = "";
+          
           cargarPublicacionesRemotas();
           window.dispatchEvent(new CustomEvent("abrirVistaGondola"));
 
