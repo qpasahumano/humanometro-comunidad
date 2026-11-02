@@ -8,6 +8,7 @@ import {
   perfilEstaCompleto
 } from "./auth.js";
 import { getItem, setItem } from "./storage.js";
+import { supabase } from "./supabase.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -17,6 +18,7 @@ let ayudaConfigurada = false;
 let evaluacionesConfiguradas = false;
 let conectividadSolidariaConfigurada = false;
 let radarComunitarioConfigurado = false;
+let intercambiosConfigurados = false;
 
 /* =========================
    NOTIFICACIONES
@@ -59,7 +61,8 @@ function mostrarVista(nombre = null, opciones = {}) {
     "vista-perfil",
     "vista-humanometro",
     "vista-radar",
-    "vista-sos-offline"
+    "vista-sos-offline",
+    "vista-intercambios" // Nueva vista agregada para los intercambios en curso
   ];
 
   const requierePerfil = nombre !== "vista-perfil";
@@ -91,6 +94,9 @@ function mostrarVista(nombre = null, opciones = {}) {
     actualizarSolapaActiva("radar");
   } else if (nombre === "vista-sos-offline") {
     actualizarSolapaActiva("sos-offline");
+  } else if (nombre === "vista-intercambios") {
+    actualizarSolapaActiva("intercambios");
+    cargarPanelIntercambios();
   } else {
     actualizarSolapaActiva("comunidad");
   }
@@ -149,13 +155,10 @@ function configurarNavegacion() {
     mostrarVista("vista-radar");
   });
 
-  /*
-   * NUEVA SOLAPA INDEPENDIENTE:
-   * COMUNICACIÓN SOS OFFLINE.
-   *
-   * No se mezcla con la mensajería habitual.
-   * No reemplaza la solapa Comunidad.
-   */
+  /* SOLAPA INTERCAMBIOS */
+  $("tab-intercambios")?.addEventListener("click", () => {
+    mostrarVista("vista-intercambios");
+  });
 
   $("tab-sos-offline")?.addEventListener("click", () => {
     mostrarVista("vista-sos-offline");
@@ -185,10 +188,6 @@ function configurarNavegacion() {
     boton.addEventListener("click", () => mostrarVista(null));
   });
 
-  /*
-   * EVENTOS DE NAVEGACIÓN ENTRE MÓDULOS.
-   */
-
   window.addEventListener("abrirPanelPrincipal", () => {
     abrirDirectorioComunidad();
   });
@@ -205,15 +204,156 @@ function configurarNavegacion() {
     mostrarVista("vista-sos-offline");
   });
 
-  /*
-   * REGRESO AL DIRECTORIO:
-   * permite que los módulos soliciten volver a Comunidad
-   * sin perder el destino seleccionado del Radar.
-   */
-
   window.addEventListener("volverAComunidad", () => {
     abrirDirectorioComunidad();
   });
+}
+
+/* =========================
+   PANEL DE INTERCAMBIOS Y EVALUACIONES BILATERALES
+========================= */
+
+async function cargarPanelIntercambios() {
+  const contenedor = $("lista-intercambios-activos") || $("vista-intercambios");
+  if (!contenedor) return;
+
+  const usuario = await obtenerUsuarioActual();
+  if (!usuario) {
+    contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px;'>Iniciá sesión para ver tus intercambios en curso.</p>";
+    return;
+  }
+
+  contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px; color: #38bdf8;'>Cargando tus intercambios activos...</p>";
+
+  const { data: intercambios, error } = await supabase
+    .from("intercambios")
+    .select("*, publicacion:publicacion_id(titulo)")
+    .or(`usuario_a.eq.${usuario.id},usuario_b.eq.${usuario.id}`)
+    .order("creado_en", { ascending: false });
+
+  if (error) {
+    console.error("Error al cargar intercambios:", error);
+    contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; color: #f87171;'>No se pudieron cargar los intercambios.</p>";
+    return;
+  }
+
+  if (!intercambios || intercambios.length === 0) {
+    contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px;'>No tenés intercambios activos en este momento. Podés iniciarlos desde las publicaciones en la comunidad.</p>";
+    return;
+  }
+
+  contenedor.replaceChildren();
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "display: flex; flex-direction: column; gap: 15px; padding: 10px;";
+
+  intercambios.forEach((inter) => {
+    const esA = inter.usuario_a === usuario.id;
+    const miConf = esA ? inter.confirmado_a : inter.confirmado_b;
+    const otraConf = esA ? inter.confirmado_b : inter.confirmado_a;
+    const ambosConf = inter.confirmado_a && inter.confirmado_b;
+
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "tarjeta-publicacion";
+    tarjeta.style.cssText = "background: #17212b; border: 1px solid #2b3b4f; padding: 15px; border-radius: 8px; color: #fff;";
+
+    tarjeta.innerHTML = `
+      <h3 style="margin-bottom: 8px; color: #38bdf8;">Intercambio: ${escapeHTML(inter.publicacion?.titulo || "Acuerdo Comunitario")}</h3>
+      <p style="margin-bottom: 6px;"><strong>Estado:</strong> <span style="text-transform: uppercase; color: #38df8;">${escapeHTML(inter.estado)}</span></p>
+      <p style="margin-bottom: 12px; font-size: 0.85rem; color: #94a3b8;">Límite acordado: ${new Date(inter.fecha_limite).toLocaleString("es-AR")}</p>
+      
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
+        <button class="boton-secundario btn-toggle-conf" data-id="${inter.id}" style="background: ${miConf ? '#166534' : '#ca8a04'}; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+          ${miConf ? "✓ Tu parte confirmada" : "○ Confirmar tu cumplimiento"}
+        </button>
+        <span style="font-size: 0.85rem; color: #cbd5e1;">Contraparte: ${otraConf ? "✓ Confirmado" : "Pendiente"}</span>
+      </div>
+
+      ${ambosConf && inter.estado !== "completado" ? `
+        <button class="boton-accion btn-evaluar-intercambio" data-id="${inter.id}" style="background: #9333ea; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; width: 100%;">
+          Evaluar contraparte y finalizar intercambio
+        </button>
+      ` : ""}
+    `;
+    wrapper.appendChild(tarjeta);
+  });
+
+  contenedor.appendChild(wrapper);
+}
+
+function configurarIntercambiosGlobales() {
+  if (intercambiosConfigurados) return;
+  intercambiosConfigurados = true;
+
+  document.addEventListener("click", async (e) => {
+    const btnConf = e.target.closest(".btn-toggle-conf");
+    if (btnConf) {
+      const id = btnConf.getAttribute("data-id");
+      const usuario = await obtenerUsuarioActual();
+      if (!usuario) return;
+
+      const { data: inter, error: errFetch } = await supabase.from("intercambios").select("*").eq("id", id).single();
+      if (errFetch || !inter) return;
+
+      const esA = inter.usuario_a === usuario.id;
+      const updateData = esA ? { confirmado_a: !inter.confirmado_a } : { confirmado_b: !inter.confirmado_b };
+
+      const { error } = await supabase.from("intercambios").update(updateData).eq("id", id);
+      if (!error) {
+        mostrarNotificacion("Estado de confirmación actualizado.");
+        cargarPanelIntercambios();
+      } else {
+        mostrarNotificacion("Error al actualizar la confirmación.", "error");
+      }
+    }
+
+    const btnEval = e.target.closest(".btn-evaluar-intercambio");
+    if (btnEval) {
+      const id = btnEval.getAttribute("data-id");
+      const usuario = await obtenerUsuarioActual();
+      if (!usuario) return;
+
+      const { data: inter, error: errFetch } = await supabase.from("intercambios").select("*").eq("id", id).single();
+      if (errFetch || !inter) return;
+
+      const evaluadoId = inter.usuario_a === usuario.id ? inter.usuario_b : inter.usuario_a;
+
+      const respeta = confirm("¿Respetó las condiciones pactadas?");
+      const cordialidad = confirm("¿Hubo cordialidad y respeto?");
+      const puntualidad = confirm("¿Cumplió con los plazos acordados?");
+      const comunicacion = confirm("¿Mantuvo una comunicación clara?");
+
+      const { error: errEval } = await supabase.from("evaluaciones").insert([{
+        intercambio_id: inter.id,
+        evaluador_id: usuario.id,
+        evaluado_id: evaluadoId,
+        respeta_condiciones: respeta,
+        cordialidad: cordialidad,
+        puntualidad: puntualidad,
+        comunicacion_clara: comunicacion
+      }]);
+
+      if (errEval) {
+        mostrarNotificacion("Error al registrar evaluación: " + errEval.message, "error");
+        return;
+      }
+
+      // Verificar si ambas partes ya evaluaron para cerrar el intercambio y la publicación
+      const { data: evals } = await supabase.from("evaluaciones").select("id").eq("intercambio_id", inter.id);
+      if (evals && evals.length >= 2) {
+        await supabase.from("intercambios").update({ estado: "completado" }).eq("id", inter.id);
+        if (inter.publicacion_id) {
+          await supabase.from("publicaciones").update({ estado: "completada" }).eq("id", inter.publicacion_id);
+        }
+      }
+
+      mostrarNotificacion("¡Evaluación registrada con éxito y medidor actualizado!", "success");
+      cargarPanelIntercambios();
+    }
+  });
+}
+
+function escapeHTML(str) {
+  return String(str || "").replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
 /* =========================
@@ -469,11 +609,6 @@ function configurarRadarComunitario() {
 
   if (!boton) return;
 
-  /*
-   * Recupera el último destino buscado.
-   * No modifica el barrio actual ni la ubicación del dispositivo.
-   */
-
   const destinoGuardado = getItem("hm_radar_destino", null);
 
   if (destinoGuardado && typeof destinoGuardado === "object") {
@@ -500,11 +635,6 @@ function configurarRadarComunitario() {
       return;
     }
 
-    /*
-     * Se guarda en una clave independiente.
-     * Nunca se sobrescribe hm_barrio ni la geolocalización actual.
-     */
-
     if (!setItem("hm_radar_destino", destino)) {
       mostrarNotificacion(
         "No se pudo guardar el destino de búsqueda."
@@ -523,11 +653,6 @@ function configurarRadarComunitario() {
         `Buscando integrantes de la comunidad en: ${partes.join(", ")}.`;
     }
 
-    /*
-     * El módulo community.js recibe el destino.
-     * Los resultados deben aparecer dentro del directorio Comunidad.
-     */
-
     window.dispatchEvent(
       new CustomEvent("buscarRadarComunitario", {
         detail: {
@@ -537,13 +662,6 @@ function configurarRadarComunitario() {
         }
       })
     );
-
-    /*
-     * La búsqueda lleva a Comunidad.
-     * Se conserva la separación entre:
-     * - Ubicación propia.
-     * - Destino de búsqueda.
-     */
 
     mostrarVista(null);
 
@@ -1244,6 +1362,7 @@ async function iniciarAplicacion() {
   configurarEvaluaciones();
   configurarPerfil();
   configurarConectividadSolidaria();
+  configurarIntercambiosGlobales();
 
   try {
     await iniciarAutenticacion();
@@ -1261,8 +1380,6 @@ async function iniciarAplicacion() {
     mostrarNotificacion
   });
 
-  // Inicializa únicamente el módulo de mediciones de humanidad.
-  // La mensajería privada fue retirada de HUMANÓMETRO COMUNIDAD.
   initMessages({
     getItem,
     setItem,
