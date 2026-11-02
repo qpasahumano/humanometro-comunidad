@@ -204,8 +204,8 @@ function prepararFormularioPerfil() {
         <input id="hm-offline-messaging-available" type="checkbox">
         Tengo mensajería offline para comunicarme sin Internet
       </label>
-      <p class="texto-ayuda">Si activás esta opción, aparecerá un indicador en tu perfil comunitario. La mensajería funciona mediante una aplicación externa y requiere que la otra persona también la tenga instalada y configurada.</p>
-      <a class="boton-secundario enlace-mensajeria-offline" href="https://play.google.com/store/apps/details?id=me.bridgefy.main" target="_blank" rel="noopener noreferrer">CONOCER / DESCARGAR BRIDGEFY EN GOOGLE PLAY</a>
+      <p class="texto-ayuda">Si activás esta opción, aparecerá un indicador en tu perfil comunitario. Briar es una aplicación gratuita y de código abierto; para comunicarse sin Internet, ambas personas deben tenerla instalada y configurada. Puede sincronizar mensajes por Bluetooth o Wi-Fi cuando los dispositivos están cerca.</p>
+      <a class="boton-secundario enlace-mensajeria-offline" href="https://www.briarproject.org/download-briar/" target="_blank" rel="noopener noreferrer">CONOCER / DESCARGAR BRIAR GRATIS</a>
     `;
     if (boton) formulario.insertBefore(bloqueOffline, boton);
     else formulario.appendChild(bloqueOffline);
@@ -382,9 +382,9 @@ function renderizarFichaVisual(contenedor) {
           </span>
         </div>
         ${datos.mensajeria_offline ? `
-          <a href="https://play.google.com/store/apps/details?id=me.bridgefy.main" target="_blank" rel="noopener noreferrer" style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(139,217,238,.35); color: #8bd9ee; text-decoration: none; font-size: 0.8rem;">
-            <span>📶 Mensajería offline:</span>
-            <strong>Bridgefy · Google Play ↗</strong>
+          <a href="https://www.briarproject.org/download-briar/" target="_blank" rel="noopener noreferrer" style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(139,217,238,.35); color: #8bd9ee; text-decoration: none; font-size: 0.8rem;">
+            <span>📶 Comunicación offline:</span>
+            <strong>Briar · Gratis y código abierto ↗</strong>
           </a>
         ` : ""}
       </div>
