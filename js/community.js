@@ -252,10 +252,24 @@ export function initCommunity({
         datos.appendChild(publicacionesVecino);
 
         // --- PUNTO 3: MEDIDOR DE HUMANIDAD EN FICHA AJENA ---
-        const humanometroVecino = document.createElement("span");
+        const humanometroVecino = document.createElement("button");
         const porcentajeHumanidad = perfil.porcentaje_humanidad ?? 0;
+        humanometroVecino.type = "button";
         humanometroVecino.className = "vecino-humanometro-badge";
-        humanometroVecino.textContent = `🤝 Humanómetro: ${porcentajeHumanidad}%`;
+        humanometroVecino.style.cssText = "border:0;cursor:pointer;font:inherit;text-align:left;background:transparent;color:inherit;padding:0;";
+        humanometroVecino.textContent = `🤝 Humanómetro: ${porcentajeHumanidad}% · Medir`;
+        humanometroVecino.addEventListener("click", () => {
+          if (typeof window.abrirMedicionHumanidad !== "function") {
+            if (typeof mostrarNotificacion === "function") {
+              mostrarNotificacion("El módulo de medición todavía no está disponible.");
+            }
+            return;
+          }
+          window.abrirMedicionHumanidad(
+            perfil.nombre_visible || "Integrante de la comunidad",
+            perfil.id
+          );
+        });
         datos.appendChild(humanometroVecino);
 
         if (perfil.conectividad_disponible) {
@@ -372,20 +386,6 @@ export function initCommunity({
           db.createObjectStore(
             MATRIX_CONFIG.STORE_PUBLICACIONES,
             { keyPath: "id" }
-          );
-        }
-
-        if (
-          !db.objectStoreNames.contains(
-            MATRIX_CONFIG.STORE_MENSAJES
-          )
-        ) {
-          db.createObjectStore(
-            MATRIX_CONFIG.STORE_MENSAJES,
-            {
-              keyPath: "id",
-              autoIncrement: true
-            }
           );
         }
 
