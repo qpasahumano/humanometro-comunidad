@@ -43,6 +43,7 @@ export function initCommunity({
   const necesitaInput = document.getElementById(
     "que-necesita-a-cambio"
   );
+  const labelNecesitaInput = document.querySelector("label[for='que-necesita-a-cambio']") || necesitaInput?.previousElementSibling;
   const zonaPublicacionInput = document.getElementById("zona-publicacion");
   const botonUbicacionPublicacion = document.getElementById("btn-ubicacion-publicacion");
   const busquedaInput = document.getElementById("buscar-publicaciones");
@@ -124,7 +125,6 @@ export function initCommunity({
   let destinoRadarComunitario = "";
 
   function obtenerContenedorPerfiles() {
-    // El Radar reutiliza el directorio: todos los resultados se muestran en Comunidad.
     return (
       document.getElementById("lista-comunidad") ||
       document.getElementById("directorio-comunidad") ||
@@ -186,7 +186,6 @@ export function initCommunity({
         .order("creado_en", { ascending: false });
       if (errorPublicaciones) throw errorPublicaciones;
 
-      // Agrupar publicaciones activas por propietario para mostrarlas en su tarjeta.
       const publicacionesPorPerfil = new Map();
       (publicacionesActivas || []).forEach((registro) => {
         const id = String(registro.perfil_id || "");
@@ -202,7 +201,6 @@ export function initCommunity({
       const usuario = await obtenerUsuarioActual();
       const idPropio = String(usuario?.id || "");
 
-      // El directorio general no exige foto, presentación ni coincidencia de barrio.
       let vecinos = (perfiles || []).filter((perfil) =>
         String(perfil.id || "") !== idPropio
       );
@@ -220,7 +218,6 @@ export function initCommunity({
         });
       }
 
-      // actualizado_en ordena por actualización del perfil; no se presenta como último ingreso.
       vecinos.sort((a, b) => {
         const fechaA = new Date(a.actualizado_en || 0).getTime();
         const fechaB = new Date(b.actualizado_en || 0).getTime();
@@ -271,7 +268,6 @@ export function initCommunity({
         const datos = document.createElement("div");
         datos.className = "vecino-indicadores";
         
-        // Las publicaciones activas solo se anuncian cuando existen.
         const publicacionesDeEstePerfil =
           publicacionesPorPerfil.get(String(perfil.id)) || [];
         const totalPubs = conteos.get(String(perfil.id)) || 0;
@@ -283,8 +279,6 @@ export function initCommunity({
           datos.appendChild(publicacionesVecino);
         }
 
-        // El porcentaje permanece visible; no se permite iniciar una medición
-        // desde la tarjeta de otra persona.
         const humanometroVecino = document.createElement("span");
         const porcentajeHumanidad = perfil.porcentaje_humanidad ?? 0;
         humanometroVecino.className = "vecino-humanometro-badge";
@@ -300,9 +294,6 @@ export function initCommunity({
         }
         tarjeta.appendChild(datos);
 
-        // Publicaciones desplegables dentro de la tarjeta del propietario.
-        // Se reutiliza la tarjeta de publicación existente para conservar
-        // todos sus detalles, avisos y el contacto específico por trueque.
         if (publicacionesDeEstePerfil.length > 0) {
           const seccionPublicaciones = document.createElement("section");
           seccionPublicaciones.className = "vecino-publicaciones";
@@ -365,10 +356,10 @@ export function initCommunity({
       contenedor.appendChild(fragmento);
       if (estado) estado.textContent = esRadar
         ? `${vecinos.length} perfil${vecinos.length === 1 ? "" : "es"} encontrado${vecinos.length === 1 ? "" : "s"} para “${destinoRadarComunitario}”.`
-        : `${vecinos.length} integrante${vecinos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil (no equivale al último ingreso).`;
+        : `${vecinos.length} integrante${vecinos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil.`;
     } catch (error) {
       console.error("No se pudieron cargar los perfiles comunitarios:", error);
-      if (estado) estado.textContent = "No se pudieron cargar los perfiles. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
+      if (estado) estado.textContent = "No se pudieron cargar los perfiles. Verificá la conexión en Supabase.";
     }
   }
 
@@ -411,41 +402,20 @@ export function initCommunity({
 
       request.onsuccess = (e) => {
         dbMatrixInstance = e.target.result;
-
         dbMatrixInstance.onversionchange = () => {
           dbMatrixInstance.close();
           dbMatrixInstance = null;
         };
-
         resolve(dbMatrixInstance);
       };
 
       request.onupgradeneeded = (e) => {
         const db = e.target.result;
-
-        if (
-          !db.objectStoreNames.contains(
-            MATRIX_CONFIG.STORE_PUBLICACIONES
-          )
-        ) {
-          db.createObjectStore(
-            MATRIX_CONFIG.STORE_PUBLICACIONES,
-            { keyPath: "id" }
-          );
+        if (!db.objectStoreNames.contains(MATRIX_CONFIG.STORE_PUBLICACIONES)) {
+          db.createObjectStore(MATRIX_CONFIG.STORE_PUBLICACIONES, { keyPath: "id" });
         }
-
-        if (
-          !db.objectStoreNames.contains(
-            MATRIX_CONFIG.STORE_MEDICIONES
-          )
-        ) {
-          db.createObjectStore(
-            MATRIX_CONFIG.STORE_MEDICIONES,
-            {
-              keyPath: "id",
-              autoIncrement: true
-            }
-          );
+        if (!db.objectStoreNames.contains(MATRIX_CONFIG.STORE_MEDICIONES)) {
+          db.createObjectStore(MATRIX_CONFIG.STORE_MEDICIONES, { keyPath: "id", autoIncrement: true });
         }
       };
     });
@@ -454,14 +424,8 @@ export function initCommunity({
   async function guardarMatrixCache(pubs) {
     try {
       const db = await abrirMatrixDB();
-      const tx = db.transaction(
-        [MATRIX_CONFIG.STORE_PUBLICACIONES],
-        "readwrite"
-      );
-      const store = tx.objectStore(
-        MATRIX_CONFIG.STORE_PUBLICACIONES
-      );
-
+      const tx = db.transaction([MATRIX_CONFIG.STORE_PUBLICACIONES], "readwrite");
+      const store = tx.objectStore(MATRIX_CONFIG.STORE_PUBLICACIONES);
       pubs.forEach((pub) => store.put(pub));
     } catch (err) {
       console.warn("Matrix: No se pudo guardar caché en IndexedDB", err);
@@ -471,17 +435,10 @@ export function initCommunity({
   async function obtenerMatrixCache() {
     try {
       const db = await abrirMatrixDB();
-
       return new Promise((resolve) => {
-        const tx = db.transaction(
-          [MATRIX_CONFIG.STORE_PUBLICACIONES],
-          "readonly"
-        );
-        const store = tx.objectStore(
-          MATRIX_CONFIG.STORE_PUBLICACIONES
-        );
+        const tx = db.transaction([MATRIX_CONFIG.STORE_PUBLICACIONES], "readonly");
+        const store = tx.objectStore(MATRIX_CONFIG.STORE_PUBLICACIONES);
         const req = store.getAll();
-
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => resolve([]);
       });
@@ -531,28 +488,22 @@ export function initCommunity({
         '"': "&quot;",
         "'": "&#39;"
       };
-
       return entidades[caracter];
     });
   }
 
   function fechaLegible(fecha) {
     if (!fecha) return "Fecha no disponible";
-
     const fechaObjeto = new Date(fecha);
-
     if (Number.isNaN(fechaObjeto.getTime())) {
       return "Fecha no disponible";
     }
-
     return fechaObjeto.toLocaleDateString("es-AR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric"
     });
   }
-
-  // --- LÓGICA DE ZONA INTELIGENTE ---
 
   function obtenerZona() {
     try {
@@ -571,28 +522,21 @@ export function initCommunity({
   }
 
   function obtenerCategoria() {
-    const categoriaSeleccionada = normalizarTexto(
-      categoriaInput?.value
-    );
-
+    const categoriaSeleccionada = normalizarTexto(categoriaInput?.value);
     if (
       categoriaSeleccionada.toLowerCase() === "otra" ||
       categoriaSeleccionada.toLowerCase() === "otro"
     ) {
       return normalizarTexto(otraCategoriaInput?.value);
     }
-
     return categoriaSeleccionada;
   }
 
   function actualizarCampoOtraCategoria() {
     if (!categoriaInput || !contenedorOtraCategoria) return;
-
     const valor = normalizarTexto(categoriaInput.value).toLowerCase();
     const mostrar = valor === "otra" || valor === "otro";
-
     contenedorOtraCategoria.hidden = !mostrar;
-
     if (otraCategoriaInput) {
       otraCategoriaInput.required = mostrar;
     }
@@ -600,31 +544,20 @@ export function initCommunity({
 
   function obtenerCondicion(descripcion) {
     const texto = normalizarTexto(descripcion);
-
     const coincidencia = texto.match(
       /(?:^|\n)\[Condición informada:\s*([^\]]*)\]\s*$/
     );
-
     if (!coincidencia) {
-      return {
-        descripcion: texto,
-        condicion: ""
-      };
+      return { descripcion: texto, condicion: "" };
     }
-
     return {
-      descripcion: texto
-        .replace(coincidencia[0], "")
-        .trim(),
+      descripcion: texto.replace(coincidencia[0], "").trim(),
       condicion: normalizarTexto(coincidencia[1])
     };
   }
 
   function convertirRegistroRemoto(registro) {
-    const datosDescripcion = obtenerCondicion(
-      registro.descripcion
-    );
-
+    const datosDescripcion = obtenerCondicion(registro.descripcion);
     return {
       id: String(registro.id),
       perfil_id: registro.perfil_id ?? null,
@@ -634,15 +567,11 @@ export function initCommunity({
       descripcion: datosDescripcion.descripcion,
       condicion: datosDescripcion.condicion,
       modalidad: registro.modalidad ?? null,
-      modalidad_intercambio:
-        registro.modalidad_intercambio ?? "",
-      que_necesita_a_cambio:
-        registro.que_necesita_a_cambio ?? "",
+      modalidad_intercambio: registro.modalidad_intercambio ?? "",
+      que_necesita_a_cambio: registro.que_necesita_a_cambio ?? "",
       zona_aproximada: registro.zona_aproximada ?? "",
       offline_activo: Boolean(registro.offline_activo ?? false),
-      fotos: Array.isArray(registro.fotos)
-        ? registro.fotos
-        : [],
+      fotos: Array.isArray(registro.fotos) ? registro.fotos : [],
       estado: registro.estado ?? "activa",
       creado_en: registro.creado_en ?? null,
       actualizado_en: registro.actualizado_en ?? null,
@@ -652,34 +581,18 @@ export function initCommunity({
 
   function combinarPublicaciones(locales, remotas) {
     const mapa = new Map();
-
     for (const publicacion of remotas) {
-      mapa.set(String(publicacion.id), {
-        ...publicacion,
-        origen: "remoto"
-      });
+      mapa.set(String(publicacion.id), { ...publicacion, origen: "remoto" });
     }
-
     for (const publicacion of locales) {
       const id = String(publicacion.id);
-
       if (!mapa.has(id)) {
-        mapa.set(id, {
-          ...publicacion,
-          origen: publicacion.origen ?? "local"
-        });
+        mapa.set(id, { ...publicacion, origen: publicacion.origen ?? "local" });
       }
     }
-
     return [...mapa.values()].sort((a, b) => {
-      const fechaA = new Date(
-        a.creado_en ?? 0
-      ).getTime();
-
-      const fechaB = new Date(
-        b.creado_en ?? 0
-      ).getTime();
-
+      const fechaA = new Date(a.creado_en ?? 0).getTime();
+      const fechaB = new Date(b.creado_en ?? 0).getTime();
       return fechaB - fechaA;
     });
   }
@@ -727,10 +640,7 @@ export function initCommunity({
         }
 
         if (zonaActualFiltro && !perfilFiltroActivo) {
-          query = query.ilike(
-            "zona_aproximada",
-            `%${zonaActualFiltro}%`
-          );
+          query = query.ilike("zona_aproximada", `%${zonaActualFiltro}%`);
         }
 
         if (palabraClave) {
@@ -751,11 +661,7 @@ export function initCommunity({
           const remotas = data.map(convertirRegistroRemoto);
           await guardarMatrixCache(remotas);
 
-          publicaciones = combinarPublicaciones(
-            obtenerLocales(),
-            remotas
-          );
-
+          publicaciones = combinarPublicaciones(obtenerLocales(), remotas);
           renderizarPublicaciones();
           cargando = false;
           return;
@@ -764,10 +670,7 @@ export function initCommunity({
         }
       }
     } catch (error) {
-      console.warn(
-        "Red intermitente, cargando desde red de relevo local Matrix...",
-        error
-      );
+      console.warn("Red intermitente, cargando desde caché Matrix...", error);
     } finally {
       cargando = false;
     }
@@ -796,17 +699,12 @@ export function initCommunity({
       );
     }
 
-    publicaciones = combinarPublicaciones(
-      obtenerLocales(),
-      remotasCache
-    );
-
+    publicaciones = combinarPublicaciones(obtenerLocales(), remotasCache);
     renderizarPublicaciones();
   }
 
   function crearTarjeta(publicacion) {
     const tarjeta = document.createElement("article");
-
     tarjeta.className = "tarjeta-publicacion";
 
     const idPublicacion = escaparHTML(publicacion.id);
@@ -816,39 +714,24 @@ export function initCommunity({
     const descripcion = escaparHTML(publicacion.descripcion);
     const condicion = escaparHTML(publicacion.condicion);
     const zona = escaparHTML(publicacion.zona_aproximada);
-    const modalidad = escaparHTML(
-      publicacion.modalidad_intercambio
-    );
-    const necesita = escaparHTML(
-      publicacion.que_necesita_a_cambio
-    );
-    const fecha = escaparHTML(
-      fechaLegible(publicacion.creado_en)
-    );
+    const modalidad = escaparHTML(publicacion.modalidad_intercambio);
+    const necesita = escaparHTML(publicacion.que_necesita_a_cambio);
+    const fecha = escaparHTML(fechaLegible(publicacion.creado_en));
 
     const esIntercambio = Boolean(
       publicacion.modalidad_intercambio ||
       publicacion.que_necesita_a_cambio
     );
 
-    const nombreAutor = escaparHTML(
-      publicacion.perfil_nombre || "Vecino"
-    );
+    const nombreAutor = escaparHTML(publicacion.perfil_nombre || "Vecino");
     const autorId = publicacion.perfil_id || "";
     const offlineActivo = Boolean(publicacion.offline_activo);
 
     let requiereRevalidar = false;
-
     if (publicacion.creado_en) {
-      const tiempoCreacion = new Date(
-        publicacion.creado_en
-      ).getTime();
+      const tiempoCreacion = new Date(publicacion.creado_en).getTime();
       const tiempoActual = Date.now();
-
-      if (
-        !Number.isNaN(tiempoCreacion) &&
-        tiempoActual - tiempoCreacion > UMBRAL_VIGENCIA_CACHE_MS
-      ) {
+      if (!Number.isNaN(tiempoCreacion) && tiempoActual - tiempoCreacion > UMBRAL_VIGENCIA_CACHE_MS) {
         requiereRevalidar = true;
       }
     }
@@ -862,51 +745,42 @@ export function initCommunity({
       ${
         requiereRevalidar
           ? `<div style="margin: 8px 0; background: #78350f; border: 1px solid #d97706; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: #fde68a;">
-               ⚠️ <strong>Aviso de perfil o publicación sin actividad reciente:</strong> Esta publicación supera las 48h. Conviene consultar disponibilidad antes de coordinar.
+               ⚠️ <strong>Aviso:</strong> Esta publicación supera las 48h. Conviene consultar disponibilidad antes de coordinar.
              </div>`
           : ""
       }
 
       <h3 class="publicacion-titulo">${titulo}</h3>
-
       <p class="publicacion-descripcion">${descripcion}</p>
 
       ${
         condicion
-          ? `<p class="publicacion-condicion">
-               <strong>Condición:</strong> ${condicion}
-             </p>`
+          ? `<p class="publicacion-condicion"><strong>Condición:</strong> ${condicion}</p>`
           : ""
       }
 
       ${
         esIntercambio && modalidad
-          ? `<p class="publicacion-modalidad">
-               <strong>Modalidad:</strong> ${modalidad}
-             </p>`
+          ? `<p class="publicacion-modalidad"><strong>Modalidad:</strong> ${modalidad}</p>`
           : ""
       }
 
       ${
         esIntercambio && necesita
-          ? `<p class="publicacion-necesita">
-               <strong>Busca a cambio:</strong> ${necesita}
-             </p>`
+          ? `<p class="publicacion-necesita"><strong>A cambio:</strong> ${necesita}</p>`
           : ""
       }
 
       ${
         zona
-          ? `<p class="publicacion-zona">
-               <strong>Zona:</strong> ${zona}
-             </p>`
+          ? `<p class="publicacion-zona"><strong>Zona:</strong> ${zona}</p>`
           : ""
       }
 
       ${
         offlineActivo
           ? `<div style="margin: 8px 0; background: #0f172a; border: 1px solid #38bdf8; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-               <span>📡</span> <strong>Conectividad Offline Activa:</strong> Vecino preparado para emergencias sin internet.
+               <span>📡</span> <strong>Conectividad Offline Activa</strong>
              </div>`
           : ""
       }
@@ -937,7 +811,6 @@ export function initCommunity({
     return tarjeta;
   }
 
-  // --- LÓGICA DE INICIAR INTERCAMBIO DESDE TARJETA ---
   async function manejarInicioIntercambioDesdeCard(e) {
     const boton = e.target.closest(".btn-iniciar-intercambio-card");
     if (!boton) return;
@@ -1031,7 +904,7 @@ export function initCommunity({
 
       if (titulo) titulo.textContent = "Antes de contactar por WhatsApp";
       if (texto) {
-        texto.textContent = `Vas a abrir WhatsApp para comunicarte directamente con ${contactoPendiente.nombre}. No compartas contraseñas, códigos ni datos privados.`;
+        texto.textContent = `Vas a abrir WhatsApp para comunicarte con ${contactoPendiente.nombre}. No compartas datos privados.`;
       }
       if (confirmar) confirmar.textContent = "ABRIR WHATSAPP";
 
@@ -1043,7 +916,7 @@ export function initCommunity({
       }
     } catch (error) {
       console.error("No se pudo preparar el contacto por WhatsApp:", error);
-      notificar("No se pudo consultar el contacto. Verificá la conexión y los permisos del perfil.", "error");
+      notificar("No se pudo consultar el contacto.", "error");
     }
   }
 
@@ -1066,11 +939,9 @@ export function initCommunity({
 
   function confirmarContactoWsp() {
     if (modalWsp) modalWsp.hidden = true;
-
     if (contactoPendiente?.url) {
       window.open(contactoPendiente.url, "_blank", "noopener,noreferrer");
     }
-
     contactoPendiente = null;
   }
 
@@ -1085,29 +956,20 @@ export function initCommunity({
   function renderizarPublicaciones() {
     if (!lista) return;
 
-    const tipoFiltro = normalizarTexto(
-      filtroTipoInput?.value
-    ).toLocaleLowerCase("es-AR");
-
-    const soloOffline = Boolean(
-      filtroOfflineActivoInput?.checked
-    );
+    const tipoFiltro = normalizarTexto(filtroTipoInput?.value).toLocaleLowerCase("es-AR");
+    const soloOffline = Boolean(filtroOfflineActivoInput?.checked);
 
     const filtradas = publicaciones.filter((publicacion) => {
       const coincideTipo =
         !tipoFiltro ||
         tipoFiltro === "todos" ||
         tipoFiltro === "todas" ||
-        String(publicacion.tipo)
-          .toLocaleLowerCase("es-AR") === tipoFiltro;
+        String(publicacion.tipo).toLocaleLowerCase("es-AR") === tipoFiltro;
 
-      const coincideOffline =
-        !soloOffline || Boolean(publicacion.offline_activo);
-
+      const coincideOffline = !soloOffline || Boolean(publicacion.offline_activo);
       const coincideAutor =
         !perfilFiltroActivo ||
-        String(publicacion.perfil_id || "") ===
-          String(perfilFiltroActivo);
+        String(publicacion.perfil_id || "") === String(perfilFiltroActivo);
 
       return coincideTipo && coincideOffline && coincideAutor;
     });
@@ -1122,28 +984,20 @@ export function initCommunity({
 
       mensaje.innerHTML = `
         <p style="color: #cbd5e1; font-weight: bold; margin-bottom: 6px;">No se encontraron publicaciones con esos criterios.</p>
-        <small style="color: #94a3b8;">Probá limpiando los filtros o revisá que la localidad escrita sea correcta.</small>
+        <small style="color: #94a3b8;">Probá limpiando los filtros.</small>
       `;
-
       lista.appendChild(mensaje);
       return;
     }
 
     const fragmento = document.createDocumentFragment();
-
     for (const publicacion of filtradas) {
-      fragmento.appendChild(
-        crearTarjeta(publicacion)
-      );
+      fragmento.appendChild(crearTarjeta(publicacion));
     }
-
     lista.appendChild(fragmento);
   }
 
-  async function obtenerZonaPorCoordenadas(
-    latitud,
-    longitud
-  ) {
+  async function obtenerZonaPorCoordenadas(latitud, longitud) {
     const parametros = new URLSearchParams({
       format: "jsonv2",
       lat: String(latitud),
@@ -1155,18 +1009,10 @@ export function initCommunity({
 
     const respuesta = await fetch(
       `https://nominatim.openstreetmap.org/reverse?${parametros.toString()}`,
-      {
-        headers: {
-          Accept: "application/json"
-        },
-        cache: "no-store"
-      }
+      { headers: { Accept: "application/json" }, cache: "no-store" }
     );
 
-    if (!respuesta.ok) {
-      throw new Error("No se pudo consultar OpenStreetMap.");
-    }
-
+    if (!respuesta.ok) throw new Error("No se pudo consultar OpenStreetMap.");
     const datos = await respuesta.json();
     const direccion = datos.address || {};
 
@@ -1182,34 +1028,24 @@ export function initCommunity({
       direccion.municipality ||
       direccion.county;
 
-    if (!zona) {
-      throw new Error("No se pudo reconocer el barrio o localidad.");
-    }
-
+    if (!zona) throw new Error("No se pudo reconocer el barrio.");
     return String(zona).trim();
   }
 
   function usarUbicacionEnPublicacion() {
     if (!navigator.geolocation) {
-      notificar(
-        "Este dispositivo no ofrece geolocalización.",
-        "warning"
-      );
+      notificar("Este dispositivo no ofrece geolocalización.", "warning");
       return;
     }
 
     if (!navigator.onLine) {
-      notificar(
-        "Necesitás conexión para identificar la zona con OpenStreetMap.",
-        "warning"
-      );
+      notificar("Necesitás conexión para identificar la zona.", "warning");
       return;
     }
 
     if (botonUbicacionPublicacion) {
       botonUbicacionPublicacion.disabled = true;
-      botonUbicacionPublicacion.textContent =
-        "IDENTIFICANDO ZONA…";
+      botonUbicacionPublicacion.textContent = "IDENTIFICANDO ZONA…";
     }
 
     navigator.geolocation.getCurrentPosition(
@@ -1219,52 +1055,25 @@ export function initCommunity({
             posicion.coords.latitude,
             posicion.coords.longitude
           );
-
-          if (zonaPublicacionInput) {
-            zonaPublicacionInput.value = zona;
-          }
-
-          notificar(
-            `Zona aproximada identificada: ${zona}. Revisala antes de publicar.`,
-            "success"
-          );
+          if (zonaPublicacionInput) zonaPublicacionInput.value = zona;
+          notificar(`Zona aproximada identificada: ${zona}`, "success");
         } catch (error) {
-          console.warn(
-            "No se pudo identificar la zona de la publicación:",
-            error
-          );
-
-          notificar(
-            "No se pudo identificar la zona. Podés escribirla manualmente.",
-            "warning"
-          );
+          notificar("No se pudo identificar la zona automáticamente.", "warning");
         } finally {
           if (botonUbicacionPublicacion) {
             botonUbicacionPublicacion.disabled = false;
-            botonUbicacionPublicacion.textContent =
-              "USAR UBICACIÓN APROXIMADA";
+            botonUbicacionPublicacion.textContent = "USAR UBICACIÓN APROXIMADA";
           }
         }
       },
-      (error) => {
+      () => {
         if (botonUbicacionPublicacion) {
           botonUbicacionPublicacion.disabled = false;
-          botonUbicacionPublicacion.textContent =
-            "USAR UBICACIÓN APROXIMADA";
+          botonUbicacionPublicacion.textContent = "USAR UBICACIÓN APROXIMADA";
         }
-
-        notificar(
-          error.code === 1
-            ? "No autorizaste la ubicación."
-            : "No se pudo obtener la ubicación. Escribí la zona manualmente.",
-          "warning"
-        );
+        notificar("No se pudo obtener la ubicación.", "warning");
       },
-      {
-        enableHighAccuracy: false,
-        timeout: 15000,
-        maximumAge: 300000
-      }
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
     );
   }
 
@@ -1275,11 +1084,7 @@ export function initCommunity({
     const descripcion = normalizarTexto(detalleInput?.value);
 
     if (!tipo || !categoria || !titulo || !descripcion) {
-      notificar(
-        "Completá el tipo, la categoría, el título y la descripción.",
-        "error"
-      );
-
+      notificar("Completá el tipo, la categoría, el título y la descripción.", "error");
       return null;
     }
 
@@ -1303,16 +1108,10 @@ export function initCommunity({
   }
 
   function generarIdLocal() {
-    if (
-      typeof crypto !== "undefined" &&
-      typeof crypto.randomUUID === "function"
-    ) {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
       return `local-${crypto.randomUUID()}`;
     }
-
-    return `local-${Date.now()}-${Math.random()
-      .toString(16)
-      .slice(2)}`;
+    return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 
   async function publicar(evento) {
@@ -1320,43 +1119,34 @@ export function initCommunity({
     actualizarAvisoMedicamentos();
 
     if (normalizarTexto(categoriaInput?.value).toLowerCase() === "medicamentos") {
-      notificar("No se pueden publicar, ofrecer, donar ni intercambiar medicamentos particulares. Consultá el directorio de entidades oficiales.", "error");
+      notificar("No se pueden publicar o intercambiar medicamentos particulares.", "error");
       return;
     }
 
     const datos = validarFormulario();
-
     if (!datos) return;
 
     const usuario = await obtenerUsuarioActual();
     const perfil = await obtenerPerfilActual();
 
     if (!usuario || !perfil || !perfilEstaCompleto()) {
-      notificar(
-        "Iniciá sesión y completá todos los datos obligatorios de tu perfil para publicar en la comunidad.",
-        "error"
-      );
-
+      notificar("Iniciá sesión y completá los datos de tu perfil para publicar.", "error");
       return;
     }
 
     if (botonSubmitForm) {
       botonSubmitForm.disabled = true;
-      botonSubmitForm.textContent =
-        "COMPARTIENDO EN LA RED...";
+      botonSubmitForm.textContent = "COMPARTIENDO EN LA RED...";
     }
 
     if (estadoPublicacion) {
-      estadoPublicacion.textContent =
-        "Compartiendo publicación con la comunidad...";
+      estadoPublicacion.textContent = "Compartiendo publicación...";
     }
 
     const ahora = new Date().toISOString();
     let descripcionRemota = datos.descripcion;
-
     if (datos.condicion) {
-      descripcionRemota +=
-        `\n[Condición informada: ${datos.condicion}]`;
+      descripcionRemota += `\n[Condición informada: ${datos.condicion}]`;
     }
 
     const registro = {
@@ -1366,14 +1156,10 @@ export function initCommunity({
       titulo: datos.titulo,
       descripcion: descripcionRemota,
       modalidad: null,
-      modalidad_intercambio:
-        datos.modalidad_intercambio,
-      que_necesita_a_cambio:
-        datos.que_necesita_a_cambio,
+      modalidad_intercambio: datos.modalidad_intercambio,
+      que_necesita_a_cambio: datos.que_necesita_a_cambio,
       zona_aproximada: datos.zona_aproximada,
-      offline_activo: Boolean(
-        getItem("hm_offline_activo", false)
-      ),
+      offline_activo: Boolean(getItem("hm_offline_activo", false)),
       fotos: [],
       estado: "activa",
       actualizado_en: ahora
@@ -1406,51 +1192,28 @@ export function initCommunity({
 
       if (error) throw error;
 
-      const publicacionRemota =
-        convertirRegistroRemoto(data);
-
+      const publicacionRemota = convertirRegistroRemoto(data);
       publicaciones = combinarPublicaciones(
         obtenerLocales(),
-        [
-          publicacionRemota,
-          ...publicaciones.filter(
-            (p) => p.origen === "remoto"
-          )
-        ]
+        [publicacionRemota, ...publicaciones.filter((p) => p.origen === "remoto")]
       );
 
       renderizarPublicaciones();
-
-      window.dispatchEvent(
-        new CustomEvent("publicacionComunidadActualizada")
-      );
+      window.dispatchEvent(new CustomEvent("publicacionComunidadActualizada"));
 
       form.reset();
       actualizarAvisoMedicamentos();
       actualizarSelectorFicha();
 
       if (zonaPublicacionInput) {
-        zonaPublicacionInput.value =
-          getItem("hm_barrio", "") || "";
+        zonaPublicacionInput.value = getItem("hm_barrio", "") || "";
       }
-
       actualizarCampoOtraCategoria();
 
-      notificar(
-        "¡Publicación compartida con éxito en la comunidad!",
-        "success"
-      );
-
-      if (estadoPublicacion) {
-        estadoPublicacion.textContent =
-          "¡Publicado y visible en la red!";
-      }
+      notificar("¡Publicación compartida con éxito!", "success");
+      if (estadoPublicacion) estadoPublicacion.textContent = "¡Publicado y visible en la red!";
     } catch (error) {
-      console.error(
-        "Error inesperado al publicar:",
-        error
-      );
-
+      console.error("Error al publicar:", error);
       const publicacionLocal = {
         ...registro,
         id: generarIdLocal(),
@@ -1465,27 +1228,12 @@ export function initCommunity({
       if (guardarLocales(locales)) {
         publicaciones = combinarPublicaciones(
           locales,
-          publicaciones.filter(
-            (p) => p.origen === "remoto"
-          )
+          publicaciones.filter((p) => p.origen === "remoto")
         );
-
         renderizarPublicaciones();
-
-        notificar(
-          "No se pudo conectar con la red. La publicación quedó guardada en este dispositivo para intentar compartirla más tarde.",
-          "warning"
-        );
-
-        if (estadoPublicacion) {
-          estadoPublicacion.textContent =
-            "Guardado localmente. Pendiente de conexión.";
-        }
+        notificar("Guardado localmente por falta de conexión.", "warning");
       } else {
-        notificar(
-          "No se pudo publicar ni guardar localmente. Revisá el espacio disponible en el dispositivo.",
-          "error"
-        );
+        notificar("No se pudo guardar la publicación.", "error");
       }
     } finally {
       if (botonSubmitForm) {
@@ -1499,25 +1247,35 @@ export function initCommunity({
     if (busquedaInput) busquedaInput.value = "";
     if (filtroZonaGondola) filtroZonaGondola.value = "";
     if (filtroTipoInput) filtroTipoInput.value = "todos";
-    if (filtroOfflineActivoInput) {
-      filtroOfflineActivoInput.checked = false;
-    }
+    if (filtroOfflineActivoInput) filtroOfflineActivoInput.checked = false;
 
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
-
-    if (filtroVecinoActivo) {
-      filtroVecinoActivo.hidden = true;
-    }
+    if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
 
     cargarPublicacionesRemotas();
+  }
+
+  // --- CORRECCIÓN DINÁMICA DE TEXTOS (OFREZCO vs. NECESITO) ---
+  function actualizarTextosFormulario(esNecesidad) {
+    if (labelNecesitaInput) {
+      labelNecesitaInput.textContent = esNecesidad
+        ? "¿Qué ofrecés a cambio?"
+        : "¿Qué solicitás a cambio?";
+    }
+    if (necesitaInput) {
+      necesitaInput.placeholder = esNecesidad
+        ? "Ej: Ofrezco clases de apoyo, alimentos, o servicio técnico..."
+        : "Ej: Busco materiales, ayuda con mudanza, o trueque abierto...";
+    }
   }
 
   function actualizarSelectorFicha() {
     if (!tipoInput) return;
 
-    const esOferta = tipoInput.value === "oferta" || tipoInput.value === "ofrezco";
-    const esNecesidad = tipoInput.value === "necesidad" || tipoInput.value === "necesito";
+    const tipoVal = String(tipoInput.value || "").toLowerCase();
+    const esOferta = tipoVal === "oferta" || tipoVal === "ofrezco";
+    const esNecesidad = tipoVal === "necesidad" || tipoVal === "necesito";
 
     if (botonFichaOfrezco) {
       botonFichaOfrezco.classList.toggle("activa", esOferta);
@@ -1528,6 +1286,8 @@ export function initCommunity({
       botonFichaNecesito.classList.toggle("activa", esNecesidad);
       botonFichaNecesito.setAttribute("aria-pressed", String(esNecesidad));
     }
+
+    actualizarTextosFormulario(esNecesidad);
   }
 
   function seleccionarTipoFicha(tipo) {
@@ -1551,11 +1311,7 @@ export function initCommunity({
   function quitarFiltroVecino() {
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
-
-    if (filtroVecinoActivo) {
-      filtroVecinoActivo.hidden = true;
-    }
-
+    if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
     cargarPublicacionesRemotas();
   }
 
@@ -1565,12 +1321,11 @@ export function initCommunity({
 
   function actualizarAvisoMedicamentos() {
     if (!avisoMedicamentos) return;
-
     const categoria = normalizarTexto(categoriaInput?.value).toLowerCase();
     const texto = [tituloInput?.value, detalleInput?.value]
       .map((valor) => normalizarTexto(valor).toLowerCase())
       .join(" ");
-    const mencionaMedicamentos = /\b(medicamento|medicamentos|f[aá]rmaco|f[aá]rmacos|pastillas|antibi[oó]tico|antibi[oó]ticos)\b/i.test(texto);
+    const mencionaMedicamentos = /\b(medicamento|medicamentos|f[aá]rmaco|f[aá]rmacos|pastillas)\b/i.test(texto);
     const seleccionMedicamentos = categoria === "medicamentos";
     const esDirectorioOficial = categoria === "bancos_salud_oficial";
 
@@ -1608,7 +1363,6 @@ export function initCommunity({
 
     destinoRadarComunitario = destino.trim();
     modoListadoPerfiles = "radar";
-
     try {
       setItem("hm_radar_destino", destinoRadarComunitario);
     } catch (error) {
@@ -1636,8 +1390,7 @@ export function initCommunity({
 
   function manejarOffline() {
     if (estadoPublicacion) {
-      estadoPublicacion.textContent =
-        "Sin conexión. Las publicaciones disponibles en caché siguen visibles.";
+      estadoPublicacion.textContent = "Sin conexión. Publicaciones en caché visibles.";
     }
   }
 
@@ -1664,73 +1417,29 @@ export function initCommunity({
   botonFichaNecesito?.addEventListener("click", manejarClickNecesito);
   tipoInput?.addEventListener("change", manejarTipoPublicacionCambio);
 
-  categoriaInput?.addEventListener(
-    "change",
-    manejarCategoriaCambio
-  );
+  categoriaInput?.addEventListener("change", manejarCategoriaCambio);
   tituloInput?.addEventListener("input", actualizarAvisoMedicamentos);
   detalleInput?.addEventListener("input", actualizarAvisoMedicamentos);
 
-  buscarPublicacionesBtn?.addEventListener(
-    "click",
-    manejarBuscarPublicaciones
-  );
+  buscarPublicacionesBtn?.addEventListener("click", manejarBuscarPublicaciones);
+  actualizarRedBtn?.addEventListener("click", manejarActualizarRed);
+  limpiarFiltrosBtn?.addEventListener("click", limpiarFiltros);
+  botonUbicacionPublicacion?.addEventListener("click", usarUbicacionEnPublicacion);
 
-  actualizarRedBtn?.addEventListener(
-    "click",
-    manejarActualizarRed
-  );
-
-  limpiarFiltrosBtn?.addEventListener(
-    "click",
-    limpiarFiltros
-  );
-
-  botonUbicacionPublicacion?.addEventListener(
-    "click",
-    usarUbicacionEnPublicacion
-  );
-
-  busquedaInput?.addEventListener(
-    "keydown",
-    (evento) => {
-      if (evento.key === "Enter") {
-        evento.preventDefault();
-        cargarPublicacionesRemotas();
-      }
+  busquedaInput?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      cargarPublicacionesRemotas();
     }
-  );
+  });
 
-  filtroTipoInput?.addEventListener(
-    "change",
-    manejarFiltroCambio
-  );
+  filtroTipoInput?.addEventListener("change", manejarFiltroCambio);
+  filtroOfflineActivoInput?.addEventListener("change", manejarFiltroCambio);
+  botonActualizarVecinos?.addEventListener("click", manejarActualizarVecinos);
+  botonQuitarFiltroVecino?.addEventListener("click", quitarFiltroVecino);
 
-  filtroOfflineActivoInput?.addEventListener(
-    "change",
-    manejarFiltroCambio
-  );
-
-  botonActualizarVecinos?.addEventListener(
-    "click",
-    manejarActualizarVecinos
-  );
-
-  botonQuitarFiltroVecino?.addEventListener(
-    "click",
-    quitarFiltroVecino
-  );
-
-  window.addEventListener(
-    "buscarRadarComunitario",
-    manejarModoRadar
-  );
-
-  window.addEventListener(
-    "mostrarDirectorioComunidad",
-    manejarMostrarDirectorio
-  );
-
+  window.addEventListener("buscarRadarComunitario", manejarModoRadar);
+  window.addEventListener("mostrarDirectorioComunidad", manejarMostrarDirectorio);
   window.addEventListener("online", manejarOnline);
   window.addEventListener("offline", manejarOffline);
 
@@ -1748,28 +1457,18 @@ export function initCommunity({
   window.addEventListener("perfilComunidadActualizado", manejarPublicacionActualizada);
 
   try {
-    destinoRadarComunitario =
-      String(getItem("hm_radar_destino", "") || "");
+    destinoRadarComunitario = String(getItem("hm_radar_destino", "") || "");
   } catch (error) {
     console.warn("No se pudo recuperar el destino del Radar:", error);
   }
 
   try {
-    const resultadoAuth = supabase.auth.onAuthStateChange(
-      () => {
-        if (!destruido) {
-          manejarCambioAuth();
-        }
-      }
-    );
-
-    suscripcionAuth =
-      resultadoAuth?.data?.subscription || null;
+    const resultadoAuth = supabase.auth.onAuthStateChange(() => {
+      if (!destruido) manejarCambioAuth();
+    });
+    suscripcionAuth = resultadoAuth?.data?.subscription || null;
   } catch (error) {
-    console.warn(
-      "No se pudo activar la actualización por autenticación:",
-      error
-    );
+    console.warn("No se pudo activar la actualización por autenticación:", error);
   }
 
   // --- INICIALIZACIÓN ---
@@ -1792,81 +1491,26 @@ export function initCommunity({
       ultimaCarga++;
 
       form?.removeEventListener("submit", publicar);
-
       botonFichaOfrezco?.removeEventListener("click", manejarClickOfrezco);
       botonFichaNecesito?.removeEventListener("click", manejarClickNecesito);
       tipoInput?.removeEventListener("change", manejarTipoPublicacionCambio);
-
-      categoriaInput?.removeEventListener(
-        "change",
-        manejarCategoriaCambio
-      );
+      categoriaInput?.removeEventListener("change", manejarCategoriaCambio);
       tituloInput?.removeEventListener("input", actualizarAvisoMedicamentos);
       detalleInput?.removeEventListener("input", actualizarAvisoMedicamentos);
-
-      buscarPublicacionesBtn?.removeEventListener(
-        "click",
-        manejarBuscarPublicaciones
-      );
-
-      actualizarRedBtn?.removeEventListener(
-        "click",
-        manejarActualizarRed
-      );
-
-      limpiarFiltrosBtn?.removeEventListener(
-        "click",
-        limpiarFiltros
-      );
-
-      botonUbicacionPublicacion?.removeEventListener(
-        "click",
-        usarUbicacionEnPublicacion
-      );
-
-      filtroTipoInput?.removeEventListener(
-        "change",
-        manejarFiltroCambio
-      );
-
-      filtroOfflineActivoInput?.removeEventListener(
-        "change",
-        manejarFiltroCambio
-      );
-
-      botonActualizarVecinos?.removeEventListener(
-        "click",
-        manejarActualizarVecinos
-      );
-
-      botonQuitarFiltroVecino?.removeEventListener(
-        "click",
-        quitarFiltroVecino
-      );
-
+      buscarPublicacionesBtn?.removeEventListener("click", manejarBuscarPublicaciones);
+      actualizarRedBtn?.removeEventListener("click", manejarActualizarRed);
+      limpiarFiltrosBtn?.removeEventListener("click", limpiarFiltros);
+      botonUbicacionPublicacion?.removeEventListener("click", usarUbicacionEnPublicacion);
+      filtroTipoInput?.removeEventListener("change", manejarFiltroCambio);
+      filtroOfflineActivoInput?.removeEventListener("change", manejarFiltroCambio);
+      botonActualizarVecinos?.removeEventListener("click", manejarActualizarVecinos);
+      botonQuitarFiltroVecino?.removeEventListener("click", quitarFiltroVecino);
       document.removeEventListener("click", manejarClickContacto);
       document.removeEventListener("click", manejarInicioIntercambioDesdeCard);
-
-      btnConfirmarWsp?.removeEventListener(
-        "click",
-        confirmarContactoWsp
-      );
-
-      btnCancelarWsp?.removeEventListener(
-        "click",
-        cancelarContactoWsp
-      );
-
-      window.removeEventListener(
-        "buscarRadarComunitario",
-        manejarModoRadar
-      );
-
-      window.removeEventListener(
-        "mostrarDirectorioComunidad",
-        manejarMostrarDirectorio
-      );
-
+      btnConfirmarWsp?.removeEventListener("click", confirmarContactoWsp);
+      btnCancelarWsp?.removeEventListener("click", cancelarContactoWsp);
+      window.removeEventListener("buscarRadarComunitario", manejarModoRadar);
+      window.removeEventListener("mostrarDirectorioComunidad", manejarMostrarDirectorio);
       window.removeEventListener("online", manejarOnline);
       window.removeEventListener("offline", manejarOffline);
       window.removeEventListener("publicacionComunidadActualizada", manejarPublicacionActualizada);
@@ -1876,7 +1520,6 @@ export function initCommunity({
         suscripcionAuth.unsubscribe();
         suscripcionAuth = null;
       }
-
       if (dbMatrixInstance) {
         dbMatrixInstance.close();
         dbMatrixInstance = null;
