@@ -1,4 +1,4 @@
-Import { supabase } from "./supabase.js";
+import { supabase } from "./supabase.js";
 import {
   obtenerUsuarioActual,
   obtenerPerfilActual,
@@ -715,7 +715,6 @@ export function initCommunity({
         } else {
           if (zonaActualFiltro) {
             const zonaLimpia = zonaActualFiltro.trim();
-            // CORREGIDO: Filtro flexible para evitar que diferencias menores oculten publicaciones
             query = query.or(`zona_aproximada.ilike.%${zonaLimpia}%,zona_aproximada.is.null`);
           }
 
