@@ -731,21 +731,22 @@ export function initCommunity({
           )
           .eq("estado", "activa");
 
+        // SI HAY UN PERFIL FILTRADO, BUSCAMOS DIRECTO POR SU ID SIN CHOCAR CON ZONA
         if (perfilFiltroActivo) {
           query = query.eq("perfil_id", perfilFiltroActivo);
-        }
+        } else {
+          if (zonaActualFiltro) {
+            query = query.ilike(
+              "zona_aproximada",
+              `%${zonaActualFiltro}%`
+            );
+          }
 
-        if (zonaActualFiltro && !perfilFiltroActivo) {
-          query = query.ilike(
-            "zona_aproximada",
-            `%${zonaActualFiltro}%`
-          );
-        }
-
-        if (palabraClave) {
-          query = query.or(
-            `titulo.ilike.%${palabraClave}%,descripcion.ilike.%${palabraClave}%`
-          );
+          if (palabraClave) {
+            query = query.or(
+              `titulo.ilike.%${palabraClave}%,descripcion.ilike.%${palabraClave}%`
+            );
+          }
         }
 
         const { data, error } = await query.order("creado_en", {
@@ -757,7 +758,25 @@ export function initCommunity({
         }
 
         if (!error && data) {
-          const remotas = data.map(convertirRegistroRemoto);
+          // Obtener los nombres de los perfiles autores para las tarjetas
+          const perfilIds = [...new Set(data.map(p => p.perfil_id).filter(Boolean))];
+          let perfilesMapa = new Map();
+          
+          if (perfilIds.length > 0) {
+            const { data: perfilesData } = await supabase
+              .from("perfiles")
+              .select("id, nombre_visible")
+              .in("id", perfilIds);
+              
+            (perfilesData || []).forEach(pf => perfilesMapa.set(pf.id, pf.nombre_visible));
+          }
+
+          const remotas = data.map(registro => {
+            const conv = convertirRegistroRemoto(registro);
+            conv.perfil_nombre = perfilesMapa.get(registro.perfil_id) || "Vecino";
+            return conv;
+          });
+
           await guardarMatrixCache(remotas);
 
           publicaciones = combinarPublicaciones(
@@ -796,7 +815,7 @@ export function initCommunity({
       );
     }
 
-    if (palabraClave) {
+    if (palabraClave && !perfilFiltroActivo) {
       const q = palabraClave.toLowerCase();
       remotasCache = remotasCache.filter(
         (p) =>
@@ -1131,7 +1150,7 @@ export function initCommunity({
 
       mensaje.innerHTML = `
         <p style="color: #cbd5e1; font-weight: bold; margin-bottom: 6px;">No se encontraron publicaciones con esos criterios.</p>
-        <small style="color: #94a3b8;">Probá limpiando los filtros o revisá que la localidad escrita sea correcta.</small>
+        <small style="color: #94a3b8;">Probá limpiando los filtros o volviendo a la comunidad.</small>
       `;
 
       lista.appendChild(mensaje);
@@ -1587,6 +1606,9 @@ export function initCommunity({
 
     // Volver a mostrar el formulario de creación
     if (form) form.style.display = "block";
+
+    // Disparar evento para volver a la pestaña/vista de comunidad
+    window.dispatchEvent(new CustomEvent("mostrarDirectorioComunidad"));
 
     cargarPublicacionesRemotas();
   }
