@@ -1,4 +1,4 @@
-import { supabase } from "./supabase.js";
+Import { supabase } from "./supabase.js";
 import {
   obtenerUsuarioActual,
   obtenerPerfilActual,
@@ -17,7 +17,6 @@ const MATRIX_CONFIG = {
 const BRIAR_URL =
   "https://play.google.com/store/apps/details?id=org.briarproject.briar.android";
 
-// Umbral de vigencia temporal para la caché local (48 horas).
 const UMBRAL_VIGENCIA_CACHE_MS = 48 * 60 * 60 * 1000;
 
 export function initCommunity({
@@ -75,8 +74,6 @@ export function initCommunity({
   let ultimaCarga = 0;
   let dbMatrixInstance = null;
 
-  // --- RADAR DE VECINOS: usa las tablas existentes perfiles/publicaciones ---
-
   function normalizarZonaRadar(valor) {
     return String(valor || "")
       .normalize("NFD")
@@ -85,8 +82,6 @@ export function initCommunity({
       .toLocaleLowerCase("es-AR");
   }
 
-  // Indicador externo de mensajería offline.
-  // Solo aparece si el usuario activó la opción en su perfil.
   function crearIndicadorMensajeriaOffline(perfil) {
     if (!perfil || !perfil.mensajeria_offline) {
       return null;
@@ -125,7 +120,6 @@ export function initCommunity({
   let destinoRadarComunitario = "";
 
   function obtenerContenedorPerfiles() {
-    // El Radar reutiliza el directorio: todos los resultados se muestran en Comunidad.
     return (
       document.getElementById("lista-comunidad") ||
       document.getElementById("directorio-comunidad") ||
@@ -187,7 +181,6 @@ export function initCommunity({
         .order("creado_en", { ascending: false });
       if (errorPublicaciones) throw errorPublicaciones;
 
-      // Agrupar publicaciones activas por propietario para mostrarlas en su tarjeta.
       const publicacionesPorPerfil = new Map();
       (publicacionesActivas || []).forEach((registro) => {
         const id = String(registro.perfil_id || "");
@@ -203,7 +196,6 @@ export function initCommunity({
       const usuario = await obtenerUsuarioActual();
       const idPropio = String(usuario?.id || "");
 
-      // El directorio general no exige foto, presentación ni coincidencia de barrio.
       let vecinos = (perfiles || []).filter((perfil) =>
         String(perfil.id || "") !== idPropio
       );
@@ -221,7 +213,6 @@ export function initCommunity({
         });
       }
 
-      // actualizado_en ordena por actualización del perfil; no se presenta como último ingreso.
       vecinos.sort((a, b) => {
         const fechaA = new Date(a.actualizado_en || 0).getTime();
         const fechaB = new Date(b.actualizado_en || 0).getTime();
@@ -272,7 +263,6 @@ export function initCommunity({
         const datos = document.createElement("div");
         datos.className = "vecino-indicadores";
         
-        // Las publicaciones activas solo se anuncian cuando existen.
         const publicacionesDeEstePerfil =
           publicacionesPorPerfil.get(String(perfil.id)) || [];
         const totalPubs = conteos.get(String(perfil.id)) || 0;
@@ -284,8 +274,6 @@ export function initCommunity({
           datos.appendChild(publicacionesVecino);
         }
 
-        // El porcentaje permanece visible; no se permite iniciar una medición
-        // desde la tarjeta de otra persona.
         const humanometroVecino = document.createElement("span");
         const porcentajeHumanidad = perfil.porcentaje_humanidad ?? 0;
         humanometroVecino.className = "vecino-humanometro-badge";
@@ -301,9 +289,6 @@ export function initCommunity({
         }
         tarjeta.appendChild(datos);
 
-        // Publicaciones desplegables dentro de la tarjeta del propietario.
-        // Se reutiliza la tarjeta de publicación existente para conservar
-        // todos sus detalles, avisos y el contacto específico por trueque.
         if (publicacionesDeEstePerfil.length > 0) {
           const seccionPublicaciones = document.createElement("section");
           seccionPublicaciones.className = "vecino-publicaciones";
@@ -347,13 +332,11 @@ export function initCommunity({
           if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
           if (textoFiltroVecino) textoFiltroVecino.textContent = `Mostrando publicaciones de ${perfilFiltroNombre}`;
           
-          // Ocultar formulario de creación de la góndola para evitar desprolijidades
           if (form) form.style.display = "none";
 
           cargarPublicacionesRemotas();
           window.dispatchEvent(new CustomEvent("abrirVistaGondola"));
 
-          // Scroll automático hacia el listado de publicaciones
           setTimeout(() => {
             lista?.scrollIntoView({ behavior: "smooth" });
           }, 150);
@@ -374,7 +357,7 @@ export function initCommunity({
       contenedor.appendChild(fragmento);
       if (estado) estado.textContent = esRadar
         ? `${vecinos.length} perfil${vecinos.length === 1 ? "" : "es"} encontrado${vecinos.length === 1 ? "" : "s"} para “${destinoRadarComunitario}”.`
-        : `${vecinos.length} integrante${vecinos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil (no equivale al último ingreso).`;
+        : `${vecinos.length} integrante${vecinos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil.`;
     } catch (error) {
       console.error("No se pudieron cargar los perfiles comunitarios:", error);
       if (estado) estado.textContent = "No se pudieron cargar los perfiles. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
@@ -397,8 +380,6 @@ export function initCommunity({
     }
     return cargarVecinos();
   }
-
-  // --- NÚCLEO MATRIX: INDEXEDDB LOCAL ---
 
   function abrirMatrixDB() {
     return new Promise((resolve, reject) => {
@@ -560,8 +541,6 @@ export function initCommunity({
       year: "numeric"
     });
   }
-
-  // --- LÓGICA DE ZONA INTELIGENTE ---
 
   function obtenerZona() {
     try {
@@ -731,15 +710,13 @@ export function initCommunity({
           )
           .eq("estado", "activa");
 
-        // SI HAY UN PERFIL FILTRADO, BUSCAMOS DIRECTO POR SU ID SIN CHOCAR CON ZONA
         if (perfilFiltroActivo) {
           query = query.eq("perfil_id", perfilFiltroActivo);
         } else {
           if (zonaActualFiltro) {
-            query = query.ilike(
-              "zona_aproximada",
-              `%${zonaActualFiltro}%`
-            );
+            const zonaLimpia = zonaActualFiltro.trim();
+            // CORREGIDO: Filtro flexible para evitar que diferencias menores oculten publicaciones
+            query = query.or(`zona_aproximada.ilike.%${zonaLimpia}%,zona_aproximada.is.null`);
           }
 
           if (palabraClave) {
@@ -758,7 +735,6 @@ export function initCommunity({
         }
 
         if (!error && data) {
-          // Obtener los nombres de los perfiles autores para las tarjetas
           const perfilIds = [...new Set(data.map(p => p.perfil_id).filter(Boolean))];
           let perfilesMapa = new Map();
           
@@ -965,7 +941,6 @@ export function initCommunity({
     return tarjeta;
   }
 
-  // --- LÓGICA DE INICIAR INTERCAMBIO DESDE TARJETA ---
   async function manejarInicioIntercambioDesdeCard(e) {
     const boton = e.target.closest(".btn-iniciar-intercambio-card");
     if (!boton) return;
@@ -1538,13 +1513,11 @@ export function initCommunity({
       filtroVecinoActivo.hidden = true;
     }
 
-    // Volver a mostrar el formulario de creación si estaba oculto
     if (form) form.style.display = "block";
 
     cargarPublicacionesRemotas();
   }
 
-  // --- CORRECCIÓN DINÁMICA DE TEXTOS (OFREZCO vs. NECESITO) ---
   function actualizarTextosFormulario(esNecesidad) {
     if (labelNecesitaInput) {
       labelNecesitaInput.textContent = esNecesidad
@@ -1604,10 +1577,8 @@ export function initCommunity({
       filtroVecinoActivo.hidden = true;
     }
 
-    // Volver a mostrar el formulario de creación
     if (form) form.style.display = "block";
 
-    // Disparar evento para volver a la pestaña/vista de comunidad
     window.dispatchEvent(new CustomEvent("mostrarDirectorioComunidad"));
 
     cargarPublicacionesRemotas();
@@ -1701,8 +1672,6 @@ export function initCommunity({
     cargarPublicacionesRemotas();
     cargarDirectorioComunidad();
   }
-
-  // --- EVENTOS ---
 
   form?.addEventListener("submit", publicar);
 
@@ -1825,8 +1794,6 @@ export function initCommunity({
       error
     );
   }
-
-  // --- INICIALIZACIÓN ---
 
   actualizarCampoOtraCategoria();
   actualizarSelectorFicha();
