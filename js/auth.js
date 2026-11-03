@@ -654,27 +654,29 @@ async function cargarMisPublicaciones() {
     const { data, error } = await supabase
       .from("publicaciones")
       .select("id, perfil_id, usuario_id, tipo, categoria, titulo, descripcion, estado, creado_en")
-      .or(`perfil_id.eq.${perfilActual.id},usuario_id.eq.${usuarioActual.id}`)
       .eq("estado", "publicada")
       .order("creado_en", { ascending: false });
 
     contenedor.replaceChildren();
     if (error) throw error;
 
-    const activas = (data || []).filter((publicacion) => publicacion.estado === "publicada").length;
+    const propias = (data || []).filter((publicacion) =>
+      String(publicacion.perfil_id || publicacion.usuario_id || "") === String(usuarioActual.id)
+    );
+    const activas = propias.length;
     const contador = document.createElement("p");
     contador.className = "texto-ayuda";
     contador.textContent = `${activas} publicación${activas === 1 ? "" : "es"} publicada${activas === 1 ? "" : "s"}`;
     contenedor.appendChild(contador);
 
-    if (!data?.length) {
+    if (!propias.length) {
       const vacio = document.createElement("p");
       vacio.textContent = "Todavía no publicaste productos ni servicios desde esta cuenta.";
       contenedor.appendChild(vacio);
       return;
     }
 
-    data.forEach((publicacion) => {
+    propias.forEach((publicacion) => {
       const tarjeta = document.createElement("article");
       tarjeta.className = "tarjeta-publicacion";
       const titulo = document.createElement("h4");
@@ -689,10 +691,12 @@ async function cargarMisPublicaciones() {
         }
       }
       detalle.textContent = descripcionOriginal
+        .replace(/(?:^|\n)\[Condición informada:\s*[^\]]*\]\s*$/, "")
         .replace(/\n?\[HMC_META:[^\]]+\]\s*$/, "")
         .trim();
       const estado = document.createElement("small");
-      const tipoVisible = ["oferta", "ofrezco"].includes(publicacion.tipo) ? "OFREZCO" : "BUSCO";
+      const tipoOriginal = metadatos.tipoUI || publicacion.tipo;
+      const tipoVisible = ["oferta", "ofrezco"].includes(tipoOriginal) ? "OFREZCO" : "BUSCO";
       const categoriaVisible = metadatos.categoriaUI || publicacion.categoria || "Sin categoría";
       estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: ${publicacion.estado || "sin especificar"}`;
       tarjeta.append(titulo, detalle, estado);
