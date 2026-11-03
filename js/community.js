@@ -1045,6 +1045,35 @@ export function initCommunity({
       return;
     }
 
+    const { data: publicacionVigente, error: errorPublicacion } = await supabase
+      .from("publicaciones")
+      .select("id, perfil_id, usuario_id, estado")
+      .eq("id", publicacionId)
+      .maybeSingle();
+    if (errorPublicacion || !publicacionVigente ||
+        publicacionVigente.estado !== "publicada" ||
+        String(publicacionVigente.perfil_id || publicacionVigente.usuario_id) !== String(perfilDuenhoId)) {
+      notificar("Esta publicación ya no está disponible para iniciar un intercambio.", "warning");
+      return;
+    }
+
+    const { data: intercambioExistente, error: errorExistente } = await supabase
+      .from("intercambios")
+      .select("id")
+      .eq("publicacion_id", publicacionId)
+      .eq("usuario_a", perfilDuenhoId)
+      .eq("usuario_b", usuarioActual.id)
+      .eq("estado", "en_proceso")
+      .maybeSingle();
+    if (errorExistente) {
+      notificar("No se pudo comprobar si ya existe una solicitud para esta publicación.", "error");
+      return;
+    }
+    if (intercambioExistente) {
+      notificar("Ya tenés un intercambio en curso para esta publicación.", "warning");
+      return;
+    }
+
     const horasStr = prompt("Ingresa el plazo estimado en horas para el intercambio (ej: 24, 48 o 72):", "24");
     if (!horasStr) return;
 
