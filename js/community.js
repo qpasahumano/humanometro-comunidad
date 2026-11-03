@@ -1834,7 +1834,11 @@ export function initCommunity({
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
     cargarPublicacionesRemotas();
-    cargarDirectorioComunidad();
+    if (modoListadoPerfiles === "radar") {
+      cargarRadarComunitario(destinoRadarComunitario);
+    } else {
+      cargarDirectorioComunidad();
+    }
   }
 
   form?.addEventListener("submit", publicar);
