@@ -3,7 +3,8 @@ import { obtenerUsuarioActual } from "./auth.js";
 
 const MATRIX_CONFIG = {
   DB_NAME: "HumanometroComunidadDB",
-  DB_VERSION: 2,
+  DB_VERSION: 3,
+  STORE_PUBLICACIONES: "publicaciones_cache",
   STORE_MEDICIONES: "mediciones_pendientes"
 };
 
@@ -58,8 +59,18 @@ function abrirMatrixDB() {
     request.onupgradeneeded = (evento) => {
       const db = evento.target.result;
 
-      // No se elimina ni se modifica el almacén histórico
-      // de mensajes: simplemente deja de utilizarse.
+      // Esquema compartido con community.js.
+      // Solo se crean almacenes faltantes: no se elimina ni se vacía
+      // ningún dato local existente.
+      if (!db.objectStoreNames.contains(
+        MATRIX_CONFIG.STORE_PUBLICACIONES
+      )) {
+        db.createObjectStore(
+          MATRIX_CONFIG.STORE_PUBLICACIONES,
+          { keyPath: "id" }
+        );
+      }
+
       if (!db.objectStoreNames.contains(
         MATRIX_CONFIG.STORE_MEDICIONES
       )) {
