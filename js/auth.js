@@ -322,6 +322,7 @@ function renderizarFichaVisual(contenedor) {
   const zonaVisible = escaparHTML(datos.zona_aproximada || "");
   const presentacionVisible = escaparHTML(datos.presentacion || "Sin presentación detallada.");
   const modalidadVisible = escaparHTML(datos.conectividad_modalidad || "");
+  const conectividadActiva = String(datos.conectividad_disponible).toLowerCase() === "true";
   const inicial = nombreVisible !== "Sin nombre" ? nombreVisible.charAt(0).toUpperCase() : "H";
 
   const infoHumanidad = datos.indice_humanidad || { porcentaje: 100, total: 0 };
@@ -377,8 +378,8 @@ function renderizarFichaVisual(contenedor) {
 
         <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
           <span style="font-size: 0.8rem;">📡 Wi-Fi Solidario:</span>
-          <span style="font-size: 0.8rem; color: ${datos.conectividad_disponible ? "#4ade80" : "#f87171"}; font-weight: bold;">
-            ${datos.conectividad_disponible ? `🟢 Activo (${modalidadVisible})` : "🔴 Inactivo"}
+          <span style="font-size: 0.8rem; color: ${conectividadActiva ? "#4ade80" : "#f87171"}; font-weight: bold;">
+            ${conectividadActiva ? `🟢 Activo (${modalidadVisible})` : "🔴 Inactivo"}
           </span>
         </div>
         ${datos.mensajeria_offline ? `
@@ -801,7 +802,7 @@ async function cargarPerfil() {
     if ($("hm-profile-locality")) $("hm-profile-locality").value = data?.localidad || "";
     if ($("hm-profile-zone")) $("hm-profile-zone").value = data?.zona_aproximada || "";
     if ($("whatsapp-usuario")) $("whatsapp-usuario").value = data?.whatsapp || "";
-    if ($("hm-connectivity-available")) $("hm-connectivity-available").checked = Boolean(data?.conectividad_disponible);
+    if ($("hm-connectivity-available")) $("hm-connectivity-available").checked = String(data?.conectividad_disponible).toLowerCase() === "true";
     if ($("hm-connectivity-mode")) $("hm-connectivity-mode").value = data?.conectividad_modalidad || "gratuito";
     if ($("hm-connectivity-emergency")) $("hm-connectivity-emergency").checked = Boolean(data?.conectividad_emergencias);
     if ($("hm-connectivity-zone")) $("hm-connectivity-zone").value = data?.conectividad_zona || "";
@@ -920,7 +921,7 @@ async function guardarPerfil(evento) {
       zona_aproximada: zona || null,
       whatsapp: whatsapp || null,
       foto_url: fotoUrl,
-      conectividad_disponible: conectividadDisponible,
+      conectividad_disponible: conectividadDisponible ? "true" : "false",
       conectividad_modalidad: conectividadModalidad,
       conectividad_emergencias: conectividadEmergencias,
       conectividad_zona: conectividadZona || null,
