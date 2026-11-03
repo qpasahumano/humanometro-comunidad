@@ -9,7 +9,7 @@ const STORAGE_KEY = "hm_publicaciones";
 
 const MATRIX_CONFIG = {
   DB_NAME: "HumanometroComunidadDB",
-  DB_VERSION: 2,
+  DB_VERSION: 3,
   STORE_PUBLICACIONES: "publicaciones_cache",
   STORE_MEDICIONES: "mediciones_pendientes"
 };
