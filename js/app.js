@@ -1320,7 +1320,6 @@ async function iniciarAplicacion() {
   configurarAyuda();
   configurarEvaluaciones();
   configurarPerfil();
-  configurarConectividadSolidaria();
   configurarIntercambiosGlobales();
 
   try {
@@ -1332,6 +1331,8 @@ async function iniciarAplicacion() {
       "No se pudo inicializar el acceso a la cuenta. Revisá tu conexión."
     );
   }
+
+  configurarConectividadSolidaria();
 
   initCommunity({
     getItem,
