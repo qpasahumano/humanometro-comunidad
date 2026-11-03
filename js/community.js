@@ -178,7 +178,7 @@ export function initCommunity({
             "actualizado_en"
           ].join(",")
         )
-        .eq("estado", "activa")
+        .eq("estado", "publicada")
         .order("creado_en", { ascending: false });
       if (errorPublicaciones) throw errorPublicaciones;
 
@@ -639,7 +639,7 @@ export function initCommunity({
       fotos: Array.isArray(registro.fotos)
         ? registro.fotos
         : [],
-      estado: registro.estado ?? "activa",
+      estado: registro.estado ?? "publicada",
       creado_en: registro.creado_en ?? null,
       actualizado_en: registro.actualizado_en ?? null,
       origen: "remoto"
@@ -717,7 +717,7 @@ export function initCommunity({
               "actualizado_en"
             ].join(",")
           )
-          .eq("estado", "activa");
+          .eq("estado", "publicada");
 
         if (perfilFiltroActivo) {
           // AJUSTE INCORPORADO: Aislamiento estricto por perfil seleccionado (evita cruces con C u otros)
@@ -1409,7 +1409,7 @@ export function initCommunity({
         getItem("hm_offline_activo", false)
       ),
       fotos: [],
-      estado: "activa",
+      estado: "publicada",
       actualizado_en: ahora
     };
 
