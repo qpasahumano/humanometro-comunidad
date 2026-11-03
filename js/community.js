@@ -723,7 +723,7 @@ export function initCommunity({
   }
 
   async function cargarPublicacionesRemotas() {
-    if (destruido || cargando) return;
+    if (destruido) return;
 
     cargando = true;
     const identificadorCarga = ++ultimaCarga;
@@ -737,49 +737,35 @@ export function initCommunity({
 
     try {
       if (navigator.onLine) {
-        let query = supabase
-          .from("publicaciones")
-          .select(
-            [
-              "id",
-              "perfil_id",
-              "usuario_id",
-              "tipo",
-              "categoria",
-              "titulo",
-              "descripcion",
-              "modalidad",
-              "modalidad_intercambio",
-              "que_necesita_a_cambio",
-              "zona_aproximada",
-              "offline_activo",
-              "fotos",
-              "estado",
-              "creado_en",
-              "actualizado_en"
-            ].join(",")
-          )
-          .eq("estado", "publicada");
+        const columnasPublicacion = [
+          "id", "perfil_id", "usuario_id", "tipo", "categoria", "titulo",
+          "descripcion", "modalidad", "modalidad_intercambio",
+          "que_necesita_a_cambio", "zona_aproximada", "offline_activo",
+          "fotos", "estado", "creado_en", "actualizado_en"
+        ].join(",");
 
-        if (perfilFiltroActivo) {
-          // AJUSTE INCORPORADO: Aislamiento estricto por perfil seleccionado (evita cruces con C u otros)
-          query = query.or(`perfil_id.eq.${perfilFiltroActivo},usuario_id.eq.${perfilFiltroActivo}`);
-        } else {
-          if (zonaActualFiltro) {
-            const zonaLimpia = zonaActualFiltro.trim();
-            query = query.or(`zona_aproximada.ilike.%${zonaLimpia}%,zona_aproximada.is.null`);
+        // Recuperar todas las publicaciones activas en páginas evita el límite
+        // máximo de filas de PostgREST y evita combinar varios filtros OR en SQL.
+        const data = [];
+        let desde = 0;
+        const tamanoPagina = 500;
+        let error = null;
+        while (true) {
+          const respuesta = await supabase
+            .from("publicaciones")
+            .select(columnasPublicacion)
+            .eq("estado", "publicada")
+            .order("creado_en", { ascending: false })
+            .range(desde, desde + tamanoPagina - 1);
+          if (respuesta.error) {
+            error = respuesta.error;
+            break;
           }
-
-          if (palabraClave) {
-            query = query.or(
-              `titulo.ilike.%${palabraClave}%,descripcion.ilike.%${palabraClave}%`
-            );
-          }
+          const pagina = respuesta.data || [];
+          data.push(...pagina);
+          if (pagina.length < tamanoPagina) break;
+          desde += tamanoPagina;
         }
-
-        const { data, error } = await query.order("creado_en", {
-          ascending: false
-        });
 
         if (destruido || identificadorCarga !== ultimaCarga) {
           return;
@@ -806,14 +792,32 @@ export function initCommunity({
             });
           }
 
-          const remotas = data.map((registro) => {
+          const todasRemotas = data.map((registro) => {
             const conv = convertirRegistroRemoto(registro);
             const idPerfil = String(registro.perfil_id || registro.usuario_id || "");
             conv.perfil_nombre = perfilesMapa.get(idPerfil) || "Vecino";
             return conv;
           });
 
-          await guardarMatrixCache(remotas);
+          // La caché conserva el conjunto completo, no solamente los resultados
+          // de una búsqueda o del perfil que se esté consultando en ese momento.
+          await guardarMatrixCache(todasRemotas);
+
+          const remotas = todasRemotas.filter((publicacion) => {
+            const propietario = String(publicacion.perfil_id || "");
+            if (perfilFiltroActivo && propietario !== String(perfilFiltroActivo)) return false;
+            if (!perfilFiltroActivo && zonaActualFiltro) {
+              const zonaPub = normalizarZonaRadar(publicacion.zona_aproximada);
+              const zonaBuscada = normalizarZonaRadar(zonaActualFiltro);
+              if (zonaPub && !zonaPub.includes(zonaBuscada)) return false;
+            }
+            if (!perfilFiltroActivo && palabraClave) {
+              const q = palabraClave.toLocaleLowerCase("es-AR");
+              const texto = `${publicacion.titulo || ""} ${publicacion.descripcion || ""}`.toLocaleLowerCase("es-AR");
+              if (!texto.includes(q)) return false;
+            }
+            return true;
+          });
 
           publicaciones = combinarPublicaciones(
             obtenerLocales(),
@@ -1157,19 +1161,19 @@ export function initCommunity({
     );
 
     const filtradas = publicaciones.filter((publicacion) => {
+      const tipoPublicacion = String(publicacion.tipo || "").toLocaleLowerCase("es-AR");
+      const tipoFiltroNormalizado = tipoFiltro === "oferta" ? "ofrezco" : tipoFiltro === "necesidad" ? "necesito" : tipoFiltro;
+      const tipoPublicacionNormalizado = tipoPublicacion === "oferta" ? "ofrezco" : tipoPublicacion === "necesidad" ? "necesito" : tipoPublicacion;
       const coincideTipo =
-        !tipoFiltro ||
-        tipoFiltro === "todos" ||
-        tipoFiltro === "todas" ||
-        String(publicacion.tipo)
-          .toLocaleLowerCase("es-AR") === tipoFiltro;
+        !tipoFiltro || tipoFiltro === "todos" || tipoFiltro === "todas" ||
+        tipoPublicacionNormalizado === tipoFiltroNormalizado;
 
       const coincideOffline =
         !soloOffline || Boolean(publicacion.offline_activo);
 
       const coincideAutor =
         !perfilFiltroActivo ||
-        String(publicacion.perfil_id || "") ===
+        String(publicacion.perfil_id || publicacion.usuario_id || "") ===
           String(perfilFiltroActivo);
 
       return coincideTipo && coincideOffline && coincideAutor;
@@ -1590,7 +1594,7 @@ export function initCommunity({
     if (labelNecesitaInput) {
       labelNecesitaInput.textContent = esNecesidad
         ? "¿Qué ofrecés a cambio?"
-        : "¿Qué solicitás a cambio?";
+        : "¿Qué querés a cambio?";
     }
     if (necesitaInput) {
       necesitaInput.placeholder = esNecesidad
