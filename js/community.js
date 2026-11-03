@@ -1443,6 +1443,10 @@ export function initCommunity({
       if (estadoPublicacion) {
         estadoPublicacion.textContent = "No se pudo validar el propietario de la publicación.";
       }
+      if (botonSubmitForm) {
+        botonSubmitForm.disabled = false;
+        botonSubmitForm.textContent = "PUBLICAR";
+      }
       return;
     }
 
