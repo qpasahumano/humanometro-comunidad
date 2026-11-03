@@ -709,6 +709,7 @@ export function initCommunity({
           .eq("estado", "activa");
 
         if (perfilFiltroActivo) {
+          // AJUSTE INCORPORADO: Aislamiento estricto por perfil seleccionado (evita cruces con C u otros)
           query = query.eq("perfil_id", perfilFiltroActivo);
         } else {
           if (zonaActualFiltro) {
@@ -1424,6 +1425,9 @@ export function initCommunity({
       window.dispatchEvent(
         new CustomEvent("publicacionComunidadActualizada")
       );
+
+      // AJUSTE INCORPORADO: Actualización automática del contador (paquetito) en la ficha al publicar
+      cargarVecinos();
 
       form.reset();
       actualizarAvisoMedicamentos();
