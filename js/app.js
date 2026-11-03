@@ -359,7 +359,7 @@ function configurarIntercambiosGlobales() {
         "¿Mantuvo una comunicación clara?"
       ];
       for (const pregunta of preguntas) {
-        const respuesta = prompt(pregunta + "\\nRespondé S para Sí o N para No. Cancelar anula toda la evaluación.", "S");
+        const respuesta = prompt(pregunta + "\nRespondé S para Sí o N para No. Cancelar anula toda la evaluación.", "S");
         if (respuesta === null) {
           mostrarNotificacion("Evaluación cancelada. No se guardó ningún resultado.", "warning");
           return;
