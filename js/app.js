@@ -294,10 +294,20 @@ function configurarIntercambiosGlobales() {
       const { data: inter, error: errFetch } = await supabase.from("intercambios").select("*").eq("id", id).single();
       if (errFetch || !inter) return;
 
-      const esA = inter.usuario_a === usuario.id;
+      const esA = String(inter.usuario_a) === String(usuario.id);
+      const esB = String(inter.usuario_b) === String(usuario.id);
+      if (!esA && !esB) {
+        mostrarNotificacion("No tenés autorización para modificar este intercambio.", "error");
+        return;
+      }
+      if (inter.estado !== "en_proceso") {
+        mostrarNotificacion("Este intercambio ya no admite cambios de confirmación.", "warning");
+        return;
+      }
       const updateData = esA ? { confirmado_a: !inter.confirmado_a } : { confirmado_b: !inter.confirmado_b };
-
-      const { error } = await supabase.from("intercambios").update(updateData).eq("id", id);
+      let consultaActualizacion = supabase.from("intercambios").update(updateData).eq("id", id);
+      consultaActualizacion = consultaActualizacion.eq(esA ? "usuario_a" : "usuario_b", usuario.id);
+      const { error } = await consultaActualizacion;
       if (!error) {
         mostrarNotificacion("Estado de confirmación actualizado.");
         cargarPanelIntercambios();
@@ -315,7 +325,31 @@ function configurarIntercambiosGlobales() {
       const { data: inter, error: errFetch } = await supabase.from("intercambios").select("*").eq("id", id).single();
       if (errFetch || !inter) return;
 
-      const evaluadoId = inter.usuario_a === usuario.id ? inter.usuario_b : inter.usuario_a;
+      const esParticipanteA = String(inter.usuario_a) === String(usuario.id);
+      const esParticipanteB = String(inter.usuario_b) === String(usuario.id);
+      if (!esParticipanteA && !esParticipanteB) {
+        mostrarNotificacion("No tenés autorización para evaluar este intercambio.", "error");
+        return;
+      }
+      if (inter.estado !== "en_proceso" || !inter.confirmado_a || !inter.confirmado_b) {
+        mostrarNotificacion("La evaluación requiere que ambas partes hayan confirmado el cumplimiento.", "warning");
+        return;
+      }
+      const evaluadoId = esParticipanteA ? inter.usuario_b : inter.usuario_a;
+      const { data: evaluacionExistente, error: errorEvaluacionExistente } = await supabase
+        .from("evaluaciones")
+        .select("id")
+        .eq("intercambio_id", inter.id)
+        .eq("evaluador_id", usuario.id)
+        .maybeSingle();
+      if (errorEvaluacionExistente) {
+        mostrarNotificacion("No se pudo comprobar si ya evaluaste este intercambio.", "error");
+        return;
+      }
+      if (evaluacionExistente) {
+        mostrarNotificacion("Ya registraste tu evaluación para este intercambio.", "warning");
+        return;
+      }
 
       const respeta = confirm("¿Respetó las condiciones pactadas?");
       const cordialidad = confirm("¿Hubo cordialidad y respeto?");
