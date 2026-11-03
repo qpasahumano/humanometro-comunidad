@@ -184,10 +184,19 @@ export function initCommunity({
 
       const publicacionesPorPerfil = new Map();
       (publicacionesActivas || []).forEach((registro) => {
-        const id = String(registro.perfil_id || registro.usuario_id || "");
-        if (!id) return;
-        if (!publicacionesPorPerfil.has(id)) publicacionesPorPerfil.set(id, []);
-        publicacionesPorPerfil.get(id).push(convertirRegistroRemoto(registro));
+        const publicacion = convertirRegistroRemoto(registro);
+        const idsPropietario = new Set(
+          [registro.perfil_id, registro.usuario_id]
+            .filter(Boolean)
+            .map((id) => String(id))
+        );
+
+        idsPropietario.forEach((id) => {
+          if (!publicacionesPorPerfil.has(id)) {
+            publicacionesPorPerfil.set(id, []);
+          }
+          publicacionesPorPerfil.get(id).push(publicacion);
+        });
       });
 
       const usuario = await obtenerUsuarioActual();
@@ -735,21 +744,30 @@ export function initCommunity({
         }
 
         if (!error && data) {
-          const perfilIds = [...new Set(data.map(p => p.perfil_id).filter(Boolean))];
-          let perfilesMapa = new Map();
-          
+          const perfilIds = [...new Set(
+            data
+              .flatMap((publicacion) => [publicacion.perfil_id, publicacion.usuario_id])
+              .filter(Boolean)
+              .map((id) => String(id))
+          )];
+          const perfilesMapa = new Map();
+
           if (perfilIds.length > 0) {
-            const { data: perfilesData } = await supabase
+            const { data: perfilesData, error: errorPerfiles } = await supabase
               .from("perfiles")
               .select("id, nombre_visible")
               .in("id", perfilIds);
-              
-            (perfilesData || []).forEach(pf => perfilesMapa.set(pf.id, pf.nombre_visible));
+
+            if (errorPerfiles) throw errorPerfiles;
+            (perfilesData || []).forEach((pf) => {
+              perfilesMapa.set(String(pf.id), pf.nombre_visible);
+            });
           }
 
-          const remotas = data.map(registro => {
+          const remotas = data.map((registro) => {
             const conv = convertirRegistroRemoto(registro);
-            conv.perfil_nombre = perfilesMapa.get(registro.perfil_id) || "Vecino";
+            const idPerfil = String(registro.perfil_id || registro.usuario_id || "");
+            conv.perfil_nombre = perfilesMapa.get(idPerfil) || "Vecino";
             return conv;
           });
 
