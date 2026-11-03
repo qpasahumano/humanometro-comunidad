@@ -1912,7 +1912,9 @@ export function initCommunity({
   actualizarSelectorFicha();
   actualizarAvisoMedicamentos();
 
-  cargarPublicacionesRemotas();
+  sincronizarPublicacionesPendientes().finally(() => {
+    if (!destruido) cargarPublicacionesRemotas();
+  });
   cargarDirectorioComunidad();
 
   return {
