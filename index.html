@@ -1048,6 +1048,36 @@
 
       </form>
 
+      <section class="tarjeta" aria-labelledby="titulo-conectividad-solidaria">
+        <h3 id="titulo-conectividad-solidaria">Conectividad Solidaria</h3>
+        <p class="texto-ayuda">
+          Si querés, podés ofrecer compartir Internet con otras personas de tu zona.
+          Es voluntario: podés activarlo, pausarlo o retirarlo cuando quieras.
+        </p>
+        <form id="form-conectividad">
+          <label class="opcion-checkbox" for="conectividad-ofrece">
+            <input id="conectividad-ofrece" type="checkbox">
+            Ofrezco conectividad solidaria
+          </label>
+          <div id="opciones-conectividad" hidden>
+            <label for="conectividad-modalidad">Modalidad</label>
+            <select id="conectividad-modalidad">
+              <option value="gratuita">Gratuita</option>
+              <option value="intercambio">Por intercambio solidario</option>
+              <option value="ambas">Gratuita o por intercambio</option>
+            </select>
+            <label class="opcion-checkbox" for="conectividad-emergencias">
+              <input id="conectividad-emergencias" type="checkbox">
+              Puedo ofrecerla ante una emergencia, si tengo conexión y energía
+            </label>
+          </div>
+          <button class="boton-accion" type="submit">GUARDAR CONECTIVIDAD SOLIDARIA</button>
+          <p id="estado-perfil-conectividad" class="texto-ayuda" aria-live="polite"></p>
+        </form>
+        <div id="lista-conectividad" aria-live="polite"></div>
+        <p id="estado-lista-conectividad" class="texto-ayuda"></p>
+      </section>
+
       <section class="tarjeta" aria-labelledby="titulo-mis-publicaciones">
         <h3 id="titulo-mis-publicaciones">Mis publicaciones activas</h3>
 
