@@ -1164,206 +1164,134 @@ function configurarConectividadSolidaria() {
   const ofrece = $("conectividad-ofrece");
   const opciones = $("opciones-conectividad");
   const modalidad = $("conectividad-modalidad");
-  const zona = $("conectividad-zona");
   const emergencias = $("conectividad-emergencias");
-  const disponibilidad = $("conectividad-disponibilidad");
-  const estadoPerfil = $("conectividad-estado");
   const mensajeEstado = $("estado-perfil-conectividad");
-
-  const lista = $("lista-conectividad");
-  const estadoLista = $("estado-lista-conectividad");
-
   const clave = "hm_conectividad_solidaria";
+  let sincronizando = false;
 
-  function obtenerPerfil() {
+  function obtenerPerfilLocal() {
     const perfil = getItem(clave, null);
-
     if (!perfil || typeof perfil !== "object" || Array.isArray(perfil)) {
-      return {
-        ofrece: false,
-        modalidad: "gratuita",
-        zona: "",
-        emergencias: false,
-        disponibilidad: "",
-        estado: "activa",
-        fechaActualizacion: null
-      };
+      return { ofrece: false, modalidad: "gratuita", emergencias: false, pendiente: false };
     }
-
     return {
       ofrece: Boolean(perfil.ofrece),
-      modalidad: ["gratuita", "intercambio", "ambas"].includes(
-        perfil.modalidad
-      )
-        ? perfil.modalidad
-        : "gratuita",
-      zona: String(perfil.zona || ""),
+      modalidad: ["gratuita", "intercambio", "ambas"].includes(perfil.modalidad) ? perfil.modalidad : "gratuita",
       emergencias: Boolean(perfil.emergencias),
-      disponibilidad: String(perfil.disponibilidad || ""),
-      estado: perfil.estado === "pausada" ? "pausada" : "activa",
-      fechaActualizacion: perfil.fechaActualizacion || null
+      pendiente: Boolean(perfil.pendiente)
     };
   }
 
   function actualizarVisibilidadOpciones() {
     if (!opciones || !ofrece) return;
-
     opciones.hidden = !ofrece.checked;
-
     opciones.querySelectorAll("input, select, textarea").forEach((campo) => {
       campo.disabled = !ofrece.checked;
     });
   }
 
-  function cargarFormulario() {
-    const perfil = obtenerPerfil();
+  function mostrarEstado(texto) {
+    if (mensajeEstado) mensajeEstado.textContent = texto;
+  }
 
-    if (ofrece) ofrece.checked = perfil.ofrece;
-    if (modalidad) modalidad.value = perfil.modalidad;
-    if (zona) zona.value = perfil.zona;
-    if (emergencias) emergencias.checked = perfil.emergencias;
-    if (disponibilidad) disponibilidad.value = perfil.disponibilidad;
-    if (estadoPerfil) estadoPerfil.value = perfil.estado;
-
+  function cargarFormulario(perfil) {
+    if (ofrece) ofrece.checked = Boolean(perfil.ofrece);
+    if (modalidad) modalidad.value = perfil.modalidad || "gratuita";
+    if (emergencias) emergencias.checked = Boolean(perfil.emergencias);
     actualizarVisibilidadOpciones();
+  }
 
-    if (mensajeEstado) {
-      mensajeEstado.textContent = perfil.ofrece
-        ? perfil.estado === "activa"
-          ? "Tu ofrecimiento está guardado en este dispositivo y figura como activo localmente."
-          : "Tu ofrecimiento está pausado en este dispositivo."
-        : "Todavía no estás ofreciendo conectividad solidaria.";
+  async function sincronizarConectividad() {
+    if (sincronizando || !navigator.onLine) return;
+    const local = obtenerPerfilLocal();
+    if (!local.pendiente) return;
+    const usuario = await obtenerUsuarioActual();
+    if (!usuario?.id) return;
+    sincronizando = true;
+    try {
+      const { error } = await supabase.from("perfiles").update({
+        conectividad_disponible: local.ofrece,
+        conectividad_modalidad: local.ofrece ? local.modalidad : null,
+        conectividad_emergencias: local.ofrece && local.emergencias,
+        actualizado_en: new Date().toISOString()
+      }).eq("id", usuario.id);
+      if (error) throw error;
+      setItem(clave, { ...local, pendiente: false, fechaActualizacion: new Date().toISOString() });
+      mostrarEstado(local.ofrece
+        ? "Tu ofrecimiento está publicado en tu perfil comunitario."
+        : "Tu ofrecimiento fue retirado de tu perfil comunitario.");
+      window.dispatchEvent(new CustomEvent("perfilComunidadActualizado"));
+    } catch (error) {
+      console.warn("No se pudo sincronizar Conectividad Solidaria:", error);
+      mostrarEstado("El cambio quedó guardado en este dispositivo y espera conexión para sincronizarse.");
+    } finally {
+      sincronizando = false;
     }
   }
 
-  function textoModalidad(valor) {
-    const modalidades = {
-      gratuita: "Gratuita",
-      intercambio: "Por intercambio solidario",
-      ambas: "Gratuita o por intercambio solidario"
-    };
-
-    return modalidades[valor] || "Sin especificar";
-  }
-
-  function renderizarLista() {
-    if (!lista) return;
-
-    lista.replaceChildren();
-
-    const perfil = obtenerPerfil();
-
-    if (!perfil.ofrece || perfil.estado !== "activa") {
-      if (estadoLista) {
-        estadoLista.textContent =
-          "Todavía no hay ofrecimientos activos guardados en este dispositivo.";
-      }
-
+  async function cargarDesdeRed() {
+    const local = obtenerPerfilLocal();
+    cargarFormulario(local);
+    mostrarEstado(local.pendiente
+      ? "Hay un cambio guardado en este dispositivo pendiente de sincronización."
+      : local.ofrece
+        ? "Tu ofrecimiento está configurado."
+        : "Todavía no ofrecés conectividad solidaria.");
+    const usuario = await obtenerUsuarioActual();
+    if (!usuario?.id || !navigator.onLine) return;
+    const { data, error } = await supabase.from("perfiles")
+      .select("conectividad_disponible, conectividad_modalidad, conectividad_emergencias")
+      .eq("id", usuario.id).maybeSingle();
+    if (error) {
+      console.warn("No se pudo recuperar Conectividad Solidaria desde el perfil:", error);
       return;
     }
-
-    const tarjeta = document.createElement("article");
-    tarjeta.className = "tarjeta-conectividad";
-
-    const titulo = document.createElement("h3");
-    titulo.textContent = "Ofrecimiento de conectividad solidaria";
-    tarjeta.appendChild(titulo);
-
-    const distintivo = document.createElement("span");
-    distintivo.className = "distintivo-conectividad";
-    distintivo.textContent = "ACTIVO EN ESTE DISPOSITIVO";
-    tarjeta.appendChild(distintivo);
-
-    const textoZona = document.createElement("p");
-    textoZona.textContent =
-      `Zona o localidad: ${perfil.zona || getItem("hm_barrio", "") || "No especificada"}`;
-    tarjeta.appendChild(textoZona);
-
-    const textoMod = document.createElement("p");
-    textoMod.textContent =
-      `Modalidad: ${textoModalidad(perfil.modalidad)}`;
-    tarjeta.appendChild(textoMod);
-
-    const textoDisponibilidad = document.createElement("p");
-    textoDisponibilidad.textContent =
-      `Disponibilidad: ${perfil.disponibilidad || "A coordinar"}`;
-    tarjeta.appendChild(textoDisponibilidad);
-
-    if (perfil.emergencias) {
-      const textoEmergencias = document.createElement("p");
-      textoEmergencias.textContent =
-        "Indica disponibilidad para situaciones de emergencia.";
-      tarjeta.appendChild(textoEmergencias);
-    }
-
-    const nota = document.createElement("p");
-    nota.textContent =
-      "Este ofrecimiento está guardado localmente en la red de relevo Matrix.";
-    tarjeta.appendChild(nota);
-
-    lista.appendChild(tarjeta);
-
-    if (estadoLista) {
-      estadoLista.textContent =
-        "Se muestra el ofrecimiento guardado en este dispositivo.";
+    if (!data) return;
+    const remoto = {
+      ofrece: Boolean(data.conectividad_disponible),
+      modalidad: ["gratuita", "intercambio", "ambas"].includes(data.conectividad_modalidad) ? data.conectividad_modalidad : "gratuita",
+      emergencias: Boolean(data.conectividad_emergencias),
+      pendiente: false,
+      fechaActualizacion: new Date().toISOString()
+    };
+    if (!local.pendiente) {
+      setItem(clave, remoto);
+      cargarFormulario(remoto);
+      mostrarEstado(remoto.ofrece
+        ? "Tu ofrecimiento está activo en tu perfil comunitario."
+        : "Todavía no ofrecés conectividad solidaria.");
     }
   }
 
   ofrece?.addEventListener("change", actualizarVisibilidadOpciones);
 
-  formulario?.addEventListener("submit", (evento) => {
+  formulario?.addEventListener("submit", async (evento) => {
     evento.preventDefault();
-
-    const perfilOfrece = Boolean(ofrece?.checked);
-
     const nuevoPerfil = {
-      ofrece: perfilOfrece,
+      ofrece: Boolean(ofrece?.checked),
       modalidad: modalidad?.value || "gratuita",
-      zona: zona?.value.trim() || "",
       emergencias: Boolean(emergencias?.checked),
-      disponibilidad: disponibilidad?.value.trim() || "",
-      estado: estadoPerfil?.value === "pausada" ? "pausada" : "activa",
+      pendiente: true,
       fechaActualizacion: new Date().toISOString()
     };
-
-    if (
-      perfilOfrece &&
-      !nuevoPerfil.zona &&
-      !getItem("hm_barrio", "")
-    ) {
-      mostrarNotificacion(
-        "Indicá una zona o guardá primero tu barrio o localidad."
-      );
-
-      zona?.focus();
-      return;
-    }
-
     if (!setItem(clave, nuevoPerfil)) {
-      mostrarNotificacion(
-        "No se pudo guardar la configuración de Conectividad Solidaria."
-      );
+      mostrarNotificacion("No se pudo guardar la configuración de Conectividad Solidaria.");
       return;
     }
-
     actualizarVisibilidadOpciones();
-    renderizarLista();
-
-    if (mensajeEstado) {
-      mensajeEstado.textContent = !nuevoPerfil.ofrece
-        ? "Tu perfil dejó de ofrecer conectividad solidaria en este dispositivo."
-        : nuevoPerfil.estado === "activa"
-          ? "Tu ofrecimiento se guardó en este dispositivo."
-          : "Tu ofrecimiento quedó pausado en este dispositivo.";
+    mostrarEstado(nuevoPerfil.ofrece
+      ? "Guardado localmente. Sincronizando tu ofrecimiento con el perfil comunitario…"
+      : "Retiro guardado localmente. Sincronizando con el perfil comunitario…");
+    await sincronizarConectividad();
+    if (obtenerPerfilLocal().pendiente) {
+      mostrarNotificacion("Se guardó en este dispositivo y se sincronizará al recuperar la conexión.");
+    } else {
+      mostrarNotificacion("Conectividad Solidaria actualizada en tu perfil comunitario.");
     }
-
-    mostrarNotificacion(
-      "Configuración de Conectividad Solidaria guardada localmente."
-    );
   });
 
-  cargarFormulario();
-  renderizarLista();
+  window.addEventListener("online", sincronizarConectividad);
+  cargarDesdeRed();
 }
 
 /* =========================
