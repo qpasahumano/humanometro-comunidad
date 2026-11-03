@@ -162,6 +162,7 @@ export function initCommunity({
           [
             "id",
             "perfil_id",
+            "usuario_id",
             "tipo",
             "categoria",
             "titulo",
@@ -183,7 +184,7 @@ export function initCommunity({
 
       const publicacionesPorPerfil = new Map();
       (publicacionesActivas || []).forEach((registro) => {
-        const id = String(registro.perfil_id || "");
+        const id = String(registro.perfil_id || registro.usuario_id || "");
         if (!id) return;
         if (!publicacionesPorPerfil.has(id)) publicacionesPorPerfil.set(id, []);
         publicacionesPorPerfil.get(id).push(convertirRegistroRemoto(registro));
@@ -613,7 +614,7 @@ export function initCommunity({
 
     return {
       id: String(registro.id),
-      perfil_id: registro.perfil_id ?? null,
+      perfil_id: registro.perfil_id ?? registro.usuario_id ?? null,
       tipo: registro.tipo ?? "",
       categoria: registro.categoria ?? "",
       titulo: registro.titulo ?? "",
@@ -691,6 +692,7 @@ export function initCommunity({
             [
               "id",
               "perfil_id",
+              "usuario_id",
               "tipo",
               "categoria",
               "titulo",
@@ -710,7 +712,7 @@ export function initCommunity({
 
         if (perfilFiltroActivo) {
           // AJUSTE INCORPORADO: Aislamiento estricto por perfil seleccionado (evita cruces con C u otros)
-          query = query.eq("perfil_id", perfilFiltroActivo);
+          query = query.or(`perfil_id.eq.${perfilFiltroActivo},usuario_id.eq.${perfilFiltroActivo}`);
         } else {
           if (zonaActualFiltro) {
             const zonaLimpia = zonaActualFiltro.trim();
@@ -1374,6 +1376,7 @@ export function initCommunity({
 
     const registro = {
       perfil_id: usuario.id,
+      usuario_id: usuario.id,
       tipo: datos.tipo,
       categoria: datos.categoria,
       titulo: datos.titulo,
