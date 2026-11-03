@@ -309,7 +309,7 @@ export function initCommunity({
         humanometroVecino.textContent = `🤝 Humanómetro: ${porcentajeHumanidad}%`;
         datos.appendChild(humanometroVecino);
 
-        if (perfil.conectividad_disponible) {
+        if (String(perfil.conectividad_disponible).toLowerCase() === "true") {
           const conectividad = document.createElement("span");
           conectividad.className = "vecino-conectividad";
           const modalidad = perfil.conectividad_modalidad || "solidaria";
