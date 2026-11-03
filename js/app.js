@@ -356,6 +356,11 @@ function configurarIntercambiosGlobales() {
       const puntualidad = confirm("¿Cumplió con los plazos acordados?");
       const comunicacion = confirm("¿Mantuvo una comunicación clara?");
 
+      if (String(evaluadoId) === String(usuario.id)) {
+        mostrarNotificacion("No podés evaluarte a vos mismo.", "error");
+        return;
+      }
+
       const { error: errEval } = await supabase.from("evaluaciones").insert([{
         intercambio_id: inter.id,
         evaluador_id: usuario.id,
@@ -371,15 +376,44 @@ function configurarIntercambiosGlobales() {
         return;
       }
 
-      const { data: evals } = await supabase.from("evaluaciones").select("id").eq("intercambio_id", inter.id);
-      if (evals && evals.length >= 2) {
-        await supabase.from("intercambios").update({ estado: "completado" }).eq("id", inter.id);
-        if (inter.publicacion_id) {
-          await supabase.from("publicaciones").update({ estado: "retirada" }).eq("id", inter.publicacion_id);
-        }
+      const { data: evals, error: errorConteo } = await supabase
+        .from("evaluaciones")
+        .select("evaluador_id")
+        .eq("intercambio_id", inter.id);
+      if (errorConteo) {
+        mostrarNotificacion("Tu evaluación quedó registrada, pero no se pudo verificar el cierre bilateral.", "warning");
+        await configurarEvaluaciones();
+        cargarPanelIntercambios();
+        return;
       }
 
-      mostrarNotificacion("¡Evaluación registrada con éxito y medidor actualizado!", "success");
+      const evaluadores = new Set((evals || []).map((ev) => String(ev.evaluador_id)));
+      const participaronAmbos = evaluadores.has(String(inter.usuario_a)) && evaluadores.has(String(inter.usuario_b));
+      if (participaronAmbos) {
+        const { error: errorCierre } = await supabase
+          .from("intercambios")
+          .update({ estado: "completado" })
+          .eq("id", inter.id)
+          .eq("estado", "en_proceso");
+        if (errorCierre) {
+          mostrarNotificacion("Las dos evaluaciones están registradas, pero no se pudo cerrar el intercambio.", "warning");
+          await configurarEvaluaciones();
+          cargarPanelIntercambios();
+          return;
+        }
+        if (inter.publicacion_id) {
+          const { error: errorRetiro } = await supabase
+            .from("publicaciones")
+            .update({ estado: "retirada", actualizado_en: new Date().toISOString() })
+            .eq("id", inter.publicacion_id)
+            .eq("estado", "publicada");
+          if (errorRetiro) console.error("No se pudo retirar automáticamente la publicación completada:", errorRetiro);
+        }
+        mostrarNotificacion("Intercambio completado: ambas partes evaluaron la experiencia.", "success");
+      } else {
+        mostrarNotificacion("Evaluación registrada. Falta la evaluación de la otra parte para completar el intercambio.", "success");
+      }
+      await configurarEvaluaciones();
       cargarPanelIntercambios();
     }
   });
