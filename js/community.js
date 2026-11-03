@@ -1935,8 +1935,15 @@ export function initCommunity({
   window.addEventListener("perfilComunidadActualizado", manejarPublicacionActualizada);
 
   try {
+    const destinoGuardadoRadar = getItem("hm_radar_destino", "");
     destinoRadarComunitario =
-      String(getItem("hm_radar_destino", "") || "");
+      destinoGuardadoRadar && typeof destinoGuardadoRadar === "object"
+        ? [
+            destinoGuardadoRadar.localidad,
+            destinoGuardadoRadar.provincia,
+            destinoGuardadoRadar.pais
+          ].filter(Boolean).join(", ")
+        : String(destinoGuardadoRadar || "");
   } catch (error) {
     console.warn("No se pudo recuperar el destino del Radar:", error);
   }
