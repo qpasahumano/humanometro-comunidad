@@ -79,8 +79,32 @@ export function initCommunity({
     return String(valor || "")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/gi, " ")
       .trim()
-      .toLocaleLowerCase("es-AR");
+      .toLocaleLowerCase("es-AR")
+      .replace(/\s+/g, " ");
+  }
+
+  function coincideZonaRadar(perfil, destino) {
+    const componentesDestino = String(destino || "")
+      .split(",")
+      .map(normalizarZonaRadar)
+      .filter((parte) => parte.length >= 3);
+    if (!componentesDestino.length) return false;
+
+    const ubicacionesPerfil = [
+      perfil?.localidad,
+      perfil?.zona_aproximada
+    ].map(normalizarZonaRadar).filter(Boolean);
+    if (!ubicacionesPerfil.length) return false;
+
+    return componentesDestino.some((parte) =>
+      ubicacionesPerfil.some((ubicacion) =>
+        ubicacion === parte ||
+        (" " + ubicacion + " ").includes(" " + parte + " ") ||
+        (" " + parte + " ").includes(" " + ubicacion + " ")
+      )
+    );
   }
 
   function crearIndicadorMensajeriaOffline(perfil) {
@@ -213,11 +237,9 @@ export function initCommunity({
           if (estado) estado.textContent = "Indicá una localidad o zona para iniciar la búsqueda del Radar.";
           return;
         }
-        vecinos = vecinos.filter((perfil) => {
-          const localidad = normalizarZonaRadar(perfil.localidad);
-          const zona = normalizarZonaRadar(perfil.zona_aproximada);
-          return localidad.includes(destino) || zona.includes(destino) || destino.includes(localidad) || destino.includes(zona);
-        });
+        vecinos = vecinos.filter((perfil) =>
+          coincideZonaRadar(perfil, destinoRadarComunitario)
+        );
       }
 
       vecinos.sort((a, b) => {
