@@ -594,25 +594,67 @@ export function initCommunity({
     }
   }
 
+  // La base usa valores cerrados (CHECK). Se conservan los valores y textos
+  // originales de la interfaz mediante metadatos internos en la descripción.
+  const MARCADOR_META_PUBLICACION = "[HMC_META:";
+
+  function mapearTipoBD(tipo) {
+    const valor = normalizarTexto(tipo).toLowerCase();
+    if (valor === "oferta" || valor === "ofrezco") return "ofrezco";
+    if (valor === "necesidad" || valor === "necesito") return "necesito";
+    if (valor === "ayuda") return "ayuda";
+    return valor;
+  }
+
+  function mapearCategoriaBD(categoria) {
+    const valor = normalizarTexto(categoria).toLowerCase();
+    const permitidas = ["alimentos", "herramientas", "hogar", "mascotas", "ropa", "servicios", "varios", "wifi"];
+    if (permitidas.includes(valor)) return valor;
+    const equivalencias = {
+      productos: "varios",
+      transporte: "servicios",
+      energia: "wifi",
+      recursos: "varios",
+      ayuda: "varios",
+      bancos_salud_oficial: "servicios",
+      otros: "varios",
+      otra: "varios"
+    };
+    return equivalencias[valor] || "varios";
+  }
+
+  function mapearModalidadBD(modalidadUI) {
+    const valor = normalizarTexto(modalidadUI).toLowerCase();
+    if (["trueque-productos", "trueque-servicios", "intercambio-mixto"].includes(valor)) {
+      return { modalidad: "intercambio", modalidad_intercambio: "especifico" };
+    }
+    if (valor === "gratuito") {
+      return { modalidad: "gratuito", modalidad_intercambio: "acepto_propuestas" };
+    }
+    if (valor === "colaboracion") {
+      return { modalidad: "a_convenir", modalidad_intercambio: "escucho_tu_ofrecimiento" };
+    }
+    return { modalidad: null, modalidad_intercambio: null };
+  }
+
   function obtenerCondicion(descripcion) {
-    const texto = normalizarTexto(descripcion);
-
-    const coincidencia = texto.match(
-      /(?:^|\n)\[Condición informada:\s*([^\]]*)\]\s*$/
-    );
-
-    if (!coincidencia) {
-      return {
-        descripcion: texto,
-        condicion: ""
-      };
+    let texto = normalizarTexto(descripcion);
+    let meta = {};
+    const metaMatch = texto.match(/(?:^|\n)\[HMC_META:([^\]]+)\]\s*$/);
+    if (metaMatch) {
+      try { meta = JSON.parse(decodeURIComponent(metaMatch[1])); } catch (error) {
+        console.warn("No se pudieron leer los metadatos de la publicación:", error);
+      }
+      texto = texto.replace(metaMatch[0], "").trim();
     }
 
+    const coincidencia = texto.match(/(?:^|\n)\[Condición informada:\s*([^\]]*)\]\s*$/);
+    if (!coincidencia) return { descripcion: texto, condicion: "", meta };
+
     return {
-      descripcion: texto
-        .replace(coincidencia[0], "")
-        .trim(),
-      condicion: normalizarTexto(coincidencia[1])
+      descripcion: texto.replace(coincidencia[0], "").trim(),
+      condicion: normalizarTexto(coincidencia[1]),
+      meta
     };
   }
 
@@ -624,14 +666,14 @@ export function initCommunity({
     return {
       id: String(registro.id),
       perfil_id: registro.perfil_id ?? registro.usuario_id ?? null,
-      tipo: registro.tipo ?? "",
-      categoria: registro.categoria ?? "",
+      tipo: datosDescripcion.meta.tipoUI || (registro.tipo === "ofrezco" ? "oferta" : registro.tipo === "necesito" ? "necesidad" : registro.tipo ?? ""),
+      categoria: datosDescripcion.meta.categoriaUI || registro.categoria || "",
       titulo: registro.titulo ?? "",
       descripcion: datosDescripcion.descripcion,
       condicion: datosDescripcion.condicion,
       modalidad: registro.modalidad ?? null,
       modalidad_intercambio:
-        registro.modalidad_intercambio ?? "",
+        datosDescripcion.meta.modalidadUI || registro.modalidad_intercambio || "",
       que_necesita_a_cambio:
         registro.que_necesita_a_cambio ?? "",
       zona_aproximada: registro.zona_aproximada ?? "",
@@ -1380,6 +1422,14 @@ export function initCommunity({
         `\n[Condición informada: ${datos.condicion}]`;
     }
 
+    const modalidadBD = mapearModalidadBD(datos.modalidad_intercambio);
+    const metadatosPublicacion = {
+      tipoUI: datos.tipo,
+      categoriaUI: datos.categoria,
+      modalidadUI: datos.modalidad_intercambio
+    };
+    descripcionRemota += `\n${MARCADOR_META_PUBLICACION}${encodeURIComponent(JSON.stringify(metadatosPublicacion))}]`;
+
     // La sesión autenticada es la fuente de autoridad para identificar al propietario.
     if (!usuario.id || !perfil.id || String(perfil.id) !== String(usuario.id)) {
       notificar(
@@ -1395,13 +1445,12 @@ export function initCommunity({
     const registro = {
       perfil_id: usuario.id,
       usuario_id: usuario.id,
-      tipo: datos.tipo,
-      categoria: datos.categoria,
+      tipo: mapearTipoBD(datos.tipo),
+      categoria: mapearCategoriaBD(datos.categoria),
       titulo: datos.titulo,
       descripcion: descripcionRemota,
-      modalidad: null,
-      modalidad_intercambio:
-        datos.modalidad_intercambio,
+      modalidad: modalidadBD.modalidad,
+      modalidad_intercambio: modalidadBD.modalidad_intercambio,
       que_necesita_a_cambio:
         datos.que_necesita_a_cambio,
       zona_aproximada: datos.zona_aproximada,
