@@ -341,7 +341,7 @@ function configurarIntercambiosGlobales() {
       if (evals && evals.length >= 2) {
         await supabase.from("intercambios").update({ estado: "completado" }).eq("id", inter.id);
         if (inter.publicacion_id) {
-          await supabase.from("publicaciones").update({ estado: "completada" }).eq("id", inter.publicacion_id);
+          await supabase.from("publicaciones").update({ estado: "retirada" }).eq("id", inter.publicacion_id);
         }
       }
 
