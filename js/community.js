@@ -179,7 +179,9 @@ export function initCommunity({
         )
         .eq("estado", "activa")
         .order("creado_en", { ascending: false });
-      if (errorPublicaciones) throw errorPublicaciones;
+      if (errorPublicaciones) {
+        console.warn("No se pudieron cargar publicaciones para las fichas:", errorPublicaciones);
+      }
 
       const publicacionesPorPerfil = new Map();
       (publicacionesActivas || []).forEach((registro) => {
@@ -670,6 +672,61 @@ export function initCommunity({
     });
   }
 
+  async function sincronizarPublicacionesPendientes() {
+    if (!navigator.onLine) return;
+    const usuario = await obtenerUsuarioActual();
+    const perfil = await obtenerPerfilActual();
+    if (!usuario?.id || !perfil?.id) return;
+
+    const locales = obtenerLocales();
+    if (!locales.length) return;
+
+    const pendientes = locales.filter((p) =>
+      p.origen === "local" &&
+      String(p.perfil_id || "") === String(perfil.id)
+    );
+    if (!pendientes.length) return;
+
+    const sincronizadas = new Set();
+    for (const pendiente of pendientes) {
+      const registro = {
+        perfil_id: perfil.id,
+        tipo: pendiente.tipo,
+        categoria: pendiente.categoria,
+        titulo: pendiente.titulo,
+        descripcion: pendiente.descripcion,
+        modalidad: pendiente.modalidad ?? null,
+        modalidad_intercambio: pendiente.modalidad_intercambio ?? "",
+        que_necesita_a_cambio: pendiente.que_necesita_a_cambio ?? "",
+        zona_aproximada: pendiente.zona_aproximada ?? "",
+        offline_activo: Boolean(pendiente.offline_activo),
+        fotos: Array.isArray(pendiente.fotos) ? pendiente.fotos : [],
+        estado: pendiente.estado || "activa",
+        actualizado_en: pendiente.actualizado_en || new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from("publicaciones")
+        .insert(registro)
+        .select("id, perfil_id, tipo, categoria, titulo, descripcion, modalidad, modalidad_intercambio, que_necesita_a_cambio, zona_aproximada, offline_activo, fotos, estado, creado_en, actualizado_en")
+        .single();
+
+      if (error) {
+        console.warn("No se pudo sincronizar una publicación pendiente:", error);
+        continue;
+      }
+
+      sincronizadas.add(String(pendiente.id));
+      await guardarMatrixCache([convertirRegistroRemoto(data)]);
+    }
+
+    if (sincronizadas.size) {
+      const restantes = locales.filter((p) => !sincronizadas.has(String(p.id)));
+      guardarLocales(restantes);
+      window.dispatchEvent(new CustomEvent("publicacionComunidadActualizada"));
+    }
+  }
+
   async function cargarPublicacionesRemotas() {
     if (destruido || cargando) return;
 
@@ -685,6 +742,7 @@ export function initCommunity({
 
     try {
       if (navigator.onLine) {
+        await sincronizarPublicacionesPendientes();
         let query = supabase
           .from("publicaciones")
           .select(
