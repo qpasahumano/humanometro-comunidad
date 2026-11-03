@@ -655,16 +655,16 @@ async function cargarMisPublicaciones() {
       .from("publicaciones")
       .select("id, perfil_id, usuario_id, tipo, categoria, titulo, descripcion, estado, creado_en")
       .or(`perfil_id.eq.${perfilActual.id},usuario_id.eq.${usuarioActual.id}`)
-      .eq("estado", "activa")
+      .eq("estado", "publicada")
       .order("creado_en", { ascending: false });
 
     contenedor.replaceChildren();
     if (error) throw error;
 
-    const activas = (data || []).filter((publicacion) => publicacion.estado === "activa").length;
+    const activas = (data || []).filter((publicacion) => publicacion.estado === "publicada").length;
     const contador = document.createElement("p");
     contador.className = "texto-ayuda";
-    contador.textContent = `${activas} publicación${activas === 1 ? "" : "es"} activa${activas === 1 ? "" : "s"}`;
+    contador.textContent = `${activas} publicación${activas === 1 ? "" : "es"} publicada${activas === 1 ? "" : "s"}`;
     contenedor.appendChild(contador);
 
     if (!data?.length) {
