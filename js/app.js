@@ -351,10 +351,27 @@ function configurarIntercambiosGlobales() {
         return;
       }
 
-      const respeta = confirm("¿Respetó las condiciones pactadas?");
-      const cordialidad = confirm("¿Hubo cordialidad y respeto?");
-      const puntualidad = confirm("¿Cumplió con los plazos acordados?");
-      const comunicacion = confirm("¿Mantuvo una comunicación clara?");
+      const respuestas = [];
+      const preguntas = [
+        "¿Respetó las condiciones pactadas?",
+        "¿Hubo cordialidad y respeto?",
+        "¿Cumplió con los plazos acordados?",
+        "¿Mantuvo una comunicación clara?"
+      ];
+      for (const pregunta of preguntas) {
+        const respuesta = prompt(pregunta + "\\nRespondé S para Sí o N para No. Cancelar anula toda la evaluación.", "S");
+        if (respuesta === null) {
+          mostrarNotificacion("Evaluación cancelada. No se guardó ningún resultado.", "warning");
+          return;
+        }
+        const valor = respuesta.trim().toLowerCase();
+        if (valor !== "s" && valor !== "si" && valor !== "sí" && valor !== "n" && valor !== "no") {
+          mostrarNotificacion("Respuesta no válida. Usá S para Sí o N para No. No se guardó la evaluación.", "error");
+          return;
+        }
+        respuestas.push(valor === "s" || valor === "si" || valor === "sí");
+      }
+      const [respeta, cordialidad, puntualidad, comunicacion] = respuestas;
 
       if (String(evaluadoId) === String(usuario.id)) {
         mostrarNotificacion("No podés evaluarte a vos mismo.", "error");
