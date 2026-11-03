@@ -1121,7 +1121,7 @@ function configurarPerfil() {
         .from("perfiles")
         .upsert({
           id: usuario.id,
-          nombre: nombre,
+          nombre_visible: nombre,
           whatsapp: whatsapp,
           actualizado_en: new Date().toISOString()
         });
@@ -1210,7 +1210,7 @@ function configurarConectividadSolidaria() {
     sincronizando = true;
     try {
       const { error } = await supabase.from("perfiles").update({
-        conectividad_disponible: local.ofrece,
+        conectividad_disponible: local.ofrece ? "true" : "false",
         conectividad_modalidad: local.ofrece ? local.modalidad : null,
         conectividad_emergencias: local.ofrece && local.emergencias,
         actualizado_en: new Date().toISOString()
@@ -1248,7 +1248,7 @@ function configurarConectividadSolidaria() {
     }
     if (!data) return;
     const remoto = {
-      ofrece: Boolean(data.conectividad_disponible),
+      ofrece: String(data.conectividad_disponible).toLowerCase() === "true",
       modalidad: ["gratuita", "intercambio", "ambas"].includes(data.conectividad_modalidad) ? data.conectividad_modalidad : "gratuita",
       emergencias: Boolean(data.conectividad_emergencias),
       pendiente: false,
