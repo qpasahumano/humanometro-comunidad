@@ -653,8 +653,8 @@ async function cargarMisPublicaciones() {
   try {
     const { data, error } = await supabase
       .from("publicaciones")
-      .select("id, tipo, categoria, titulo, descripcion, estado, creado_en")
-      .eq("perfil_id", perfilActual.id)
+      .select("id, perfil_id, usuario_id, tipo, categoria, titulo, descripcion, estado, creado_en")
+      .or(`perfil_id.eq.${perfilActual.id},usuario_id.eq.${usuarioActual.id}`)
       .eq("estado", "activa")
       .order("creado_en", { ascending: false });
 
