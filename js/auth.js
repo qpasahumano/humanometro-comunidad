@@ -680,9 +680,21 @@ async function cargarMisPublicaciones() {
       const titulo = document.createElement("h4");
       titulo.textContent = publicacion.titulo || "Publicación sin título";
       const detalle = document.createElement("p");
-      detalle.textContent = publicacion.descripcion || "";
+      const descripcionOriginal = publicacion.descripcion || "";
+      const metaMatch = descripcionOriginal.match(/(?:^|\n)\[HMC_META:([^\]]+)\]\s*$/);
+      let metadatos = {};
+      if (metaMatch) {
+        try { metadatos = JSON.parse(decodeURIComponent(metaMatch[1])); } catch (error) {
+          console.warn("No se pudieron leer los metadatos de la publicación propia:", error);
+        }
+      }
+      detalle.textContent = descripcionOriginal
+        .replace(/\n?\[HMC_META:[^\]]+\]\s*$/, "")
+        .trim();
       const estado = document.createElement("small");
-      estado.textContent = `${publicacion.tipo === "oferta" ? "OFREZCO" : "BUSCO"} · ${publicacion.categoria || "Sin categoría"} · Estado: ${publicacion.estado || "sin especificar"}`;
+      const tipoVisible = ["oferta", "ofrezco"].includes(publicacion.tipo) ? "OFREZCO" : "BUSCO";
+      const categoriaVisible = metadatos.categoriaUI || publicacion.categoria || "Sin categoría";
+      estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: ${publicacion.estado || "sin especificar"}`;
       tarjeta.append(titulo, detalle, estado);
       contenedor.appendChild(tarjeta);
     });
