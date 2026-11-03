@@ -73,6 +73,7 @@ export function initCommunity({
   let suscripcionAuth = null;
   let ultimaCarga = 0;
   let dbMatrixInstance = null;
+  let usuarioSesionId = "";
 
   function normalizarZonaRadar(valor) {
     return String(valor || "")
@@ -722,8 +723,25 @@ export function initCommunity({
     });
   }
 
+  async function sincronizarPublicacionesPendientes() {
+    if (!navigator.onLine) return;
+    const usuario = await obtenerUsuarioActual();
+    if (!usuario?.id) return;
+    const pendientes = obtenerLocales().filter((p) => String(p.origen || "") === "local" && String(p.usuario_id || p.perfil_id || "") === String(usuario.id) && String(p.id || "").startsWith("local-"));
+    const sincronizadas = new Set();
+    for (const pendiente of pendientes) {
+      const registro = { perfil_id: usuario.id, usuario_id: usuario.id, tipo: pendiente.tipo, categoria: pendiente.categoria, titulo: pendiente.titulo, descripcion: pendiente.descripcion, modalidad: pendiente.modalidad ?? null, modalidad_intercambio: pendiente.modalidad_intercambio ?? null, que_necesita_a_cambio: pendiente.que_necesita_a_cambio || "", zona_aproximada: pendiente.zona_aproximada || "", offline_activo: Boolean(pendiente.offline_activo), fotos: Array.isArray(pendiente.fotos) ? pendiente.fotos : [], estado: "publicada", creado_en: pendiente.creado_en || new Date().toISOString(), actualizado_en: new Date().toISOString() };
+      const { error } = await supabase.from("publicaciones").insert(registro);
+      if (error) { console.warn("Publicación pendiente de sincronización:", error); continue; }
+      sincronizadas.add(String(pendiente.id));
+    }
+    if (sincronizadas.size) guardarLocales(obtenerLocales().filter((p) => !sincronizadas.has(String(p.id))));
+  }
+
   async function cargarPublicacionesRemotas() {
     if (destruido) return;
+    const usuarioSesion = await obtenerUsuarioActual();
+    usuarioSesionId = String(usuarioSesion?.id || "");
 
     cargando = true;
     const identificadorCarga = ++ultimaCarga;
@@ -904,6 +922,8 @@ export function initCommunity({
     );
     const autorId = publicacion.perfil_id || "";
     const offlineActivo = Boolean(publicacion.offline_activo);
+    const esPropia = Boolean(usuarioSesionId) && String(publicacion.perfil_id || publicacion.usuario_id || "") === usuarioSesionId;
+    const esLocal = publicacion.origen === "local";
 
     let requiereRevalidar = false;
 
@@ -991,6 +1011,7 @@ export function initCommunity({
           Contactar por este trueque
         </button>
 
+        ${esPropia && !esLocal ? `<button class="boton-secundario btn-retirar-publicacion" data-pub-id="${idPublicacion}" style="flex:1;font-size:.85rem;">RETIRAR MI PUBLICACIÓN</button>` : ""}
         <button
           class="boton-accion btn-iniciar-intercambio-card"
           data-pub-id="${idPublicacion}"
@@ -1058,6 +1079,21 @@ export function initCommunity({
   }
 
   document.addEventListener("click", manejarInicioIntercambioDesdeCard);
+
+  async function manejarRetiroPublicacion(e) {
+    const boton = e.target.closest?.(".btn-retirar-publicacion");
+    if (!boton) return;
+    e.preventDefault();
+    const usuario = await obtenerUsuarioActual();
+    if (!usuario?.id || !boton.dataset.pubId) return;
+    boton.disabled = true;
+    const { error } = await supabase.from("publicaciones").update({ estado: "retirada", actualizado_en: new Date().toISOString() }).eq("id", boton.dataset.pubId).eq("usuario_id", usuario.id);
+    if (error) { console.error("No se pudo retirar la publicación:", error); boton.disabled = false; notificar("No se pudo retirar la publicación. Intentá nuevamente.", "error"); return; }
+    notificar("Tu publicación fue retirada de la comunidad.", "success");
+    cargarPublicacionesRemotas();
+    cargarDirectorioComunidad();
+  }
+  document.addEventListener("click", manejarRetiroPublicacion);
 
   let contactoPendiente = null;
 
@@ -1726,7 +1762,8 @@ export function initCommunity({
     }
   }
 
-  function manejarOnline() {
+  async function manejarOnline() {
+    await sincronizarPublicacionesPendientes();
     cargarPublicacionesRemotas();
     if (modoListadoPerfiles === "directorio") {
       cargarDirectorioComunidad();
@@ -1943,6 +1980,7 @@ export function initCommunity({
 
       document.removeEventListener("click", manejarClickContacto);
       document.removeEventListener("click", manejarInicioIntercambioDesdeCard);
+      document.removeEventListener("click", manejarRetiroPublicacion);
 
       btnConfirmarWsp?.removeEventListener(
         "click",
