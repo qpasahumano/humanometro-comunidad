@@ -49,6 +49,8 @@ export function initCommunity({
   const filtroZonaGondola = document.getElementById("filtro-zona-gondola");
   const filtroTipoInput = document.getElementById("filtro-tipo");
   const filtroOfflineActivoInput = document.getElementById("filtro-offline-activo");
+  const filtroCategoriaRadarInput = document.getElementById("filtro-categoria-radar");
+  const contenedorPublicacionesPerfil = document.getElementById("contenedor-publicaciones-perfil");
   const limpiarFiltrosBtn = document.getElementById(
     "btn-limpiar-filtros"
   );
@@ -235,9 +237,31 @@ export function initCommunity({
           if (estado) estado.textContent = "Indicá una localidad o zona para iniciar la búsqueda del Radar.";
           return;
         }
-        vecinos = vecinos.filter((perfil) =>
-          coincideZonaRadar(perfil, destinoRadarComunitario)
-        );
+        const palabra = normalizarZonaRadar(busquedaInput?.value);
+        const tipoElegido = filtroTipoInput?.value || "todas";
+        const categoriaElegida = normalizarZonaRadar(filtroCategoriaRadarInput?.value);
+        const soloOffline = Boolean(filtroOfflineActivoInput?.checked);
+        vecinos = vecinos.filter((perfil) => {
+          if (!coincideZonaRadar(perfil, destinoRadarComunitario)) return false;
+          if (soloOffline && !perfil.mensajeria_offline) return false;
+          const pubs = publicacionesPorPerfil.get(String(perfil.id)) || [];
+          const coinciden = pubs.filter((pub) => {
+            const texto = normalizarZonaRadar([pub.titulo, pub.descripcion, pub.categoria].join(" "));
+            const tipo = normalizarZonaRadar(pub.tipo);
+            const categoria = normalizarZonaRadar(pub.categoria);
+            if (palabra && !texto.includes(palabra)) return false;
+            if (tipoElegido !== "todas" && tipo !== normalizarZonaRadar(tipoElegido)) return false;
+            if (categoriaElegida && categoria !== categoriaElegida) return false;
+            return true;
+          });
+          if (palabra || tipoElegido !== "todas" || categoriaElegida) {
+            if (!coinciden.length) return false;
+          }
+          return true;
+        });
+        if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
+      } else if (contenedorPublicacionesPerfil) {
+        contenedorPublicacionesPerfil.hidden = true;
       }
 
       vecinos.sort((a, b) => {
@@ -364,10 +388,10 @@ export function initCommunity({
           if (busquedaInput) busquedaInput.value = "";
           
           cargarPublicacionesRemotas();
-          window.dispatchEvent(new CustomEvent("abrirVistaGondola"));
+          window.dispatchEvent(new CustomEvent("abrirVistaRadar"));
 
           setTimeout(() => {
-            lista?.scrollIntoView({ behavior: "smooth" });
+            contenedorPublicacionesPerfil?.scrollIntoView({ behavior: "smooth" });
           }, 150);
         });
         acciones.appendChild(verPublicaciones);
@@ -1779,6 +1803,7 @@ export function initCommunity({
     if (filtroTipoInput) filtroTipoInput.value = "todas";
     if (filtroOfflineActivoInput) filtroOfflineActivoInput.checked = false;
     if (form) form.style.display = "none";
+    if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
     if (textoFiltroVecino) {
       textoFiltroVecino.textContent = `Mostrando todas las publicaciones de ${perfilFiltroNombre || "este integrante"}`;
     }
