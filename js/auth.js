@@ -143,6 +143,22 @@ function prepararFormularioPerfil() {
       placeholder: "Contá detalladamente las condiciones reales de lo que ofrecés o buscás."
     },
     {
+      id: "hm-profile-country",
+      nombre: "País",
+      etiqueta: "País",
+      tipo: "input",
+      max: 100,
+      placeholder: "Ej.: Argentina"
+    },
+    {
+      id: "hm-profile-province",
+      nombre: "Provincia, estado o región",
+      etiqueta: "Provincia, estado o región",
+      tipo: "input",
+      max: 100,
+      placeholder: "Ej.: Buenos Aires"
+    },
+    {
       id: "hm-profile-locality",
       nombre: "Localidad",
       etiqueta: "Localidad",
@@ -611,6 +627,8 @@ function actualizarInterfazUsuario() {
 function limpiarFormularioPerfil() {
   const nombre = $("nombre-usuario");
   const presentacion = $("hm-profile-presentation");
+  const pais = $("hm-profile-country");
+  const provincia = $("hm-profile-province");
   const localidad = $("hm-profile-locality");
   const zona = $("hm-profile-zone");
   const whatsapp = $("whatsapp-usuario");
@@ -630,6 +648,8 @@ function limpiarFormularioPerfil() {
   if (mensajeriaOffline) mensajeriaOffline.checked = false;
   if (nombre) nombre.value = "";
   if (presentacion) presentacion.value = "";
+  if (pais) pais.value = "";
+  if (provincia) provincia.value = "";
   if (localidad) localidad.value = "";
   if (zona) zona.value = "";
   if (whatsapp) whatsapp.value = "";
@@ -865,7 +885,7 @@ async function cargarPerfil() {
     const { data, error } = await supabase
       .from("perfiles")
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline, estado_acceso_comunidad, procesos_incumplidos, motivo_restriccion"
+        "id, nombre_visible, presentacion, pais, provincia, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline, estado_acceso_comunidad, procesos_incumplidos, motivo_restriccion"
       )
       .eq("id", usuarioActual.id)
       .maybeSingle();
@@ -884,6 +904,8 @@ async function cargarPerfil() {
 
     if ($("nombre-usuario")) $("nombre-usuario").value = data?.nombre_visible || "";
     if ($("hm-profile-presentation")) $("hm-profile-presentation").value = data?.presentacion || "";
+    if ($("hm-profile-country")) $("hm-profile-country").value = data?.pais || "";
+    if ($("hm-profile-province")) $("hm-profile-province").value = data?.provincia || "";
     if ($("hm-profile-locality")) $("hm-profile-locality").value = data?.localidad || "";
     if ($("hm-profile-zone")) $("hm-profile-zone").value = data?.zona_aproximada || "";
     if ($("whatsapp-usuario")) $("whatsapp-usuario").value = data?.whatsapp || "";
@@ -929,6 +951,8 @@ async function guardarPerfil(evento) {
 
   const nombre = $("nombre-usuario")?.value.trim() || "";
   const presentacion = $("hm-profile-presentation")?.value.trim() || "";
+  const pais = $("hm-profile-country")?.value.trim() || "";
+  const provincia = $("hm-profile-province")?.value.trim() || "";
   const localidad = $("hm-profile-locality")?.value.trim() || "";
   const zona = $("hm-profile-zone")?.value.trim() || "";
   const whatsapp = $("whatsapp-usuario")?.value.trim() || "";
@@ -1001,6 +1025,8 @@ async function guardarPerfil(evento) {
       id: usuarioActual.id,
       nombre_visible: nombre,
       presentacion: presentacion || null,
+      pais: pais || "",
+      provincia: provincia || "",
       localidad: localidad || null,
       zona_aproximada: zona || null,
       whatsapp: whatsapp || null,
@@ -1017,7 +1043,7 @@ async function guardarPerfil(evento) {
       .from("perfiles")
       .upsert(registro, { onConflict: "id" })
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline, estado_acceso_comunidad, procesos_incumplidos, motivo_restriccion"
+        "id, nombre_visible, presentacion, pais, provincia, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline, estado_acceso_comunidad, procesos_incumplidos, motivo_restriccion"
       )
       .single();
 
