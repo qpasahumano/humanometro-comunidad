@@ -249,6 +249,16 @@
         </div>
       </section>
 
+      <section id="contenedor-publicaciones-perfil" class="tarjeta" hidden>
+        <div id="filtro-vecino-activo" class="filtro-vecino-activo" hidden>
+          <span id="texto-filtro-vecino">Publicaciones de un integrante</span>
+          <button id="btn-quitar-filtro-vecino" class="boton-secundario" type="button">VER TODAS</button>
+        </div>
+        <h3>Publicaciones del integrante</h3>
+        <div id="lista-publicaciones" class="lista-publicaciones" aria-live="polite"></div>
+        <p class="aviso-local">La disponibilidad puede cambiar. Antes de coordinar, confirmá con su autor que la publicación siga activa y que las condiciones continúen vigentes.</p>
+      </section>
+
     </div><!-- /#panel-comunidad -->
 
     <!-- =====================================================
@@ -318,7 +328,41 @@
 
       <!-- BUSCAR O EXPLORAR OTRA COMUNIDAD -->
       <section class="tarjeta selector-barrio">
+        <h3>Buscar publicaciones y personas</h3>
+        <p>Buscá dentro de tu zona o en cualquier localidad, provincia o país. Los resultados mostrarán integrantes que tengan publicaciones coincidentes.</p>
 
+        <label for="buscar-publicaciones">Palabra clave</label>
+        <input id="buscar-publicaciones" type="search" maxlength="120" placeholder="Producto, servicio, oficio o necesidad">
+
+        <label for="filtro-tipo">Tipo de publicación</label>
+        <select id="filtro-tipo">
+          <option value="todas">Ofrezco y necesito</option>
+          <option value="oferta">Solo ofrecen</option>
+          <option value="necesidad">Solo buscan</option>
+        </select>
+
+        <label for="filtro-categoria-radar">Categoría</label>
+        <select id="filtro-categoria-radar">
+          <option value="">Todas las categorías</option>
+          <option value="productos">Productos y objetos</option>
+          <option value="alimentos">Alimentos</option>
+          <option value="ropa">Ropa y calzado</option>
+          <option value="herramientas">Herramientas</option>
+          <option value="servicios">Servicios y oficios</option>
+          <option value="transporte">Traslados y transporte</option>
+          <option value="energia">Energía y conectividad</option>
+          <option value="recursos">Recursos comunitarios</option>
+          <option value="ayuda">Ayuda mutua</option>
+          <option value="otros">Otros</option>
+        </select>
+
+        <label class="control-check filtro-offline" for="filtro-offline-activo">
+          <input id="filtro-offline-activo" type="checkbox">
+          Solo integrantes con comunicación offline activa
+        </label>
+      </section>
+
+      <section class="tarjeta selector-barrio">
         <h3>¿A qué comunidad querés llegar?</h3>
 
         <p>
@@ -563,7 +607,7 @@
         </small>
 
         <button class="boton-accion" type="submit">
-          GUARDAR PUBLICACIÓN
+          PUBLICAR
         </button>
 
         <p
@@ -574,86 +618,6 @@
 
       </form>
 
-      <!-- BÚSQUEDA Y FILTROS -->
-      <div class="tarjeta filtros">
-        <h3>Buscar publicaciones</h3>
-
-        <label for="buscar-publicaciones">Palabra clave</label>
-
-        <input
-          id="buscar-publicaciones"
-          type="search"
-          placeholder="Buscá por servicio, título, detalle o categoría"
-        >
-
-        <label for="filtro-zona-gondola">Buscar en barrio o localidad</label>
-
-        <input
-          id="filtro-zona-gondola"
-          type="search"
-          maxlength="120"
-          placeholder="Dejá vacío para usar tu zona seleccionada"
-        >
-
-        <label for="filtro-tipo">Mostrar</label>
-
-        <select id="filtro-tipo">
-          <option value="todas">Todas las publicaciones</option>
-          <option value="necesidad">Solo lo que se busca</option>
-          <option value="oferta">Solo lo que se ofrece</option>
-        </select>
-
-        <label class="control-check filtro-offline" for="filtro-offline-activo">
-          <input id="filtro-offline-activo" type="checkbox">
-          Mostrar solo vecinos con comunicación offline activa
-        </label>
-
-        <div class="acciones-busqueda">
-          <button
-            id="btn-buscar-publicaciones"
-            class="boton-accion boton-ancho"
-            type="button"
-          >
-            BUSCAR PUBLICACIONES
-          </button>
-
-          <button
-            id="btn-limpiar-filtros"
-            class="boton-secundario boton-ancho"
-            type="button"
-          >
-            LIMPIAR BÚSQUEDA
-          </button>
-
-          <button
-            id="btn-actualizar-red"
-            class="boton-secundario boton-ancho"
-            type="button"
-          >
-            ACTUALIZAR RED
-          </button>
-        </div>
-      </div>
-
-      <div id="filtro-vecino-activo" class="filtro-vecino-activo" hidden>
-        <span id="texto-filtro-vecino">Publicaciones de un integrante</span>
-        <button id="btn-quitar-filtro-vecino" class="boton-secundario" type="button">
-          VER TODAS
-        </button>
-      </div>
-
-      <h3>Publicaciones</h3>
-
-      <div
-        id="lista-publicaciones"
-        class="lista-publicaciones"
-        aria-live="polite"
-      ></div>
-
-      <p class="aviso-local">
-        La disponibilidad puede cambiar. Antes de coordinar, confirmá con su
-        autor que la publicación siga activa y que las condiciones continúen vigentes.
-      </p>
 
     </section>
 
