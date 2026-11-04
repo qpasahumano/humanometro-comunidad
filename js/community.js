@@ -255,9 +255,8 @@ export function initCommunity({
             if (categoriaElegida && categoria !== categoriaElegida) return false;
             return true;
           });
-          if (palabra || tipoElegido !== "todas" || categoriaElegida) {
-            if (!coinciden.length) return false;
-          }
+          // El Radar busca integrantes con publicaciones activas; no lista perfiles vacíos.
+          if (!coinciden.length) return false;
           return true;
         });
         if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
