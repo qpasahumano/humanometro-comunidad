@@ -569,8 +569,8 @@ function configurarIntercambiosGlobales() {
           const { error: errorRetiro } = await supabase
             .from("publicaciones")
             .update({ estado: "retirada", actualizado_en: new Date().toISOString() })
-            .eq("id", inter.publicacion_id)
-            .eq("estado", "publicada");
+             .eq("id", inter.publicacion_id)
+            .in("estado", ["publicada", "reservada"]);
           if (errorRetiro) console.error("No se pudo retirar automáticamente la publicación completada:", errorRetiro);
         }
         mostrarNotificacion("Intercambio completado: ambas partes evaluaron la experiencia.", "success");
