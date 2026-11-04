@@ -32,7 +32,8 @@ export function perfilEstaCompleto() {
     String(perfilActual.whatsapp || "").trim() &&
     String(perfilActual.presentacion || "").trim() &&
     String(perfilActual.localidad || "").trim() &&
-    String(perfilActual.foto_url || "").trim()
+    String(perfilActual.foto_url || "").trim() &&
+    String(perfilActual.estado_acceso_comunidad || "activo") === "activo"
   );
 }
 
@@ -856,7 +857,7 @@ async function cargarPerfil() {
     const { data, error } = await supabase
       .from("perfiles")
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline"
+        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline, estado_acceso_comunidad, procesos_incumplidos, motivo_restriccion"
       )
       .eq("id", usuarioActual.id)
       .maybeSingle();
@@ -1008,7 +1009,7 @@ async function guardarPerfil(evento) {
       .from("perfiles")
       .upsert(registro, { onConflict: "id" })
       .select(
-        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline"
+        "id, nombre_visible, presentacion, localidad, zona_aproximada, whatsapp, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, conectividad_zona, mensajeria_offline, estado_acceso_comunidad, procesos_incumplidos, motivo_restriccion"
       )
       .single();
 
