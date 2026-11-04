@@ -1324,13 +1324,21 @@ export function initCommunity({
 
       const coincideOffline =
         !soloOffline || Boolean(publicacion.offline_activo);
+      const categoriaElegida = normalizarZonaRadar(filtroCategoriaRadarInput?.value);
+      const coincideCategoria = !categoriaElegida ||
+        normalizarZonaRadar(publicacion.categoria) === categoriaElegida;
+      const palabra = normalizarZonaRadar(busquedaInput?.value);
+      const textoPublicacion = normalizarZonaRadar([
+        publicacion.titulo, publicacion.descripcion, publicacion.categoria
+      ].join(" "));
+      const coincidePalabra = !palabra || textoPublicacion.includes(palabra);
 
       const coincideAutor =
         !perfilFiltroActivo ||
         String(publicacion.perfil_id || publicacion.usuario_id || "") ===
           String(perfilFiltroActivo);
 
-      return coincideTipo && coincideOffline && coincideAutor;
+      return coincideTipo && coincideOffline && coincideCategoria && coincidePalabra && coincideAutor;
     });
 
     lista.replaceChildren();
