@@ -1070,7 +1070,7 @@ export function initCommunity({
 
     const { data: publicacionVigente, error: errorPublicacion } = await supabase
       .from("publicaciones")
-      .select("id, perfil_id, usuario_id, estado")
+      .select("id, perfil_id, usuario_id, titulo, estado")
       .eq("id", publicacionId)
       .maybeSingle();
     if (errorPublicacion || !publicacionVigente ||
@@ -1112,6 +1112,7 @@ export function initCommunity({
     try {
       const { error } = await supabase.from("intercambios").insert([{
         publicacion_id: publicacionId,
+        referencia: String(publicacionVigente.titulo || "Intercambio comunitario"),
         usuario_a: perfilDuenhoId,
         usuario_b: usuarioActual.id,
         estado: "en_proceso",
