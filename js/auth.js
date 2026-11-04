@@ -348,6 +348,8 @@ function renderizarFichaVisual(contenedor) {
   const fotoSrc = escaparHTML(datos.foto_url || "");
   const nombreVisible = escaparHTML(datos.nombre_visible || "Sin nombre");
   const localidadVisible = escaparHTML(datos.localidad || "Sin localidad");
+  const provinciaVisible = escaparHTML(datos.provincia || "");
+  const paisVisible = escaparHTML(datos.pais || "");
   const zonaVisible = escaparHTML(datos.zona_aproximada || "");
   const presentacionVisible = escaparHTML(datos.presentacion || "Sin presentación detallada.");
   const modalidadVisible = escaparHTML(datos.conectividad_modalidad || "");
@@ -376,7 +378,7 @@ function renderizarFichaVisual(contenedor) {
         </div>
         <div style="overflow: hidden; flex-grow: 1;">
           <h3 style="margin: 0; color: #38bdf8; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nombreVisible}</h3>
-          <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #94a3b8;">📍 ${localidadVisible} ${zonaVisible ? `(${zonaVisible})` : ""}</p>
+          <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #94a3b8;">📍 ${[localidadVisible, provinciaVisible, paisVisible, zonaVisible].filter(Boolean).join(" · ")}</p>
         </div>
       </div>
 
