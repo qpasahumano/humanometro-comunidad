@@ -246,78 +246,18 @@
          RADAR COMUNITARIO (UNIFICADO: BARRIO PROPIO Y OTRAS LOCALIDADES)
          ===================================================== -->
     <section id="vista-radar" class="vista-interna" hidden>
-
-      <button class="boton-volver" data-volver type="button">
-        ← Volver a la comunidad
-      </button>
-
-      <h2>Radar comunitario y Ubicación</h2>
-
-      <p class="texto-ayuda">
-        Configurá tu barrio o buscá gente de la comunidad en otros lugares del país o del mundo.
-      </p>
-
-      <!-- UBICACIÓN DE LA COMUNIDAD PROPIA / BARRIO -->
-      <section class="selector-barrio tarjeta" style="margin-bottom: 16px;">
-        <h3>Mi barrio o localidad de referencia</h3>
-
-        <label for="barrio">Barrio o localidad</label>
-
-        <div class="fila-barrio">
-          <input
-            id="barrio"
-            type="text"
-            maxlength="100"
-            placeholder="Escribí tu barrio o localidad"
-            autocomplete="address-level3"
-          >
-
-          <button
-            id="btn-guardar-barrio"
-            class="boton-secundario"
-            type="button"
-          >
-            GUARDAR
-          </button>
-        </div>
-
-        <button
-          id="btn-ubicacion"
-          class="boton-secundario boton-ancho"
-          type="button"
-        >
-          USAR MI UBICACIÓN APROXIMADA
-        </button>
-
-        <p class="texto-ayuda">
-          La ubicación es opcional. Podés escribir tu barrio manualmente.
-          No publicamos tus coordenadas exactas.
-        </p>
-
-        <p class="texto-ayuda">
-          Identificación geográfica: datos de OpenStreetMap contributors.
-        </p>
-
-        <p
-          id="estado-barrio"
-          class="texto-ayuda"
-          aria-live="polite"
-        >
-          Elegí tu barrio para organizar la actividad local.
-        </p>
-      </section>
-
-      <!-- BUSCAR O EXPLORAR OTRA COMUNIDAD -->
+      <button class="boton-volver" data-volver type="button">← Volver a la comunidad</button>
+      <h2>Radar comunitario</h2>
       <section class="tarjeta selector-barrio">
         <h3>Buscar publicaciones y personas</h3>
-        <p>Buscá dentro de tu zona o en cualquier localidad, provincia o país. Los resultados mostrarán integrantes que tengan publicaciones coincidentes.</p>
+        <p>Elegí qué buscás y en qué lugar. El Radar mostrará las fichas de integrantes de esa zona que tengan publicaciones coincidentes.</p>
 
-        <label for="buscar-publicaciones">Palabra clave</label>
+        <label for="buscar-publicaciones">Qué buscás</label>
         <input id="buscar-publicaciones" type="search" maxlength="120" placeholder="Producto, servicio, oficio o necesidad">
 
         <label for="filtro-tipo">Tipo de publicación</label>
         <select id="filtro-tipo">
-          <option value="todas">Ofrezco y necesito</option>
+          <option value="todas">Ofrecen y buscan</option>
           <option value="oferta">Solo ofrecen</option>
           <option value="necesidad">Solo buscan</option>
         </select>
@@ -345,85 +285,33 @@
           <input id="filtro-whatsapp-activo" type="checkbox">
           WhatsApp disponible
         </label>
+
+        <h3>Ubicación de la comunidad que querés buscar</h3>
+        <label for="radar-pais">País</label>
+        <input id="radar-pais" type="text" maxlength="100" placeholder="Ej.: Argentina" autocomplete="country-name">
+
+        <label for="radar-provincia">Provincia, estado o región</label>
+        <input id="radar-provincia" type="text" maxlength="100" placeholder="Ej.: Buenos Aires">
+
+        <label for="zona-explorar">Ciudad, localidad o barrio</label>
+        <input id="zona-explorar" type="text" maxlength="100" placeholder="Ej.: Capital Federal">
+
+        <button id="btn-buscar-radar" class="boton-accion boton-ancho" type="button">BUSCAR COMUNIDAD</button>
+        <p id="estado-radar" class="texto-ayuda" aria-live="polite">Seleccioná una ubicación para ver sus integrantes.</p>
       </section>
 
-      <section class="tarjeta selector-barrio">
-        <h3>¿A qué comunidad querés llegar?</h3>
-
-        <p>
-          Elegí el destino para consultar las fichas de las personas
-          registradas en ese lugar. No necesitás estar físicamente allí.
-        </p>
-
-        <label for="radar-pais">País</label>
-
-        <input
-          id="radar-pais"
-          type="text"
-          maxlength="100"
-          placeholder="Ej.: México"
-          autocomplete="country-name"
-        >
-
-        <label for="radar-provincia">
-          Provincia, estado o región
-        </label>
-
-        <input
-          id="radar-provincia"
-          type="text"
-          maxlength="100"
-          placeholder="Ej.: Ciudad de México"
-        >
-
-        <label for="zona-explorar">
-          Ciudad, localidad o barrio
-        </label>
-
-        <input
-          id="zona-explorar"
-          type="text"
-          maxlength="100"
-          placeholder="Ej.: Coyoacán, Ciudad de México"
-        >
-
-        <button
-          id="btn-buscar-radar"
-          class="boton-accion boton-ancho"
-          type="button"
-        >
-          BUSCAR COMUNIDAD
-        </button>
-
-        <p
-          id="estado-radar"
-          class="texto-ayuda"
-          aria-live="polite"
-        >
-          Seleccioná un destino para ver sus integrantes.
-        </p>
-
-        <!-- COMPATIBILIDAD CON LA NAVEGACIÓN GEOGRÁFICA EXISTENTE -->
-        <select
-          id="modo-visualizacion"
-          hidden
-          aria-hidden="true"
-          tabindex="-1"
-        >
+      <!-- Campos heredados ocultos: mantienen la configuración del barrio propio sin sumar preguntas al Radar -->
+      <section class="selector-barrio tarjeta" hidden aria-hidden="true">
+        <input id="barrio" type="text">
+        <button id="btn-guardar-barrio" type="button">GUARDAR</button>
+        <button id="btn-ubicacion" type="button">USAR MI UBICACIÓN APROXIMADA</button>
+        <p id="estado-barrio"></p>
+        <select id="modo-visualizacion" hidden tabindex="-1">
           <option value="barrio">Mi comunidad</option>
           <option value="explorar">Explorar otra localidad</option>
         </select>
-
-        <div id="contenedor-explorar-zona" hidden>
-          <input
-            id="zona-explorar-compatibilidad"
-            type="text"
-            maxlength="100"
-          >
-        </div>
-
+        <div id="contenedor-explorar-zona" hidden><input id="zona-explorar-compatibilidad" type="text"></div>
       </section>
-
     </section>
 
     <!-- =====================================================
