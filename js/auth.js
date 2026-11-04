@@ -849,11 +849,11 @@ async function calcularPorcentajeHumanidad(perfilId) {
     }
 
     console.warn("No se pudieron consultar las fuentes de evaluaciones:", error || errorMediciones);
-    return { porcentaje: 100, total: 0 };
+    return { porcentaje: 0, total: 0 };
 
   } catch (e) {
     console.error("Error calculando porcentaje de humanidad:", e);
-    return { porcentaje: 100, total: 0 };
+    return { porcentaje: 0, total: 0 };
   }
 }
 
