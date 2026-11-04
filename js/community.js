@@ -354,6 +354,7 @@ export function initCommunity({
 
           publicacionesDeEstePerfil.forEach((publicacion) => {
             const desplegable = document.createElement("details");
+            desplegable.open = true;
             desplegable.className = "vecino-publicacion-desplegable";
             const resumen = document.createElement("summary");
             resumen.textContent = `${publicacion.tipo || "Publicación"} · ${publicacion.titulo || "Ver detalles"}`;
@@ -1746,6 +1747,9 @@ export function initCommunity({
     if (filtroOfflineActivoInput) {
       filtroOfflineActivoInput.checked = false;
     }
+    if (filtroWhatsAppActivoInput) {
+      filtroWhatsAppActivoInput.checked = false;
+    }
 
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
@@ -2009,6 +2013,11 @@ export function initCommunity({
   );
 
   filtroOfflineActivoInput?.addEventListener(
+    "change",
+    manejarFiltroCambio
+  );
+
+  filtroWhatsAppActivoInput?.addEventListener(
     "change",
     manejarFiltroCambio
   );
