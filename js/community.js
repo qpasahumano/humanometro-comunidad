@@ -1177,6 +1177,25 @@ export function initCommunity({
     }
 
     try {
+      const usuarioActual = await obtenerUsuarioActual();
+      if (!usuarioActual?.id) {
+        notificar("Iniciá sesión para contactar a otro integrante.", "warning");
+        return;
+      }
+      const estadosConContacto = ["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso"];
+      const { data: procesoPropio, error: errorProcesoPropio } = await supabase
+        .from("intercambios").select("id").eq("usuario_a", perfilId).eq("usuario_b", usuarioActual.id)
+        .in("estado", estadosConContacto).limit(1);
+      if (errorProcesoPropio) throw errorProcesoPropio;
+      const { data: procesoContrario, error: errorProcesoContrario } = await supabase
+        .from("intercambios").select("id").eq("usuario_a", usuarioActual.id).eq("usuario_b", perfilId)
+        .in("estado", estadosConContacto).limit(1);
+      if (errorProcesoContrario) throw errorProcesoContrario;
+      if (!(procesoPropio?.length || procesoContrario?.length)) {
+        notificar("Para abrir WhatsApp primero iniciá una propuesta desde una publicación. Así el contacto queda registrado y el proceso no se pierde fuera de la comunidad.", "warning");
+        return;
+      }
+
       const { data: perfil, error } = await supabase
         .from("perfiles")
         .select("whatsapp")
