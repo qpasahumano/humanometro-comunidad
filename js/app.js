@@ -281,25 +281,6 @@ async function cargarPanelIntercambios() {
       eventosPorProceso.get(evento.intercambio_id).push(evento);
     });
   }
-  const evaluacionesPorProceso = new Map();
-  let evaluacionesDisponibles = true;
-  if (idsProcesos.length) {
-    const { data: evaluaciones, error: errorEvaluaciones } = await supabase
-      .from("evaluaciones")
-      .select("intercambio_id, evaluador_id")
-      .in("intercambio_id", idsProcesos);
-    if (errorEvaluaciones) {
-      evaluacionesDisponibles = false;
-      console.error("No se pudieron consultar las evaluaciones de los intercambios:", errorEvaluaciones);
-    } else {
-      (evaluaciones || []).forEach((evaluacion) => {
-        if (!evaluacionesPorProceso.has(evaluacion.intercambio_id)) {
-          evaluacionesPorProceso.set(evaluacion.intercambio_id, []);
-        }
-        evaluacionesPorProceso.get(evaluacion.intercambio_id).push(String(evaluacion.evaluador_id));
-      });
-    }
-  }
   const idsPerfiles = [...new Set((intercambios || []).flatMap((item) => [item.usuario_a, item.usuario_b]).filter(Boolean))];
   let nombresPerfiles = new Map();
   if (idsPerfiles.length) {
@@ -334,12 +315,7 @@ async function cargarPanelIntercambios() {
     if (inter.estado === "pendiente_respuesta" && soyAutorB) {
       const avisoPendiente = document.createElement("p");
       avisoPendiente.className = "aviso-propuesta-entrante";
-      avisoPendiente.textContent = "Nueva solicitud sobre tu publicación. Revisá la propuesta y respondé desde esta cuenta para continuar.";
-      card.appendChild(avisoPendiente);
-    } else if (inter.estado === "pendiente_respuesta" && soyIniciadorA) {
-      const avisoPendiente = document.createElement("p");
-      avisoPendiente.className = "aviso-propuesta-entrante";
-      avisoPendiente.textContent = "Tu solicitud ya fue enviada y está esperando la respuesta del autor de la publicación. Cuando responda, vas a poder registrar el acuerdo desde esta cuenta.";
+      avisoPendiente.textContent = "Esta persona quiere intercambiar por tu publicación. Revisá qué ofrece y respondé acá para continuar.";
       card.appendChild(avisoPendiente);
     }
     const estado = document.createElement("p");
@@ -410,26 +386,7 @@ async function cargarPanelIntercambios() {
       const estadoConf=document.createElement("p");
       estadoConf.textContent="Tu cumplimiento: "+(miConf?"confirmado":"pendiente")+" · Contraparte: "+(otraConf?"confirmado":"pendiente");
       card.appendChild(estadoConf);
-      if (miConf && otraConf && inter.estado === "en_proceso") {
-        if (!evaluacionesDisponibles) {
-          const estadoEval = document.createElement("p");
-          estadoEval.textContent = "No se pudo comprobar el estado de las evaluaciones. Actualizá el panel antes de continuar.";
-          card.appendChild(estadoEval);
-        } else {
-          const evaluadores = new Set(evaluacionesPorProceso.get(inter.id) || []);
-          const yaEvalue = evaluadores.has(String(usuario.id));
-          const contraparteEvaluo = evaluadores.has(String(contraparteId));
-          if (!yaEvalue) {
-            agregar("Evaluar contraparte", "btn-evaluar-intercambio");
-          } else {
-            const estadoEval = document.createElement("p");
-            estadoEval.textContent = contraparteEvaluo
-              ? "Ambas evaluaciones están registradas. El intercambio se está cerrando."
-              : "Tu evaluación ya está registrada. Falta la evaluación de la contraparte para cerrar el intercambio.";
-            card.appendChild(estadoEval);
-          }
-        }
-      }
+      if (miConf && otraConf && inter.estado==="en_proceso") agregar("Evaluar contraparte","btn-evaluar-intercambio");
       agregar("Cancelar proceso","btn-cancelar-intercambio");
     }
     if (inter.estado === "pendiente_respuesta" || inter.estado === "respuesta_recibida" || inter.estado === "conversacion_pendiente" || inter.estado === "acuerdo_pendiente_confirmacion") {
@@ -442,12 +399,6 @@ async function cargarPanelIntercambios() {
         : "Proceso incumplido. Podés solicitar una regularización bilateral.";
       card.appendChild(estadoReg);
       agregar("Solicitar / confirmar regularización","btn-regularizar-proceso");
-    }
-    if (inter.estado === "completado") {
-      const cierre = document.createElement("p");
-      cierre.className = "texto-ayuda";
-      cierre.textContent = "Intercambio cerrado: ambas partes completaron sus evaluaciones.";
-      card.appendChild(cierre);
     }
     card.appendChild(acciones);
     wrapper.appendChild(card);
