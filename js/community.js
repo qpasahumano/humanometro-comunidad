@@ -844,6 +844,8 @@ export function initCommunity({
           await guardarMatrixCache(todasRemotas);
 
           const remotas = todasRemotas.filter((publicacion) => {
+            if (!perfilFiltroActivo && usuarioSesionId &&
+                String(publicacion.perfil_id || publicacion.usuario_id || "") === usuarioSesionId) return false;
             const propietarios = [
               publicacion.perfil_id,
               publicacion.usuario_id
@@ -984,6 +986,15 @@ export function initCommunity({
       }
 
       <h3 class="publicacion-titulo">${titulo}</h3>
+      <div class="publicacion-acciones-ficha">
+        <button class="boton-accion btn-iniciar-intercambio-card" data-pub-id="${idPublicacion}" data-autor-id="${autorId}">
+          INICIAR INTERCAMBIO
+        </button>
+        <button class="boton-secundario btn-contactar-trueque" data-id="${autorId}" data-nombre="${nombreAutor}">
+          CONTACTAR POR ESTE TRUEQUE
+        </button>
+        ${esPropia && !esLocal ? `<button class="boton-secundario btn-retirar-publicacion" data-pub-id="${idPublicacion}">RETIRAR MI PUBLICACIÓN</button>` : ""}
+      </div>
 
       <p class="publicacion-descripcion">${descripcion}</p>
 
@@ -1029,26 +1040,7 @@ export function initCommunity({
 
       <small class="publicacion-fecha">${fecha}</small>
 
-      <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-        <button
-          class="boton-secundario btn-contactar-trueque"
-          data-id="${autorId}"
-          data-nombre="${nombreAutor}"
-          style="flex: 1; font-size: 0.85rem; cursor: pointer;"
-        >
-          Contactar por este trueque
-        </button>
 
-        ${esPropia && !esLocal ? `<button class="boton-secundario btn-retirar-publicacion" data-pub-id="${idPublicacion}" style="flex:1;font-size:.85rem;">RETIRAR MI PUBLICACIÓN</button>` : ""}
-        <button
-          class="boton-accion btn-iniciar-intercambio-card"
-          data-pub-id="${idPublicacion}"
-          data-autor-id="${autorId}"
-          style="flex: 1; font-size: 0.85rem; cursor: pointer; background: #0284c7; color: #fff;"
-        >
-          Iniciar Intercambio
-        </button>
-      </div>
     `;
 
     return tarjeta;
