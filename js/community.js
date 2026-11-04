@@ -890,6 +890,12 @@ export function initCommunity({
     const cacheLocal = await obtenerMatrixCache();
     let remotasCache = cacheLocal.map(convertirRegistroRemoto);
 
+    if (!perfilFiltroActivo && usuarioSesionId) {
+      remotasCache = remotasCache.filter((p) =>
+        String(p.perfil_id || p.usuario_id || "") !== usuarioSesionId
+      );
+    }
+
     if (perfilFiltroActivo) {
       remotasCache = remotasCache.filter((p) =>
         [p.perfil_id, p.usuario_id]
