@@ -1576,6 +1576,25 @@ export function initCommunity({
 
     if (!datos) return;
 
+    // La prohibición alcanza también a textos publicados bajo otras categorías.
+    // El directorio oficial de Bancos de Medicamentos y Redes de Salud se conserva.
+    const esDirectorioSaludOficial = datos.categoria === "bancos_salud_oficial";
+    const textoPublicacion = [
+      datos.titulo,
+      datos.descripcion,
+      datos.que_necesita_a_cambio,
+      datos.condicion
+    ].filter(Boolean).join(" ");
+    const mencionaMedicamentos = /\b(medicamentos?|remedios?|f[aá]rmacos?|pastillas?|antibióticos?|antibioticos?|vacunas?|ampollas?|comprimidos?|jarabes?|insulinas?|analgésicos?|analgesicos?|antiinflamatorios?|psicotrópicos?|psicotropicos?)\b/i.test(textoPublicacion);
+
+    if (!esDirectorioSaludOficial && mencionaMedicamentos) {
+      notificar(
+        "No se permite ofrecer, solicitar, donar ni intercambiar medicamentos entre particulares. El directorio oficial de Bancos de Medicamentos y Redes de Salud permanece disponible.",
+        "error"
+      );
+      return;
+    }
+
     const usuario = await obtenerUsuarioActual();
     const perfil = await obtenerPerfilActual();
 
@@ -1833,9 +1852,19 @@ export function initCommunity({
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
     if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
-    if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = true;
     if (form) form.style.display = "block";
-    window.dispatchEvent(new CustomEvent("volverAComunidad"));
+    window.dispatchEvent(new CustomEvent("volverDePublicacionesPerfil", {
+      detail: { modo: modoListadoPerfiles }
+    }));
+  }
+
+  function restaurarDirectorioComunidad(evento) {
+    const modo = evento?.detail?.modo;
+    if (modo === "radar") {
+      cargarRadarComunitario(destinoRadarComunitario);
+    } else {
+      cargarDirectorioComunidad();
+    }
   }
 
   function manejarFiltroCambio() {
@@ -2057,6 +2086,8 @@ export function initCommunity({
     manejarMostrarDirectorio
   );
 
+  window.addEventListener("restaurarDirectorioComunidad", restaurarDirectorioComunidad);
+
   window.addEventListener("online", manejarOnline);
   window.addEventListener("offline", manejarOffline);
   window.addEventListener("pageshow", manejarVisibilidad);
@@ -2203,6 +2234,7 @@ export function initCommunity({
         "mostrarDirectorioComunidad",
         manejarMostrarDirectorio
       );
+      window.removeEventListener("restaurarDirectorioComunidad", restaurarDirectorioComunidad);
 
       window.removeEventListener("online", manejarOnline);
       window.removeEventListener("offline", manejarOffline);

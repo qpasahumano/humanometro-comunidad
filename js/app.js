@@ -5,7 +5,8 @@ import {
   iniciarAutenticacion,
   obtenerUsuarioActual,
   obtenerPerfilActual,
-  perfilEstaCompleto
+  perfilEstaCompleto,
+  calcularPorcentajeHumanidad
 } from "./auth.js";
 import { getItem, setItem } from "./storage.js";
 import { supabase } from "./supabase.js";
@@ -20,6 +21,7 @@ let conectividadSolidariaConfigurada = false;
 let radarComunitarioConfigurado = false;
 let intercambiosConfigurados = false;
 let accesoComunidadBloqueado = false;
+let vistaAnteriorResultados = null;
 
 /* =========================
    NOTIFICACIONES
@@ -63,7 +65,8 @@ function mostrarVista(nombre = null, opciones = {}) {
     "vista-humanometro",
     "vista-radar",
     "vista-sos-offline",
-    "vista-intercambios"
+    "vista-intercambios",
+    "vista-publicaciones-perfil"
   ];
 
   const requierePerfil = nombre !== "vista-perfil";
@@ -100,6 +103,8 @@ function mostrarVista(nombre = null, opciones = {}) {
   } else if (nombre === "vista-intercambios") {
     actualizarSolapaActiva("intercambios");
     cargarPanelIntercambios();
+  } else if (nombre === "vista-publicaciones-perfil") {
+    actualizarSolapaActiva(vistaAnteriorResultados === "vista-radar" ? "radar" : "comunidad");
   } else if (nombre === "vista-humanometro") {
     actualizarSolapaActiva("humanometro");
     configurarEvaluaciones();
@@ -202,7 +207,16 @@ function configurarNavegacion() {
   });
 
   window.addEventListener("abrirVistaComunidadResultados", () => {
-    mostrarVista(null);
+    vistaAnteriorResultados = $("vista-radar")?.hidden === false ? "vista-radar" : null;
+    mostrarVista("vista-publicaciones-perfil");
+  });
+
+  window.addEventListener("volverDePublicacionesPerfil", (evento) => {
+    mostrarVista(vistaAnteriorResultados);
+    window.dispatchEvent(new CustomEvent("restaurarDirectorioComunidad", {
+      detail: { modo: evento.detail?.modo || "directorio" }
+    }));
+    vistaAnteriorResultados = null;
   });
 
   window.addEventListener("abrirVistaRadar", () => {
@@ -1198,21 +1212,9 @@ async function configurarEvaluaciones() {
     return;
   }
 
-  const totalIntercambios = evaluaciones ? evaluaciones.length : 0;
-  let porcentajeActual = 0;
-
-  if (totalIntercambios > 0) {
-    let puntosTotales = 0;
-    evaluaciones.forEach((ev) => {
-      let criteriosAprobados = 0;
-      if (ev.respeta_condiciones) criteriosAprobados++;
-      if (ev.cordialidad) criteriosAprobados++;
-      if (ev.puntualidad) criteriosAprobados++;
-      if (ev.comunicacion_clara) criteriosAprobados++;
-      puntosTotales += (criteriosAprobados / 4) * 100;
-    });
-    porcentajeActual = Math.round(puntosTotales / totalIntercambios);
-  }
+  const indiceHumanidad = await calcularPorcentajeHumanidad(usuario.id);
+  const totalIntercambios = indiceHumanidad.total;
+  const porcentajeActual = indiceHumanidad.porcentaje;
 
   const umbralMinimoIntercambiosParaRiesgo = 3;
   const estaEnRiesgo = totalIntercambios >= umbralMinimoIntercambiosParaRiesgo && porcentajeActual < 70;
@@ -1572,6 +1574,12 @@ async function iniciarAplicacion() {
       tab?.setAttribute("aria-label", "Intercambios y góndola");
       const panel = $("lista-intercambios-activos");
       if (panel) panel.textContent = "Iniciá sesión para ver tus procesos comunitarios.";
+      // Al cerrar sesión, volver a la portada pública y cerrar las vistas internas.
+      mostrarVista(null, { forzar: true });
+      const pantallaComunidad = $("pantalla-comunidad");
+      const pantallaInicial = $("pantalla-inicial");
+      if (pantallaComunidad) pantallaComunidad.hidden = true;
+      if (pantallaInicial) pantallaInicial.hidden = false;
     } else {
       cargarPanelIntercambios();
     }
