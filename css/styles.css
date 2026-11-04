@@ -1717,3 +1717,36 @@ select option {
     transition: none;
   }
 }
+
+
+/* Ajuste de lectura y acciones en teléfonos angostos. */
+@media (max-width: 520px) {
+  #vista-gondola .lista-publicaciones {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #vista-gondola .tarjeta-publicacion > div[style*="display: flex"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  #vista-gondola .tarjeta-publicacion > div[style*="display: flex"] button {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .mis-publicaciones-acciones {
+    display: flex;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .mis-publicaciones-acciones button {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+  }
+}
