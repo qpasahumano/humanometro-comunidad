@@ -818,7 +818,7 @@ async function cargarMisPublicaciones() {
   }
 }
 
-async function calcularPorcentajeHumanidad(perfilId) {
+export async function calcularPorcentajeHumanidad(perfilId) {
   try {
     const { data: evaluaciones, error } = await supabase
       .from("evaluaciones")
