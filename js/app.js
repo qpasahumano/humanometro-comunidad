@@ -271,6 +271,27 @@ async function cargarPanelIntercambios() {
     ayuda.className = "texto-ayuda";
     ayuda.textContent = "La conversación puede continuar por WhatsApp, pero las propuestas y confirmaciones deben quedar registradas en la comunidad.";
     card.appendChild(ayuda);
+    const agregarDetalle = (etiqueta, valor) => {
+      if (!valor) return;
+      const p=document.createElement("p");
+      p.textContent=etiqueta+": "+String(valor);
+      card.appendChild(p);
+    };
+    if (inter.propuesta_a) {
+      agregarDetalle("Propuesta inicial", inter.propuesta_a.oferta);
+      agregarDetalle("Necesita a cambio", inter.propuesta_a.necesita);
+      agregarDetalle("Plazo propuesto por quien inicia", inter.propuesta_a.horas_a ? inter.propuesta_a.horas_a+" horas" : "");
+    }
+    if (inter.respuesta_b) {
+      agregarDetalle("Respuesta del autor", inter.respuesta_b.opcion);
+      agregarDetalle("Alternativa ofrecida", inter.respuesta_b.oferta?.detalle || "");
+    }
+    if (inter.propuesta_final) {
+      agregarDetalle("Acuerdo: oferta del iniciador", inter.propuesta_final.oferta_a);
+      agregarDetalle("Acuerdo: oferta del autor", inter.propuesta_final.oferta_b);
+      agregarDetalle("Plazo iniciador", inter.propuesta_final.horas_a+" horas");
+      agregarDetalle("Plazo autor", inter.propuesta_final.horas_b+" horas");
+    }
     const historial = eventosPorProceso.get(inter.id) || [];
     const detallesHistorial = document.createElement("details");
     detallesHistorial.className = "historial-intercambio";
