@@ -383,6 +383,7 @@ export function initCommunity({
           perfilFiltroActivo = perfil.id;
           perfilFiltroNombre = perfil.nombre_visible || "Integrante";
           if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
+          if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
           if (textoFiltroVecino) textoFiltroVecino.textContent = `Mostrando publicaciones de ${perfilFiltroNombre}`;
           
           if (form) form.style.display = "none";
