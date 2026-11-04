@@ -750,10 +750,11 @@ async function cargarMisPublicaciones() {
     contenedor.replaceChildren();
     if (error) throw error;
 
-    const estadosVisibles = new Set(["publicada", "reservada", "en_proceso", "por_concluir", "pendiente_respuesta", "acuerdo_pendiente_confirmacion"]);
+    // En el perfil solo se muestran publicaciones que siguen disponibles.
+    // Los procesos, cancelaciones y acuerdos concluidos no forman parte de la góndola.
     const propias = (data || []).filter((publicacion) =>
       String(publicacion.perfil_id || publicacion.usuario_id || "") === String(usuarioActual.id) &&
-      estadosVisibles.has(String(publicacion.estado || "").toLowerCase())
+      String(publicacion.estado || "").toLowerCase() === "publicada"
     );
     const activas = propias.length;
     const contador = document.createElement("p");
