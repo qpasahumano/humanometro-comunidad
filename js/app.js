@@ -229,7 +229,7 @@ async function cargarPanelIntercambios() {
     .from("intercambios")
     .select("*, publicacion:publicacion_id(titulo)")
     .or(`usuario_a.eq.${usuario.id},usuario_b.eq.${usuario.id}`)
-    .order("creado_en", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error al cargar intercambios:", error);
