@@ -212,7 +212,8 @@ function configurarNavegacion() {
   });
 
   window.addEventListener("volverDePublicacionesPerfil", (evento) => {
-    mostrarVista(vistaAnteriorResultados);
+    const vistaDestino = vistaAnteriorResultados || null;
+    mostrarVista(vistaDestino);
     window.dispatchEvent(new CustomEvent("restaurarDirectorioComunidad", {
       detail: { modo: evento.detail?.modo || "directorio" }
     }));
