@@ -585,6 +585,7 @@ async function cerrarSesion() {
     usuarioActual = null;
     perfilActual = null;
     modoEdicionPerfil = false;
+    window.dispatchEvent(new CustomEvent("hmc:session-changed", { detail: { userId: null } }));
     limpiarFormularioPerfil();
     actualizarModoVisualizacion();
     mostrarEstado("Sesión cerrada.");
@@ -1108,6 +1109,7 @@ export async function iniciarAutenticacion() {
   if (!escuchadorAutenticacion) {
     const resultado = supabase.auth.onAuthStateChange((_evento, sesion) => {
       usuarioActual = sesion?.user || null;
+      window.dispatchEvent(new CustomEvent("hmc:session-changed", { detail: { userId: usuarioActual?.id || null } }));
       actualizarInterfazUsuario();
 
       if (usuarioActual) {
