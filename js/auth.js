@@ -357,14 +357,9 @@ function renderizarFichaVisual(contenedor) {
         </div>
       </div>
 
-      <div style="background: #1e293b; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #475569;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: ${colorPct}; box-shadow: 0 0 6px ${colorPct}; display: inline-block;"></span>
-          <span style="font-size: 0.8rem; color: #e2e8f0; font-weight: bold;">Calidad Humana: ${pct}% (${infoHumanidad.total} ev.)</span>
-        </div>
-        <button id="btn-medicion-humanidad" class="boton-secundario" type="button" style="font-size: 0.75rem; padding: 4px 8px; margin: 0;">
-          MEDIR HUMANIDAD
-        </button>
+      <div style="background: #1e293b; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; border: 1px solid #475569;">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${colorPct}; box-shadow: 0 0 6px ${colorPct}; display: inline-block; flex-shrink: 0;"></span>
+        <span style="font-size: 0.8rem; color: #e2e8f0; font-weight: bold;">Calidad Humana: ${pct}% (${infoHumanidad.total} ev.)</span>
       </div>
 
       <div style="background: #0f172a; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1e293b;">
@@ -397,7 +392,7 @@ function renderizarFichaVisual(contenedor) {
       </div>
 
       <p style="margin: 0 0 10px 0; font-size: 0.7rem; color: #64748b; text-align: center;">
-        💡 El nexo es aquí: acordá como quieras, pero medí la humanidad para cuidar la comunidad.
+        💡 El nexo es aquí: acordá como quieras; la comunidad construye su confianza mediante evaluaciones entre personas.
       </p>
 
       <button id="btn-activar-edicion" class="boton-secundario" type="button" style="width: 100%; font-size: 0.8rem; padding: 8px; margin-bottom: 8px;">
@@ -425,14 +420,6 @@ function renderizarFichaVisual(contenedor) {
     window.dispatchEvent(new CustomEvent("abrirPanelPrincipal"));
   });
 
-  $("btn-medicion-humanidad")?.addEventListener("click", () => {
-    const botonHumanometroNav = $("btn-humanometro");
-    if (botonHumanometroNav) {
-      botonHumanometroNav.click();
-    } else {
-      alert("Sección Humanómetro de Humanidad disponible en el menú principal.");
-    }
-  });
 }
 
 // ==========================================
