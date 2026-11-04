@@ -1469,6 +1469,8 @@ async function iniciarAplicacion() {
       if (accesoComunidadBloqueado) {
         mostrarNotificacion("Tu perfil está temporalmente inhabilitado por dos o más procesos incumplidos. Podés ingresar a Mi perfil para regularizarlos.");
         mostrarVista("vista-perfil", { forzar: true });
+      } else if (Number(estadoAcceso?.procesos_incumplidos || 0) === 1) {
+        mostrarNotificacion("Tenés un proceso comunitario incumplido. Regularizalo para evitar la restricción de acceso.");
       }
     }
   }
