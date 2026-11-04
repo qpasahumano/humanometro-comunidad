@@ -274,7 +274,7 @@ async function cargarPanelIntercambios() {
     }
     if (inter.estado === "en_proceso") {
       const plazo=document.createElement("p");
-      plazo.textContent="Tu vencimiento: " + new Date((soyAutorB ? inter.fecha_limite_a : inter.fecha_limite_b) || inter.fecha_limite).toLocaleString("es-AR");
+      plazo.textContent="Tu vencimiento: " + new Date((soyAutorB ? inter.fecha_limite_b : inter.fecha_limite_a) || inter.fecha_limite).toLocaleString("es-AR");
       card.appendChild(plazo);
       const miConf=soyAutorB ? inter.confirmado_a : inter.confirmado_b;
       const otraConf=soyAutorB ? inter.confirmado_b : inter.confirmado_a;
@@ -287,6 +287,14 @@ async function cargarPanelIntercambios() {
     }
     if (inter.estado === "pendiente_respuesta" || inter.estado === "respuesta_recibida" || inter.estado === "conversacion_pendiente" || inter.estado === "acuerdo_pendiente_confirmacion") {
       agregar("Cerrar solicitud sin acuerdo","btn-cancelar-intercambio");
+    }
+    if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
+      const estadoReg=document.createElement("p");
+      estadoReg.textContent=inter.regularizacion_solicitada_por
+        ? "Regularización solicitada. La otra parte debe confirmarla."
+        : "Proceso incumplido. Podés solicitar una regularización bilateral.";
+      card.appendChild(estadoReg);
+      agregar("Solicitar / confirmar regularización","btn-regularizar-proceso");
     }
     card.appendChild(acciones);
     wrapper.appendChild(card);
@@ -336,6 +344,19 @@ function configurarIntercambiosGlobales() {
       const {error}=await supabase.rpc("hmc_confirmar_acuerdo",{p_intercambio_id:btnConfirmarAcuerdo.dataset.id});
       if(error) mostrarNotificacion("No se pudo confirmar: "+error.message,"error");
       else {mostrarNotificacion("Tu confirmación quedó registrada.","success");cargarPanelIntercambios();}
+      return;
+    }
+
+    const btnRegularizar = e.target.closest(".btn-regularizar-proceso");
+    if(btnRegularizar){
+      const {data,error}=await supabase.rpc("hmc_regularizar_proceso",{p_intercambio_id:btnRegularizar.dataset.id});
+      if(error) mostrarNotificacion("No se pudo regularizar: "+error.message,"error");
+      else {
+        mostrarNotificacion(data?.mensaje || "Regularización actualizada.","success");
+        const {data:acceso}=await supabase.rpc("hmc_verificar_estado_comunidad");
+        accesoComunidadBloqueado=acceso?.estado==="restringido";
+        cargarPanelIntercambios();
+      }
       return;
     }
 
