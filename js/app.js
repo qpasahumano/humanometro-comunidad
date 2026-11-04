@@ -1444,6 +1444,22 @@ async function iniciarAplicacion() {
     }
   }
 
+  window.addEventListener("intercambioComunidadActualizado", cargarPanelIntercambios);
+  try {
+    supabase.channel("hmc-intercambios-panel")
+      .on("postgres_changes", { event: "*", schema: "public", table: "intercambios" }, (payload) => {
+        const uid = obtenerUsuarioActual()?.id;
+        const registro = payload.new || payload.old || {};
+        if (uid && (String(registro.usuario_a) === String(uid) || String(registro.usuario_b) === String(uid))) {
+          cargarPanelIntercambios();
+          mostrarNotificacion("Tenés una actualización en uno de tus procesos comunitarios.");
+        }
+      })
+      .subscribe();
+  } catch (error) {
+    console.warn("No se pudo activar la notificación en vivo de intercambios:", error);
+  }
+
   configurarConectividadSolidaria();
 
   initCommunity({
