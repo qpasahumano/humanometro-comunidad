@@ -891,7 +891,10 @@ async function cargarPerfil() {
     if ($("hm-profile-locality")) $("hm-profile-locality").value = data?.localidad || "";
     if ($("hm-profile-zone")) $("hm-profile-zone").value = data?.zona_aproximada || "";
     if ($("whatsapp-usuario")) $("whatsapp-usuario").value = data?.whatsapp || "";
-    if ($("hm-connectivity-available")) $("hm-connectivity-available").checked = String(data?.conectividad_disponible).toLowerCase() === "true";
+    if ($("hm-connectivity-available")) {
+      $("hm-connectivity-available").checked = String(data?.conectividad_disponible).toLowerCase() === "true";
+      $("hm-connectivity-available").dispatchEvent(new Event("change"));
+    }
     if ($("hm-connectivity-mode")) $("hm-connectivity-mode").value = data?.conectividad_modalidad || "gratuito";
     if ($("hm-offline-messaging-available")) {
       $("hm-offline-messaging-available").checked = Boolean(data?.mensajeria_offline);
