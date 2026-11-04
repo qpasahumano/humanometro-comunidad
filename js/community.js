@@ -320,8 +320,21 @@ export function initCommunity({
         const datos = document.createElement("div");
         datos.className = "vecino-indicadores";
         
-        const publicacionesDeEstePerfil =
+        const publicacionesDeEstePerfilBase =
           publicacionesPorPerfil.get(String(perfil.id)) || [];
+        const publicacionesDeEstePerfil = esRadar
+          ? publicacionesDeEstePerfilBase.filter((pub) => {
+              const palabra = normalizarZonaRadar(busquedaInput?.value);
+              const texto = normalizarZonaRadar([pub.titulo, pub.descripcion, pub.categoria].join(" "));
+              const tipo = normalizarZonaRadar(pub.tipo);
+              const categoria = normalizarZonaRadar(pub.categoria);
+              const tipoElegido = normalizarZonaRadar(filtroTipoInput?.value || "todas");
+              const categoriaElegida = normalizarZonaRadar(filtroCategoriaRadarInput?.value);
+              return (!palabra || texto.includes(palabra)) &&
+                (tipoElegido === "todas" || tipo === tipoElegido) &&
+                (!categoriaElegida || categoria === categoriaElegida);
+            })
+          : publicacionesDeEstePerfilBase;
         const totalPubs = publicacionesDeEstePerfil.length;
 
         if (totalPubs > 0) {
