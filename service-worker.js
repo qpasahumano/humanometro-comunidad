@@ -1,4 +1,4 @@
-const CACHE_NAME = "humanometro-comunidad-v13";
+const CACHE_NAME = "humanometro-comunidad-v14";
 const CACHE_PREFIX = "humanometro-comunidad-";
 
 // Archivos estáticos principales de la interfaz
