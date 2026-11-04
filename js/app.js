@@ -199,6 +199,10 @@ function configurarNavegacion() {
     mostrarVista("vista-gondola");
   });
 
+  window.addEventListener("abrirVistaComunidadResultados", () => {
+    mostrarVista(null);
+  });
+
   window.addEventListener("abrirVistaRadar", () => {
     mostrarVista("vista-radar");
   });
