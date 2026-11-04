@@ -1775,9 +1775,9 @@ export function initCommunity({
 
     perfilFiltroActivo = perfilConservado;
     if (busquedaInput) busquedaInput.value = "";
-    if (zonaInput) zonaInput.value = "";
-    if (tipoInput) tipoInput.value = "todas";
-    if (offlineInput) offlineInput.checked = false;
+    if (filtroZonaGondola) filtroZonaGondola.value = "";
+    if (filtroTipoInput) filtroTipoInput.value = "todas";
+    if (filtroOfflineActivoInput) filtroOfflineActivoInput.checked = false;
     if (form) form.style.display = "none";
     if (textoFiltroVecino) {
       textoFiltroVecino.textContent = `Mostrando todas las publicaciones de ${perfilFiltroNombre || "este integrante"}`;
