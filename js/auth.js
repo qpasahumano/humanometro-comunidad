@@ -107,8 +107,8 @@ function crearInterfazAcceso() {
   botonSalirPerfil.textContent = "CERRAR SESIÓN";
   botonSalirPerfil.hidden = true;
   botonSalirPerfil.addEventListener("click", cerrarSesion);
-  const formularioPerfil = $("form-perfil");
-  formularioPerfil?.appendChild(botonSalirPerfil);
+  const accionesCuenta = $("hm-auth-actions") || obtenerVistaPerfil();
+  accionesCuenta?.appendChild(botonSalirPerfil);
 
   prepararFormularioPerfil();
 }
