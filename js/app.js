@@ -21,6 +21,7 @@ let conectividadSolidariaConfigurada = false;
 let radarComunitarioConfigurado = false;
 let intercambiosConfigurados = false;
 let accesoComunidadBloqueado = false;
+let vistaAnteriorResultados = null;
 
 /* =========================
    NOTIFICACIONES
@@ -64,7 +65,8 @@ function mostrarVista(nombre = null, opciones = {}) {
     "vista-humanometro",
     "vista-radar",
     "vista-sos-offline",
-    "vista-intercambios"
+    "vista-intercambios",
+    "vista-publicaciones-perfil"
   ];
 
   const requierePerfil = nombre !== "vista-perfil";
@@ -101,6 +103,8 @@ function mostrarVista(nombre = null, opciones = {}) {
   } else if (nombre === "vista-intercambios") {
     actualizarSolapaActiva("intercambios");
     cargarPanelIntercambios();
+  } else if (nombre === "vista-publicaciones-perfil") {
+    actualizarSolapaActiva(vistaAnteriorResultados === "vista-radar" ? "radar" : "comunidad");
   } else if (nombre === "vista-humanometro") {
     actualizarSolapaActiva("humanometro");
     configurarEvaluaciones();
@@ -203,7 +207,16 @@ function configurarNavegacion() {
   });
 
   window.addEventListener("abrirVistaComunidadResultados", () => {
-    mostrarVista(null);
+    vistaAnteriorResultados = $("vista-radar")?.hidden === false ? "vista-radar" : null;
+    mostrarVista("vista-publicaciones-perfil");
+  });
+
+  window.addEventListener("volverDePublicacionesPerfil", (evento) => {
+    mostrarVista(vistaAnteriorResultados);
+    window.dispatchEvent(new CustomEvent("restaurarDirectorioComunidad", {
+      detail: { modo: evento.detail?.modo || "directorio" }
+    }));
+    vistaAnteriorResultados = null;
   });
 
   window.addEventListener("abrirVistaRadar", () => {
