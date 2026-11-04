@@ -210,18 +210,12 @@ export function initCommunity({
       const publicacionesPorPerfil = new Map();
       (publicacionesActivas || []).forEach((registro) => {
         const publicacion = convertirRegistroRemoto(registro);
-        const idsPropietario = new Set(
-          [registro.perfil_id, registro.usuario_id]
-            .filter(Boolean)
-            .map((id) => String(id))
-        );
-
-        idsPropietario.forEach((id) => {
-          if (!publicacionesPorPerfil.has(id)) {
-            publicacionesPorPerfil.set(id, []);
-          }
-          publicacionesPorPerfil.get(id).push(publicacion);
-        });
+        const idPropietario = String(registro.perfil_id || registro.usuario_id || "");
+        if (!idPropietario) return;
+        if (!publicacionesPorPerfil.has(idPropietario)) {
+          publicacionesPorPerfil.set(idPropietario, []);
+        }
+        publicacionesPorPerfil.get(idPropietario).push(publicacion);
       });
 
       const usuario = await obtenerUsuarioActual();
@@ -689,6 +683,7 @@ export function initCommunity({
     return {
       id: String(registro.id),
       perfil_id: registro.perfil_id ?? registro.usuario_id ?? null,
+      usuario_id: registro.usuario_id ?? registro.perfil_id ?? null,
       tipo: datosDescripcion.meta.tipoUI || (registro.tipo === "ofrezco" ? "oferta" : registro.tipo === "necesito" ? "necesidad" : registro.tipo ?? ""),
       categoria: datosDescripcion.meta.categoriaUI || registro.categoria || "",
       titulo: registro.titulo ?? "",
@@ -844,8 +839,11 @@ export function initCommunity({
           await guardarMatrixCache(todasRemotas);
 
           const remotas = todasRemotas.filter((publicacion) => {
-            const propietario = String(publicacion.perfil_id || "");
-            if (perfilFiltroActivo && propietario !== String(perfilFiltroActivo)) return false;
+            const propietarios = [
+              publicacion.perfil_id,
+              publicacion.usuario_id
+            ].filter(Boolean).map((id) => String(id));
+            if (perfilFiltroActivo && !propietarios.includes(String(perfilFiltroActivo))) return false;
             if (!perfilFiltroActivo && zonaActualFiltro) {
               const zonaPub = normalizarZonaRadar(publicacion.zona_aproximada);
               const zonaBuscada = normalizarZonaRadar(zonaActualFiltro);
@@ -859,10 +857,12 @@ export function initCommunity({
             return true;
           });
 
-          publicaciones = combinarPublicaciones(
-            obtenerLocales(),
-            remotas
-          );
+          // Al consultar el perfil de otra persona no se mezclan registros
+          // locales de la sesión actual: solo se muestran publicaciones cuyo
+          // propietario coincide con el perfil seleccionado.
+          publicaciones = perfilFiltroActivo
+            ? remotas
+            : combinarPublicaciones(obtenerLocales(), remotas);
 
           renderizarPublicaciones();
           cargando = false;
@@ -884,8 +884,10 @@ export function initCommunity({
     let remotasCache = cacheLocal.map(convertirRegistroRemoto);
 
     if (perfilFiltroActivo) {
-      remotasCache = remotasCache.filter(
-        (p) => String(p.perfil_id) === String(perfilFiltroActivo)
+      remotasCache = remotasCache.filter((p) =>
+        [p.perfil_id, p.usuario_id]
+          .filter(Boolean)
+          .some((id) => String(id) === String(perfilFiltroActivo))
       );
     } else if (zonaActualFiltro) {
       remotasCache = remotasCache.filter((p) =>
@@ -904,10 +906,9 @@ export function initCommunity({
       );
     }
 
-    publicaciones = combinarPublicaciones(
-      obtenerLocales(),
-      remotasCache
-    );
+    publicaciones = perfilFiltroActivo
+      ? remotasCache
+      : combinarPublicaciones(obtenerLocales(), remotasCache);
 
     renderizarPublicaciones();
   }
