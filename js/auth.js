@@ -745,14 +745,15 @@ async function cargarMisPublicaciones() {
     const { data, error } = await supabase
       .from("publicaciones")
       .select("id, perfil_id, usuario_id, tipo, categoria, titulo, descripcion, estado, creado_en")
-      .eq("estado", "publicada")
       .order("creado_en", { ascending: false });
 
     contenedor.replaceChildren();
     if (error) throw error;
 
+    const estadosVisibles = new Set(["publicada", "reservada", "en_proceso", "por_concluir", "pendiente_respuesta", "acuerdo_pendiente_confirmacion"]);
     const propias = (data || []).filter((publicacion) =>
-      String(publicacion.perfil_id || publicacion.usuario_id || "") === String(usuarioActual.id)
+      String(publicacion.perfil_id || publicacion.usuario_id || "") === String(usuarioActual.id) &&
+      estadosVisibles.has(String(publicacion.estado || "").toLowerCase())
     );
     const activas = propias.length;
     const contador = document.createElement("p");
@@ -785,12 +786,16 @@ async function cargarMisPublicaciones() {
         .replace(/(?:^|\n)\[Condición informada:\s*[^\]]*\]\s*$/, "")
         .replace(/\n?\[HMC_META:[^\]]+\]\s*$/, "")
         .trim();
+      const detalleExpandible = document.createElement("details");
+      const resumenDetalle = document.createElement("summary");
+      resumenDetalle.textContent = "VER DETALLE";
+      detalleExpandible.append(resumenDetalle, detalle);
       const estado = document.createElement("small");
       const tipoOriginal = metadatos.tipoUI || publicacion.tipo;
       const tipoVisible = ["oferta", "ofrezco"].includes(tipoOriginal) ? "OFREZCO" : "BUSCO";
       const categoriaVisible = metadatos.categoriaUI || publicacion.categoria || "Sin categoría";
       estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: ${publicacion.estado || "sin especificar"}`;
-      tarjeta.append(titulo, detalle, estado);
+      tarjeta.append(titulo, estado, detalleExpandible);
 
       if (publicacion.estado === "publicada") {
         const acciones = document.createElement("div");
