@@ -1843,3 +1843,15 @@ select option {
     margin-top: 0;
   }
 }
+
+
+/* Perfil compacto: el acceso se oculta al iniciar sesión y el cierre queda en la ficha. */
+#vista-perfil #hm-auth-panel[hidden] {
+  display: none !important;
+}
+#vista-perfil #hm-auth-logout {
+  margin-top: 12px;
+}
+#contenedor-publicaciones-perfil[hidden] {
+  display: none !important;
+}
