@@ -233,6 +233,19 @@ async function cargarPanelIntercambios() {
     contenedor.textContent = "No se pudieron cargar tus procesos.";
     return;
   }
+  const idsProcesos = (intercambios || []).map((item) => item.id);
+  let eventosPorProceso = new Map();
+  if (idsProcesos.length) {
+    const { data: eventos } = await supabase
+      .from("intercambio_eventos")
+      .select("intercambio_id, evento, estado_anterior, estado_nuevo, creado_en")
+      .in("intercambio_id", idsProcesos)
+      .order("creado_en", { ascending: true });
+    (eventos || []).forEach((evento) => {
+      if (!eventosPorProceso.has(evento.intercambio_id)) eventosPorProceso.set(evento.intercambio_id, []);
+      eventosPorProceso.get(evento.intercambio_id).push(evento);
+    });
+  }
   contenedor.replaceChildren();
   if (!intercambios?.length) {
     contenedor.textContent = "No tenés procesos abiertos. Las propuestas y acuerdos que converses por WhatsApp también deben registrarse acá.";
@@ -258,6 +271,22 @@ async function cargarPanelIntercambios() {
     ayuda.className = "texto-ayuda";
     ayuda.textContent = "La conversación puede continuar por WhatsApp, pero las propuestas y confirmaciones deben quedar registradas en la comunidad.";
     card.appendChild(ayuda);
+    const historial = eventosPorProceso.get(inter.id) || [];
+    const detallesHistorial = document.createElement("details");
+    detallesHistorial.className = "historial-intercambio";
+    const resumenHistorial = document.createElement("summary");
+    resumenHistorial.textContent = "Historial de pasos (" + historial.length + ")";
+    detallesHistorial.appendChild(resumenHistorial);
+    const listaHistorial = document.createElement("ol");
+    historial.forEach((evento) => {
+      const item = document.createElement("li");
+      const fecha = new Date(evento.creado_en).toLocaleString("es-AR");
+      item.textContent = fecha + " · " + String(evento.evento || "actualización").replaceAll("_"," ") +
+        (evento.estado_nuevo ? " · " + evento.estado_nuevo.replaceAll("_"," ") : "");
+      listaHistorial.appendChild(item);
+    });
+    detallesHistorial.appendChild(listaHistorial);
+    card.appendChild(detallesHistorial);
     const acciones = document.createElement("div");
     acciones.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
     const agregar = (label, cls, accion) => {
