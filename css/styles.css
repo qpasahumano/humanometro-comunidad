@@ -1855,3 +1855,24 @@ select option {
 #contenedor-publicaciones-perfil[hidden] {
   display: none !important;
 }
+
+
+/* Ajustes solicitados: vistas más compactas y regreso claro al directorio. */
+.bienvenida {
+  padding-bottom: 4px;
+}
+#vista-publicaciones-perfil > .boton-volver-comunidad {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 44px;
+  margin: 4px 0 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(139, 217, 238, 0.45);
+  border-radius: 10px;
+  color: var(--celeste);
+  background: rgba(83, 197, 235, 0.1);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-align: left;
+}
