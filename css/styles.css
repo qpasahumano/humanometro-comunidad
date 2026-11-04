@@ -1750,3 +1750,30 @@ select option {
     white-space: normal;
   }
 }
+
+
+/* Acciones de tarjetas: controles apilados y legibles en pantallas pequeñas. */
+@media (max-width: 520px) {
+  #vista-gondola .tarjeta-publicacion > div[style*="display: flex"],
+  .tarjeta-vecino .vecino-acciones {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  #vista-gondola .tarjeta-publicacion > div[style*="display: flex"] button,
+  .tarjeta-vecino .vecino-acciones button,
+  .tarjeta-vecino .vecino-acciones a {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 44px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.25;
+  }
+}
