@@ -647,6 +647,33 @@ async function cargarMisPublicaciones() {
     return;
   }
 
+  if (!contenedor.dataset.retiroConfigurado) {
+    contenedor.dataset.retiroConfigurado = "true";
+    contenedor.addEventListener("click", async (evento) => {
+      const boton = evento.target.closest(".btn-retirar-mi-publicacion");
+      if (!boton) return;
+      const usuario = usuarioActual;
+      const publicacionId = boton.dataset.pubId;
+      if (!usuario?.id || !publicacionId) return;
+      const confirmar = window.confirm("¿Querés retirar esta publicación de la comunidad? Podrás volver a publicar más adelante.");
+      if (!confirmar) return;
+      boton.disabled = true;
+      const { error } = await supabase
+        .from("publicaciones")
+        .update({ estado: "retirada", actualizado_en: new Date().toISOString() })
+        .eq("id", publicacionId)
+        .eq("perfil_id", usuario.id);
+      if (error) {
+        console.error("No se pudo retirar la publicación propia:", error);
+        boton.disabled = false;
+        window.alert("No se pudo retirar la publicación. Intentá nuevamente.");
+        return;
+      }
+      await cargarMisPublicaciones();
+      window.dispatchEvent(new CustomEvent("perfilComunidadActualizado"));
+    });
+  }
+
   const aviso = document.createElement("p");
   aviso.textContent = "Cargando tus publicaciones…";
   contenedor.appendChild(aviso);
@@ -701,6 +728,19 @@ async function cargarMisPublicaciones() {
       const categoriaVisible = metadatos.categoriaUI || publicacion.categoria || "Sin categoría";
       estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: ${publicacion.estado || "sin especificar"}`;
       tarjeta.append(titulo, detalle, estado);
+
+      if (publicacion.estado === "publicada") {
+        const acciones = document.createElement("div");
+        acciones.className = "mis-publicaciones-acciones";
+        const retirar = document.createElement("button");
+        retirar.type = "button";
+        retirar.className = "boton-secundario btn-retirar-mi-publicacion";
+        retirar.dataset.pubId = String(publicacion.id);
+        retirar.textContent = "RETIRAR PUBLICACIÓN";
+        acciones.appendChild(retirar);
+        tarjeta.appendChild(acciones);
+      }
+
       contenedor.appendChild(tarjeta);
     });
 
