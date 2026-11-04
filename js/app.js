@@ -430,37 +430,6 @@ function configurarIntercambiosGlobales() {
       return;
     }
 
-    const btnConf = e.target.closest(".btn-toggle-conf");
-    if (btnConf) {
-      const id = btnConf.getAttribute("data-id");
-      const usuario = await obtenerUsuarioActual();
-      if (!usuario) return;
-
-      const { data: inter, error: errFetch } = await supabase.from("intercambios").select("*").eq("id", id).single();
-      if (errFetch || !inter) return;
-
-      const esA = String(inter.usuario_a) === String(usuario.id);
-      const esB = String(inter.usuario_b) === String(usuario.id);
-      if (!esA && !esB) {
-        mostrarNotificacion("No tenés autorización para modificar este intercambio.", "error");
-        return;
-      }
-      if (inter.estado !== "en_proceso") {
-        mostrarNotificacion("Este intercambio ya no admite cambios de confirmación.", "warning");
-        return;
-      }
-      const updateData = esA ? { confirmado_a: !inter.confirmado_a } : { confirmado_b: !inter.confirmado_b };
-      let consultaActualizacion = supabase.from("intercambios").update(updateData).eq("id", id);
-      consultaActualizacion = consultaActualizacion.eq(esA ? "usuario_a" : "usuario_b", usuario.id);
-      const { error } = await consultaActualizacion;
-      if (!error) {
-        mostrarNotificacion("Estado de confirmación actualizado.");
-        cargarPanelIntercambios();
-      } else {
-        mostrarNotificacion("Error al actualizar la confirmación.", "error");
-      }
-    }
-
     const btnEval = e.target.closest(".btn-evaluar-intercambio");
     if (btnEval) {
       const id = btnEval.getAttribute("data-id");
