@@ -1852,9 +1852,19 @@ export function initCommunity({
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
     if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
-    if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = true;
     if (form) form.style.display = "block";
-    window.dispatchEvent(new CustomEvent("volverAComunidad"));
+    window.dispatchEvent(new CustomEvent("volverDePublicacionesPerfil", {
+      detail: { modo: modoListadoPerfiles }
+    }));
+  }
+
+  function restaurarDirectorioComunidad(evento) {
+    const modo = evento?.detail?.modo;
+    if (modo === "radar") {
+      cargarRadarComunitario(destinoRadarComunitario);
+    } else {
+      cargarDirectorioComunidad();
+    }
   }
 
   function manejarFiltroCambio() {
@@ -2076,6 +2086,8 @@ export function initCommunity({
     manejarMostrarDirectorio
   );
 
+  window.addEventListener("restaurarDirectorioComunidad", restaurarDirectorioComunidad);
+
   window.addEventListener("online", manejarOnline);
   window.addEventListener("offline", manejarOffline);
   window.addEventListener("pageshow", manejarVisibilidad);
@@ -2222,6 +2234,7 @@ export function initCommunity({
         "mostrarDirectorioComunidad",
         manejarMostrarDirectorio
       );
+      window.removeEventListener("restaurarDirectorioComunidad", restaurarDirectorioComunidad);
 
       window.removeEventListener("online", manejarOnline);
       window.removeEventListener("offline", manejarOffline);
