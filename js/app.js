@@ -249,7 +249,7 @@ async function cargarPanelIntercambios() {
   const propuestasEntrantes = (intercambios || []).filter((item) =>
     estadosPendientes.has(item.estado)
   ).length;
-  const tabIntercambios = $("tab-intercambios");
+  const tabIntercambios = $("tab-intercambios") || $("tab-gondola");
   if (tabIntercambios) {
     let contador = tabIntercambios.querySelector(".contador-propuestas");
     if (propuestasEntrantes > 0) {
