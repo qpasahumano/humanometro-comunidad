@@ -233,6 +233,26 @@ async function cargarPanelIntercambios() {
     contenedor.textContent = "No se pudieron cargar tus procesos.";
     return;
   }
+  const propuestasEntrantes = (intercambios || []).filter((item) =>
+    String(item.usuario_a) === String(usuario.id) && item.estado === "pendiente_respuesta"
+  ).length;
+  const tabIntercambios = $("tab-intercambios");
+  if (tabIntercambios) {
+    let contador = tabIntercambios.querySelector(".contador-propuestas");
+    if (propuestasEntrantes > 0) {
+      if (!contador) {
+        contador = document.createElement("span");
+        contador.className = "contador-propuestas";
+        contador.setAttribute("aria-live", "polite");
+        tabIntercambios.appendChild(contador);
+      }
+      contador.textContent = String(propuestasEntrantes);
+      tabIntercambios.setAttribute("aria-label", "Intercambios y góndola. " + propuestasEntrantes + " propuestas nuevas");
+    } else {
+      contador?.remove();
+      tabIntercambios.setAttribute("aria-label", "Intercambios y góndola");
+    }
+  }
   const idsProcesos = (intercambios || []).map((item) => item.id);
   let eventosPorProceso = new Map();
   if (idsProcesos.length) {
@@ -245,6 +265,13 @@ async function cargarPanelIntercambios() {
       if (!eventosPorProceso.has(evento.intercambio_id)) eventosPorProceso.set(evento.intercambio_id, []);
       eventosPorProceso.get(evento.intercambio_id).push(evento);
     });
+  }
+  const idsPerfiles = [...new Set((intercambios || []).flatMap((item) => [item.usuario_a, item.usuario_b]).filter(Boolean))];
+  let nombresPerfiles = new Map();
+  if (idsPerfiles.length) {
+    const { data: perfilesNombres, error: errorNombres } = await supabase
+      .from("perfiles").select("id, nombre_visible").in("id", idsPerfiles);
+    if (!errorNombres) (perfilesNombres || []).forEach((perfil) => nombresPerfiles.set(String(perfil.id), perfil.nombre_visible || "Integrante"));
   }
   contenedor.replaceChildren();
   if (!intercambios?.length) {
@@ -264,6 +291,18 @@ async function cargarPanelIntercambios() {
     const titulo = document.createElement("h3");
     titulo.textContent = "Proceso: " + (inter.publicacion?.titulo || inter.referencia || "Acuerdo comunitario");
     card.appendChild(titulo);
+    const contraparteId = soyAutorB ? inter.usuario_b : inter.usuario_a;
+    const contraparte = nombresPerfiles.get(String(contraparteId)) || "Integrante de la comunidad";
+    const quien = document.createElement("p");
+    quien.className = "texto-ayuda";
+    quien.textContent = (inter.estado === "pendiente_respuesta" && soyAutorB ? "Nueva propuesta de: " : "Contraparte: ") + contraparte;
+    card.appendChild(quien);
+    if (inter.estado === "pendiente_respuesta" && soyAutorB) {
+      const avisoPendiente = document.createElement("p");
+      avisoPendiente.className = "aviso-propuesta-entrante";
+      avisoPendiente.textContent = "Esta persona quiere intercambiar por tu publicación. Revisá qué ofrece y respondé acá para continuar.";
+      card.appendChild(avisoPendiente);
+    }
     const estado = document.createElement("p");
     estado.textContent = "Estado: " + inter.estado.replaceAll("_"," ").toUpperCase();
     card.appendChild(estado);
