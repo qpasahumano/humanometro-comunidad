@@ -248,8 +248,11 @@ async function cargarPanelIntercambios() {
     "incumplido",
     "regularizacion_pendiente"
   ]);
+  // La insignia representa propuestas entrantes que esperan respuesta
+  // del titular de la publicación; no suma los procesos iniciados por esta cuenta.
   const propuestasEntrantes = (intercambios || []).filter((item) =>
-    estadosPendientes.has(item.estado)
+    String(item.usuario_a) === String(usuario.id) &&
+    item.estado === "pendiente_respuesta"
   ).length;
   const tabIntercambios = $("tab-intercambios") || $("tab-gondola");
   if (tabIntercambios) {
