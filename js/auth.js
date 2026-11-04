@@ -211,33 +211,39 @@ function prepararFormularioPerfil() {
     else formulario.appendChild(bloqueOffline);
   }
 
-  // Conectividad Solidaria y Emergencias
+  // Conectividad Solidaria: una sola pregunta y tres modalidades.
   if (!$("hm-connectivity-available")) {
     const bloque = document.createElement("fieldset");
     bloque.className = "perfil-conectividad tarjeta";
     bloque.innerHTML = `
-      <legend>Conectividad Solidaria</legend>
+      <legend>Conectividad solidaria</legend>
       <label class="control-check" for="hm-connectivity-available">
         <input id="hm-connectivity-available" type="checkbox">
-        Puedo ofrecer acceso a Internet voluntariamente
+        ¿Ofrecés conectividad (Internet y/o electricidad)?
       </label>
-      <label for="hm-connectivity-mode">Modalidad</label>
-      <select id="hm-connectivity-mode">
-        <option value="gratuito">Gratuito / solidario</option>
-        <option value="intercambio">Por intercambio</option>
-        <option value="ambas">Ambas modalidades</option>
-      </select>
-      <label class="control-check" for="hm-connectivity-emergency">
-        <input id="hm-connectivity-emergency" type="checkbox">
-        Podría ofrecerlo durante una emergencia si tengo conexión y energía
-      </label>
-      <label for="hm-connectivity-zone">Zona aproximada para ofrecer conectividad</label>
-      <input id="hm-connectivity-zone" type="text" maxlength="120" placeholder="Ej.: zona centro de mi localidad">
-      <p class="texto-ayuda">La oferta es voluntaria. No publiques contraseñas ni tu dirección exacta. Podés pausar o desactivar esta opción cuando quieras.</p>
+      <div id="hm-connectivity-options">
+        <label for="hm-connectivity-mode">Modalidad</label>
+        <select id="hm-connectivity-mode">
+          <option value="gratuito">Gratuita / solidaria</option>
+          <option value="intercambio">Por intercambio</option>
+          <option value="ambas">Gratuita o por intercambio (mixta)</option>
+        </select>
+      </div>
+      <p class="texto-ayuda">Si no ofrecés conectividad, dejá la opción desactivada. Los detalles se acuerdan al contactarse. No publiques contraseñas ni tu dirección exacta.</p>
     `;
     if (boton) formulario.insertBefore(bloque, boton);
     else formulario.appendChild(bloque);
   }
+  const conectividadCheck = $("hm-connectivity-available");
+  const conectividadOpciones = $("hm-connectivity-options");
+  const actualizarOpcionesConectividad = () => {
+    if (conectividadOpciones) conectividadOpciones.hidden = !conectividadCheck?.checked;
+  };
+  if (conectividadCheck && !conectividadCheck.dataset.listenerConfigurado) {
+    conectividadCheck.dataset.listenerConfigurado = "true";
+    conectividadCheck.addEventListener("change", actualizarOpcionesConectividad);
+  }
+  actualizarOpcionesConectividad();
 
   let fichaVisual = $("hm-perfil-ficha");
   if (!fichaVisual) {
@@ -614,8 +620,6 @@ function limpiarFormularioPerfil() {
   const whatsapp = $("whatsapp-usuario");
   const conectividad = $("hm-connectivity-available");
   const modalidad = $("hm-connectivity-mode");
-  const emergencia = $("hm-connectivity-emergency");
-  const zonaConectividad = $("hm-connectivity-zone");
   const mensajeriaOffline = $("hm-offline-messaging-available");
   const foto = $("foto-perfil-vista");
   const inicialFoto = $("foto-perfil-inicial");
@@ -627,8 +631,6 @@ function limpiarFormularioPerfil() {
   if (inicialFoto) inicialFoto.hidden = false;
   if (conectividad) conectividad.checked = false;
   if (modalidad) modalidad.value = "gratuito";
-  if (emergencia) emergencia.checked = false;
-  if (zonaConectividad) zonaConectividad.value = "";
   if (mensajeriaOffline) mensajeriaOffline.checked = false;
   if (nombre) nombre.value = "";
   if (presentacion) presentacion.value = "";
@@ -650,6 +652,48 @@ async function cargarMisPublicaciones() {
   if (!contenedor.dataset.retiroConfigurado) {
     contenedor.dataset.retiroConfigurado = "true";
     contenedor.addEventListener("click", async (evento) => {
+      const botonEditar = evento.target.closest(".btn-editar-mi-publicacion");
+      if (botonEditar) {
+        const publicacionId = botonEditar.dataset.pubId;
+        const usuario = usuarioActual;
+        if (!usuario?.id || !publicacionId) return;
+        const { data: registro, error: errorLectura } = await supabase
+          .from("publicaciones")
+          .select("id, perfil_id, usuario_id, titulo, descripcion")
+          .eq("id", publicacionId)
+          .maybeSingle();
+        if (errorLectura || !registro ||
+            String(registro.perfil_id || registro.usuario_id) !== String(usuario.id)) {
+          window.alert("No se pudo verificar que la publicación sea tuya.");
+          return;
+        }
+        const tituloNuevo = window.prompt("Editar título de la publicación:", registro.titulo || "");
+        if (tituloNuevo === null) return;
+        if (!tituloNuevo.trim()) { window.alert("El título no puede quedar vacío."); return; }
+        const descripcionActual = String(registro.descripcion || "");
+        const descripcionVisible = descripcionActual
+          .replace(/(?:^|\n)\[Condición informada:\s*[^\]]*\]\s*$/, "")
+          .replace(/\n?\[HMC_META:[^\]]+\]\s*$/, "")
+          .trim();
+        const descripcionNueva = window.prompt("Editar descripción:", descripcionVisible);
+        if (descripcionNueva === null) return;
+        botonEditar.disabled = true;
+        const meta = descripcionActual.match(/\n?\[HMC_META:[^\]]+\]\s*$/)?.[0] || "";
+        const { error: errorActualizacion } = await supabase
+          .from("publicaciones")
+          .update({ titulo: tituloNuevo.trim(), descripcion: descripcionNueva.trim() + meta, actualizado_en: new Date().toISOString() })
+          .eq("id", publicacionId)
+          .eq("perfil_id", usuario.id);
+        if (errorActualizacion) {
+          console.error("No se pudo editar la publicación:", errorActualizacion);
+          botonEditar.disabled = false;
+          window.alert("No se pudo guardar la edición. Revisá la conexión e intentá nuevamente.");
+          return;
+        }
+        await cargarMisPublicaciones();
+        window.dispatchEvent(new CustomEvent("publicacionComunidadActualizada"));
+        return;
+      }
       const boton = evento.target.closest(".btn-retirar-mi-publicacion");
       if (!boton) return;
       const usuario = usuarioActual;
@@ -732,12 +776,17 @@ async function cargarMisPublicaciones() {
       if (publicacion.estado === "publicada") {
         const acciones = document.createElement("div");
         acciones.className = "mis-publicaciones-acciones";
+        const editar = document.createElement("button");
+        editar.type = "button";
+        editar.className = "boton-secundario btn-editar-mi-publicacion";
+        editar.dataset.pubId = String(publicacion.id);
+        editar.textContent = "EDITAR PUBLICACIÓN";
         const retirar = document.createElement("button");
         retirar.type = "button";
         retirar.className = "boton-secundario btn-retirar-mi-publicacion";
         retirar.dataset.pubId = String(publicacion.id);
         retirar.textContent = "RETIRAR PUBLICACIÓN";
-        acciones.appendChild(retirar);
+        acciones.append(editar, retirar);
         tarjeta.appendChild(acciones);
       }
 
@@ -844,8 +893,6 @@ async function cargarPerfil() {
     if ($("whatsapp-usuario")) $("whatsapp-usuario").value = data?.whatsapp || "";
     if ($("hm-connectivity-available")) $("hm-connectivity-available").checked = String(data?.conectividad_disponible).toLowerCase() === "true";
     if ($("hm-connectivity-mode")) $("hm-connectivity-mode").value = data?.conectividad_modalidad || "gratuito";
-    if ($("hm-connectivity-emergency")) $("hm-connectivity-emergency").checked = Boolean(data?.conectividad_emergencias);
-    if ($("hm-connectivity-zone")) $("hm-connectivity-zone").value = data?.conectividad_zona || "";
     if ($("hm-offline-messaging-available")) {
       $("hm-offline-messaging-available").checked = Boolean(data?.mensajeria_offline);
     }
@@ -889,8 +936,6 @@ async function guardarPerfil(evento) {
   const archivoFotoSeleccionado = $("foto-perfil-archivo")?.files?.[0] || null;
   const conectividadDisponible = Boolean($("hm-connectivity-available")?.checked);
   const conectividadModalidad = $("hm-connectivity-mode")?.value || "gratuito";
-  const conectividadEmergencias = Boolean($("hm-connectivity-emergency")?.checked);
-  const conectividadZona = $("hm-connectivity-zone")?.value.trim() || "";
   const mensajeriaOffline = Boolean($("hm-offline-messaging-available")?.checked);
   let fotoUrl = perfilActual?.foto_url || null;
 
@@ -963,8 +1008,8 @@ async function guardarPerfil(evento) {
       foto_url: fotoUrl,
       conectividad_disponible: conectividadDisponible ? "true" : "false",
       conectividad_modalidad: conectividadModalidad,
-      conectividad_emergencias: conectividadEmergencias,
-      conectividad_zona: conectividadZona || null,
+      conectividad_emergencias: false,
+      conectividad_zona: null,
       mensajeria_offline: mensajeriaOffline,
       actualizado_en: new Date().toISOString()
     };
