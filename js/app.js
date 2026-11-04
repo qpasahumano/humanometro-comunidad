@@ -846,9 +846,55 @@ function configurarRadarComunitario() {
   const provincia = $("radar-provincia");
   const localidad = $("zona-explorar");
   const boton = $("btn-buscar-radar");
+  const botonUbicacion = $("btn-ubicacion-radar");
   const estado = $("estado-radar");
 
   if (!boton) return;
+
+  botonUbicacion?.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      if (estado) estado.textContent = "Este dispositivo no permite obtener la ubicación.";
+      return;
+    }
+    if (estado) estado.textContent = "Esperando autorización de ubicación…";
+    botonUbicacion.disabled = true;
+    navigator.geolocation.getCurrentPosition(async (posicion) => {
+      try {
+        const params = new URLSearchParams({
+          format: "jsonv2",
+          lat: String(posicion.coords.latitude),
+          lon: String(posicion.coords.longitude),
+          addressdetails: "1",
+          "accept-language": "es"
+        });
+        const respuesta = await fetch("https://nominatim.openstreetmap.org/reverse?" + params.toString(), {
+          headers: { Accept: "application/json" },
+          cache: "no-store"
+        });
+        if (!respuesta.ok) throw new Error("No se pudo identificar la zona.");
+        const datos = await respuesta.json();
+        const direccion = datos.address || {};
+        const localidadDetectada = direccion.city || direccion.town || direccion.village ||
+          direccion.municipality || direccion.suburb || direccion.county || "";
+        if (pais) pais.value = direccion.country || "";
+        if (provincia) provincia.value = direccion.state || direccion.region || "";
+        if (localidad) localidad.value = localidadDetectada;
+        if (estado) estado.textContent = localidadDetectada
+          ? "Ubicación completada. Revisá los datos y presioná BUSCAR COMUNIDAD."
+          : "Se autorizó la ubicación, pero no se pudo identificar una localidad. Completá los campos manualmente.";
+      } catch (error) {
+        console.error("Error al identificar ubicación del Radar:", error);
+        if (estado) estado.textContent = "No se pudo identificar la ubicación. Podés completar país, provincia y localidad manualmente.";
+      } finally {
+        botonUbicacion.disabled = false;
+      }
+    }, (error) => {
+      if (estado) estado.textContent = error.code === 1
+        ? "No autorizaste la ubicación. Podés completar los datos manualmente."
+        : "No se pudo obtener la ubicación. Completá los datos manualmente.";
+      botonUbicacion.disabled = false;
+    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
+  });
 
   const destinoGuardado = getItem("hm_radar_destino", null);
 
