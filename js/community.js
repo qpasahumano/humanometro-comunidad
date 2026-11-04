@@ -1576,6 +1576,25 @@ export function initCommunity({
 
     if (!datos) return;
 
+    // La prohibición alcanza también a textos publicados bajo otras categorías.
+    // El directorio oficial de Bancos de Medicamentos y Redes de Salud se conserva.
+    const esDirectorioSaludOficial = datos.categoria === "bancos_salud_oficial";
+    const textoPublicacion = [
+      datos.titulo,
+      datos.descripcion,
+      datos.que_necesita_a_cambio,
+      datos.condicion
+    ].filter(Boolean).join(" ");
+    const mencionaMedicamentos = /\b(medicamentos?|remedios?|f[aá]rmacos?|pastillas?|antibióticos?|antibioticos?|vacunas?|ampollas?|comprimidos?|jarabes?|insulinas?|analgésicos?|analgesicos?|antiinflamatorios?|psicotrópicos?|psicotropicos?)\b/i.test(textoPublicacion);
+
+    if (!esDirectorioSaludOficial && mencionaMedicamentos) {
+      notificar(
+        "No se permite ofrecer, solicitar, donar ni intercambiar medicamentos entre particulares. El directorio oficial de Bancos de Medicamentos y Redes de Salud permanece disponible.",
+        "error"
+      );
+      return;
+    }
+
     const usuario = await obtenerUsuarioActual();
     const perfil = await obtenerPerfilActual();
 
