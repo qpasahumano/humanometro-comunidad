@@ -424,9 +424,7 @@ function configurarIntercambiosGlobales() {
       const usuario=await obtenerUsuarioActual();
       const {data:inter,error:fetchError}=await supabase.from("intercambios").select("*").eq("id",btnCumplimiento.dataset.id).single();
       if(fetchError||!inter||!usuario) return;
-      const esAutor=String(inter.usuario_a)===String(usuario.id);
-      const campo=esAutor?"confirmado_a":"confirmado_b";
-      const {error}=await supabase.from("intercambios").update({[campo]:true}).eq("id",inter.id).eq(esAutor?"usuario_a":"usuario_b",usuario.id).eq("estado","en_proceso").eq(campo,false);
+      const {error}=await supabase.rpc("hmc_confirmar_cumplimiento",{p_intercambio_id:inter.id});
       if(error) mostrarNotificacion("No se pudo confirmar el cumplimiento: "+error.message,"error");
       else {mostrarNotificacion("Cumplimiento confirmado. Esta acción no se puede retirar.","success");cargarPanelIntercambios();}
       return;
@@ -555,23 +553,12 @@ function configurarIntercambiosGlobales() {
       const participaronAmbos = evaluadores.has(String(inter.usuario_a)) && evaluadores.has(String(inter.usuario_b));
       if (participaronAmbos) {
         const { error: errorCierre } = await supabase
-          .from("intercambios")
-          .update({ estado: "completado" })
-          .eq("id", inter.id)
-          .eq("estado", "en_proceso");
+          .rpc("hmc_finalizar_intercambio_evaluado", { p_intercambio_id: inter.id });
         if (errorCierre) {
-          mostrarNotificacion("Las dos evaluaciones están registradas, pero no se pudo cerrar el intercambio.", "warning");
+          mostrarNotificacion("Las dos evaluaciones están registradas, pero no se pudo cerrar el intercambio: " + errorCierre.message, "warning");
           await configurarEvaluaciones();
           cargarPanelIntercambios();
           return;
-        }
-        if (inter.publicacion_id) {
-          const { error: errorRetiro } = await supabase
-            .from("publicaciones")
-            .update({ estado: "retirada", actualizado_en: new Date().toISOString() })
-             .eq("id", inter.publicacion_id)
-            .in("estado", ["publicada", "reservada"]);
-          if (errorRetiro) console.error("No se pudo retirar automáticamente la publicación completada:", errorRetiro);
         }
         mostrarNotificacion("Intercambio completado: ambas partes evaluaron la experiencia.", "success");
       } else {
