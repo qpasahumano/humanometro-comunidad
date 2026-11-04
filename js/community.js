@@ -1768,16 +1768,21 @@ export function initCommunity({
   }
 
   function quitarFiltroVecino() {
-    perfilFiltroActivo = null;
-    perfilFiltroNombre = "";
+    // "VER TODAS" desde una ficha significa todas las publicaciones de ESA persona,
+    // nunca quitar el propietario y mezclar publicaciones de otros integrantes.
+    const perfilConservado = perfilFiltroActivo;
+    if (!perfilConservado) return;
 
-    if (filtroVecinoActivo) {
-      filtroVecinoActivo.hidden = true;
+    perfilFiltroActivo = perfilConservado;
+    if (busquedaInput) busquedaInput.value = "";
+    if (zonaInput) zonaInput.value = "";
+    if (tipoInput) tipoInput.value = "todas";
+    if (offlineInput) offlineInput.checked = false;
+    if (form) form.style.display = "none";
+    if (textoFiltroVecino) {
+      textoFiltroVecino.textContent = `Mostrando todas las publicaciones de ${perfilFiltroNombre || "este integrante"}`;
     }
-
-    if (form) form.style.display = "block";
-
-    window.dispatchEvent(new CustomEvent("mostrarDirectorioComunidad"));
+    if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
 
     cargarPublicacionesRemotas();
   }
