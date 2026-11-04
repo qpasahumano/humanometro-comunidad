@@ -388,7 +388,7 @@ export function initCommunity({
           if (busquedaInput) busquedaInput.value = "";
           
           cargarPublicacionesRemotas();
-          window.dispatchEvent(new CustomEvent("abrirVistaRadar"));
+          window.dispatchEvent(new CustomEvent("abrirVistaComunidadResultados"));
 
           setTimeout(() => {
             contenedorPublicacionesPerfil?.scrollIntoView({ behavior: "smooth" });
@@ -601,6 +601,9 @@ export function initCommunity({
       const zonaGondola = normalizarTexto(filtroZonaGondola?.value);
       if (zonaGondola) return zonaGondola;
 
+      if (modoListadoPerfiles === "radar" && destinoRadarComunitario) {
+        return normalizarTexto(destinoRadarComunitario);
+      }
       const modo = getItem("hm_modo_visualizacion", "barrio");
       if (modo === "explorar") {
         return normalizarTexto(getItem("hm_zona_explorar", ""));
@@ -1804,6 +1807,7 @@ export function initCommunity({
     if (filtroOfflineActivoInput) filtroOfflineActivoInput.checked = false;
     if (form) form.style.display = "none";
     if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
+    window.dispatchEvent(new CustomEvent("abrirVistaComunidadResultados"));
     if (textoFiltroVecino) {
       textoFiltroVecino.textContent = `Mostrando todas las publicaciones de ${perfilFiltroNombre || "este integrante"}`;
     }
@@ -1863,6 +1867,8 @@ export function initCommunity({
     modoListadoPerfiles = "radar";
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
+    if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
+    cargarPublicacionesRemotas();
 
     try {
       setItem("hm_radar_destino", destinoRadarComunitario);
