@@ -233,8 +233,17 @@ async function cargarPanelIntercambios() {
     contenedor.textContent = "No se pudieron cargar tus procesos.";
     return;
   }
+  const estadosPendientes = new Set([
+    "pendiente_respuesta",
+    "respuesta_recibida",
+    "conversacion_pendiente",
+    "acuerdo_pendiente_confirmacion",
+    "en_proceso",
+    "incumplido",
+    "regularizacion_pendiente"
+  ]);
   const propuestasEntrantes = (intercambios || []).filter((item) =>
-    String(item.usuario_a) === String(usuario.id) && item.estado === "pendiente_respuesta"
+    estadosPendientes.has(item.estado)
   ).length;
   const tabIntercambios = $("tab-intercambios");
   if (tabIntercambios) {
@@ -247,7 +256,7 @@ async function cargarPanelIntercambios() {
         tabIntercambios.appendChild(contador);
       }
       contador.textContent = String(propuestasEntrantes);
-      tabIntercambios.setAttribute("aria-label", "Intercambios y góndola. " + propuestasEntrantes + " propuestas nuevas");
+      tabIntercambios.setAttribute("aria-label", "Intercambios y góndola. " + propuestasEntrantes + " procesos pendientes");
     } else {
       contador?.remove();
       tabIntercambios.setAttribute("aria-label", "Intercambios y góndola");
@@ -1499,13 +1508,17 @@ async function iniciarAplicacion() {
         const registro = payload.new || payload.old || {};
         if (uid && (String(registro.usuario_a) === String(uid) || String(registro.usuario_b) === String(uid))) {
           cargarPanelIntercambios();
-          mostrarNotificacion("Tenés una actualización en uno de tus procesos comunitarios.");
+          mostrarNotificacion("Tenés una actualización en uno de tus procesos comunitarios. Revisá Intercambios / Góndola.");
         }
       })
       .subscribe();
   } catch (error) {
     console.warn("No se pudo activar la notificación en vivo de intercambios:", error);
   }
+
+  // Cargar los procesos al iniciar la aplicación para que la insignia
+  // exista aunque el usuario todavía no haya abierto la solapa.
+  cargarPanelIntercambios();
 
   configurarConectividadSolidaria();
 
