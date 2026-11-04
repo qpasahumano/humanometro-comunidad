@@ -228,6 +228,9 @@ async function cargarPanelIntercambios() {
   const usuario = await obtenerUsuarioActual();
   if (!usuario) {
     contenedor.textContent = "Iniciá sesión para ver tus procesos comunitarios.";
+    const tabIntercambios = $("tab-intercambios") || $("tab-gondola");
+    tabIntercambios?.querySelector(".contador-propuestas")?.remove();
+    tabIntercambios?.setAttribute("aria-label", "Intercambios y góndola");
     return;
   }
   const { data: intercambios, error } = await supabase
@@ -248,11 +251,11 @@ async function cargarPanelIntercambios() {
     "incumplido",
     "regularizacion_pendiente"
   ]);
-  // La insignia representa propuestas entrantes que esperan respuesta
-  // del titular de la publicación; no suma los procesos iniciados por esta cuenta.
+  // Cuenta únicamente los procesos propios de esta cuenta (la consulta
+  // anterior ya está limitada a usuario_a o usuario_b); cada solicitud
+  // independiente genera su propio registro y no se mezclan otras cuentas.
   const propuestasEntrantes = (intercambios || []).filter((item) =>
-    String(item.usuario_a) === String(usuario.id) &&
-    item.estado === "pendiente_respuesta"
+    estadosPendientes.has(item.estado)
   ).length;
   const tabIntercambios = $("tab-intercambios") || $("tab-gondola");
   if (tabIntercambios) {
@@ -392,8 +395,14 @@ async function cargarPanelIntercambios() {
       if (miConf && otraConf && inter.estado==="en_proceso") agregar("Evaluar contraparte","btn-evaluar-intercambio");
       agregar("Cancelar proceso","btn-cancelar-intercambio");
     }
-    if (inter.estado === "pendiente_respuesta" || inter.estado === "respuesta_recibida" || inter.estado === "conversacion_pendiente" || inter.estado === "acuerdo_pendiente_confirmacion") {
+    if (inter.estado === "pendiente_respuesta" && soyIniciadorA) {
+      agregar("Cancelar solicitud","btn-cancelar-intercambio");
+    }
+    if (inter.estado === "respuesta_recibida" || inter.estado === "conversacion_pendiente" || inter.estado === "acuerdo_pendiente_confirmacion") {
       agregar("Cerrar solicitud sin acuerdo","btn-cancelar-intercambio");
+    }
+    if (inter.estado === "rechazado") {
+      agregarDetalle("Resultado", "La propuesta fue rechazada. La publicación continúa disponible.");
     }
     if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
       const estadoReg=document.createElement("p");
@@ -415,9 +424,9 @@ function configurarIntercambiosGlobales() {
   document.addEventListener("click", async (e) => {
     const btnResponder = e.target.closest(".btn-responder-propuesta");
     if (btnResponder) {
-      const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas\n2 = Propongo una alternativa\n3 = Quiero conversar antes de formalizar", "1");
+      const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas\n2 = Propongo una alternativa\n3 = Quiero conversar antes de formalizar\n4 = No acepto esta propuesta", "1");
       if (opcion === null) return;
-      const mapa = {"1":"aceptar_condiciones","2":"propuesta_alternativa","3":"conversar"};
+      const mapa = {"1":"aceptar_condiciones","2":"propuesta_alternativa","3":"conversar","4":"rechazar_propuesta"};
       if (!mapa[opcion]) { mostrarNotificacion("Opción inválida.","error"); return; }
       let oferta = {};
       if (opcion === "2") {
@@ -427,7 +436,7 @@ function configurarIntercambiosGlobales() {
       }
       const {error}=await supabase.rpc("hmc_responder_intercambio",{p_intercambio_id:btnResponder.dataset.id,p_opcion:mapa[opcion],p_oferta:oferta});
       if(error) mostrarNotificacion("No se pudo registrar la respuesta: "+error.message,"error");
-      else { mostrarNotificacion(opcion==="3"?"Conversación pendiente. Cuando acuerden por WhatsApp, registren el acuerdo acá.":"Respuesta registrada. Falta formalizar el acuerdo.","success"); cargarPanelIntercambios(); }
+      else { mostrarNotificacion(opcion==="3"?"Conversación pendiente. Cuando acuerden por WhatsApp, registren el acuerdo acá.":opcion==="4"?"Propuesta rechazada. La publicación continúa disponible.":"Respuesta registrada. Falta formalizar el acuerdo.","success"); cargarPanelIntercambios(); }
       return;
     }
 
@@ -1556,6 +1565,17 @@ async function iniciarAplicacion() {
   }
 
   window.addEventListener("intercambioComunidadActualizado", cargarPanelIntercambios);
+  window.addEventListener("hmc:session-changed", (evento) => {
+    if (!evento.detail?.userId) {
+      const tab = $("tab-intercambios") || $("tab-gondola");
+      tab?.querySelector(".contador-propuestas")?.remove();
+      tab?.setAttribute("aria-label", "Intercambios y góndola");
+      const panel = $("lista-intercambios-activos");
+      if (panel) panel.textContent = "Iniciá sesión para ver tus procesos comunitarios.";
+    } else {
+      cargarPanelIntercambios();
+    }
+  });
   try {
     supabase.channel("hmc-intercambios-panel")
       .on("postgres_changes", { event: "*", schema: "public", table: "intercambios" }, async (payload) => {
