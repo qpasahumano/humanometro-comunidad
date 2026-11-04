@@ -180,7 +180,7 @@ export function initCommunity({
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
         .select(
-          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en"
+          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
         );
       if (errorPerfiles) throw errorPerfiles;
 
@@ -225,7 +225,8 @@ export function initCommunity({
       const idPropio = String(usuario?.id || "");
 
       let vecinos = (perfiles || []).filter((perfil) =>
-        String(perfil.id || "") !== idPropio
+        String(perfil.id || "") !== idPropio &&
+        String(perfil.estado_acceso_comunidad || "activo") === "activo"
       );
 
       if (esRadar) {
