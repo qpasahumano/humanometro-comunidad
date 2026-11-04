@@ -49,6 +49,7 @@ export function initCommunity({
   const filtroZonaGondola = document.getElementById("filtro-zona-gondola");
   const filtroTipoInput = document.getElementById("filtro-tipo");
   const filtroOfflineActivoInput = document.getElementById("filtro-offline-activo");
+  const filtroWhatsAppActivoInput = document.getElementById("filtro-whatsapp-activo");
   const filtroCategoriaRadarInput = document.getElementById("filtro-categoria-radar");
   const contenedorPublicacionesPerfil = document.getElementById("contenedor-publicaciones-perfil");
   const limpiarFiltrosBtn = document.getElementById(
@@ -183,7 +184,7 @@ export function initCommunity({
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
         .select(
-          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
+          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, whatsapp, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
         );
       if (errorPerfiles) throw errorPerfiles;
 
@@ -242,9 +243,11 @@ export function initCommunity({
         const tipoElegido = filtroTipoInput?.value || "todas";
         const categoriaElegida = normalizarZonaRadar(filtroCategoriaRadarInput?.value);
         const soloOffline = Boolean(filtroOfflineActivoInput?.checked);
+        const soloWhatsApp = Boolean(filtroWhatsAppActivoInput?.checked);
         vecinos = vecinos.filter((perfil) => {
           if (!coincideZonaRadar(perfil, destinoRadarComunitario)) return false;
           if (soloOffline && !perfil.mensajeria_offline) return false;
+          if (soloWhatsApp && !String(perfil.whatsapp || "").replace(/\D/g, "")) return false;
           const pubs = publicacionesPorPerfil.get(String(perfil.id)) || [];
           const coinciden = pubs.filter((pub) => {
             const texto = normalizarZonaRadar([pub.titulo, pub.descripcion, pub.categoria].join(" "));
@@ -1808,25 +1811,12 @@ export function initCommunity({
   }
 
   function quitarFiltroVecino() {
-    // "VER TODAS" desde una ficha significa todas las publicaciones de ESA persona,
-    // nunca quitar el propietario y mezclar publicaciones de otros integrantes.
-    const perfilConservado = perfilFiltroActivo;
-    if (!perfilConservado) return;
-
-    perfilFiltroActivo = perfilConservado;
-    if (busquedaInput) busquedaInput.value = "";
-    if (filtroZonaGondola) filtroZonaGondola.value = "";
-    if (filtroTipoInput) filtroTipoInput.value = "todas";
-    if (filtroOfflineActivoInput) filtroOfflineActivoInput.checked = false;
-    if (form) form.style.display = "none";
-    if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
-    window.dispatchEvent(new CustomEvent("abrirVistaComunidadResultados"));
-    if (textoFiltroVecino) {
-      textoFiltroVecino.textContent = `Mostrando todas las publicaciones de ${perfilFiltroNombre || "este integrante"}`;
-    }
-    if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
-
-    cargarPublicacionesRemotas();
+    perfilFiltroActivo = null;
+    perfilFiltroNombre = "";
+    if (filtroVecinoActivo) filtroVecinoActivo.hidden = true;
+    if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = true;
+    if (form) form.style.display = "block";
+    window.dispatchEvent(new CustomEvent("volverAComunidad"));
   }
 
   function manejarFiltroCambio() {
