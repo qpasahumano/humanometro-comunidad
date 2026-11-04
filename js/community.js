@@ -1873,7 +1873,6 @@ export function initCommunity({
     perfilFiltroActivo = null;
     perfilFiltroNombre = "";
     if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
-    cargarPublicacionesRemotas();
 
     try {
       setItem("hm_radar_destino", destinoRadarComunitario);
@@ -1885,8 +1884,10 @@ export function initCommunity({
   function manejarMostrarDirectorio(evento) {
     const detalle = evento?.detail || {};
     if (detalle.modo === "radar") {
-      cargarRadarComunitario(detalle.destino ?? destinoRadarComunitario);
+      cargarRadarComunitario(detalle.destino ?? destinoRadarComunitario)
+        .then(() => cargarPublicacionesRemotas());
     } else {
+      if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = true;
       cargarDirectorioComunidad();
     }
   }
