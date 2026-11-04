@@ -101,11 +101,13 @@ export function initCommunity({
 
     const ubicacionesPerfil = [
       perfil?.localidad,
-      perfil?.zona_aproximada
+      perfil?.zona_aproximada,
+      perfil?.provincia,
+      perfil?.pais
     ].map(normalizarZonaRadar).filter(Boolean);
     if (!ubicacionesPerfil.length) return false;
 
-    return componentesDestino.some((parte) =>
+    return componentesDestino.every((parte) =>
       ubicacionesPerfil.some((ubicacion) =>
         ubicacion === parte ||
         (" " + ubicacion + " ").includes(" " + parte + " ") ||
@@ -184,7 +186,7 @@ export function initCommunity({
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
         .select(
-          "id, nombre_visible, presentacion, localidad, zona_aproximada, foto_url, whatsapp, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
+          "id, nombre_visible, presentacion, pais, provincia, localidad, zona_aproximada, foto_url, whatsapp, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
         );
       if (errorPerfiles) throw errorPerfiles;
 
