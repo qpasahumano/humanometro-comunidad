@@ -83,9 +83,6 @@ function crearInterfazAcceso() {
         CREAR CUENTA
       </button>
 
-      <button id="hm-auth-logout" class="boton-secundario" type="button" hidden>
-        CERRAR SESIÓN
-      </button>
     </div>
 
     <p id="hm-auth-status" class="texto-ayuda" role="status" aria-live="polite">
@@ -102,7 +99,16 @@ function crearInterfazAcceso() {
 
   $("hm-auth-login").addEventListener("click", iniciarSesion);
   $("hm-auth-register").addEventListener("click", crearCuenta);
-  $("hm-auth-logout").addEventListener("click", cerrarSesion);
+
+  const botonSalirPerfil = document.createElement("button");
+  botonSalirPerfil.id = "hm-auth-logout";
+  botonSalirPerfil.className = "boton-secundario boton-ancho";
+  botonSalirPerfil.type = "button";
+  botonSalirPerfil.textContent = "CERRAR SESIÓN";
+  botonSalirPerfil.hidden = true;
+  botonSalirPerfil.addEventListener("click", cerrarSesion);
+  const formularioPerfil = $("form-perfil");
+  formularioPerfil?.appendChild(botonSalirPerfil);
 
   prepararFormularioPerfil();
 }
@@ -578,9 +584,11 @@ function actualizarInterfazUsuario() {
   const botonEntrar = $("hm-auth-login");
   const botonCrear = $("hm-auth-register");
   const botonSalir = $("hm-auth-logout");
+  const panelAcceso = $("hm-auth-panel");
 
   const autenticado = Boolean(usuarioActual);
 
+  if (panelAcceso) panelAcceso.hidden = autenticado;
   if (credenciales) credenciales.hidden = autenticado;
   if (botonEntrar) botonEntrar.hidden = autenticado;
   if (botonCrear) botonCrear.hidden = autenticado;
