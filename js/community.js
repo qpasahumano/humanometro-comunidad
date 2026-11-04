@@ -71,6 +71,9 @@ export function initCommunity({
   let cargando = false;
   let destruido = false;
   let suscripcionAuth = null;
+  let suscripcionRealtime = null;
+  let temporizadorActualizacion = null;
+  let intervaloActualizacion = null;
   let ultimaCarga = 0;
   let dbMatrixInstance = null;
   let usuarioSesionId = "";
@@ -469,17 +472,18 @@ export function initCommunity({
   async function guardarMatrixCache(pubs) {
     try {
       const db = await abrirMatrixDB();
-      const tx = db.transaction(
-        [MATRIX_CONFIG.STORE_PUBLICACIONES],
-        "readwrite"
-      );
-      const store = tx.objectStore(
-        MATRIX_CONFIG.STORE_PUBLICACIONES
-      );
-
-      pubs.forEach((pub) => store.put(pub));
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction([MATRIX_CONFIG.STORE_PUBLICACIONES], "readwrite");
+        const store = tx.objectStore(MATRIX_CONFIG.STORE_PUBLICACIONES);
+        // Reemplaza el conjunto completo para no resucitar publicaciones retiradas.
+        store.clear();
+        pubs.forEach((pub) => store.put(pub));
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error("Error al actualizar la caché"));
+        tx.onabort = () => reject(tx.error || new Error("Actualización de caché cancelada"));
+      });
     } catch (err) {
-      console.warn("Matrix: No se pudo guardar caché en IndexedDB", err);
+      console.warn("Matrix: No se pudo reemplazar la caché de publicaciones", err);
     }
   }
 
@@ -1815,14 +1819,48 @@ export function initCommunity({
     }
   }
 
+  function actualizarVistaComunitaria() {
+    if (destruido || !navigator.onLine || document.visibilityState === "hidden") return;
+    cargarPublicacionesRemotas();
+    if (modoListadoPerfiles === "directorio") cargarDirectorioComunidad();
+    else cargarRadarComunitario(destinoRadarComunitario);
+  }
+
+  function programarActualizacionComunitaria() {
+    if (destruido) return;
+    clearTimeout(temporizadorActualizacion);
+    temporizadorActualizacion = setTimeout(actualizarVistaComunitaria, 450);
+  }
+
+  function activarActualizacionesEnVivo() {
+    try {
+      suscripcionRealtime = supabase
+        .channel("humanometro-comunidad-live")
+        .on("postgres_changes", { event: "*", schema: "public", table: "publicaciones" }, programarActualizacionComunitaria)
+        .on("postgres_changes", { event: "*", schema: "public", table: "perfiles" }, programarActualizacionComunitaria)
+        .on("postgres_changes", { event: "*", schema: "public", table: "intercambios" }, programarActualizacionComunitaria)
+        .on("postgres_changes", { event: "*", schema: "public", table: "evaluaciones" }, programarActualizacionComunitaria)
+        .subscribe((estado) => {
+          if (estado === "SUBSCRIBED") actualizarVistaComunitaria();
+          if (estado === "CHANNEL_ERROR" || estado === "TIMED_OUT") {
+            console.warn("Realtime no está disponible; continúa la actualización periódica.");
+          }
+        });
+    } catch (error) {
+      console.warn("No se pudo iniciar Realtime:", error);
+    }
+    intervaloActualizacion = setInterval(() => {
+      if (!document.hidden && navigator.onLine) actualizarVistaComunitaria();
+    }, 60000);
+  }
+
+  function manejarVisibilidad() {
+    if (!document.hidden && navigator.onLine) actualizarVistaComunitaria();
+  }
+
   async function manejarOnline() {
     await sincronizarPublicacionesPendientes();
-    cargarPublicacionesRemotas();
-    if (modoListadoPerfiles === "directorio") {
-      cargarDirectorioComunidad();
-    } else {
-      cargarRadarComunitario(destinoRadarComunitario);
-    }
+    actualizarVistaComunitaria();
   }
 
   function manejarOffline() {
@@ -1926,6 +1964,8 @@ export function initCommunity({
 
   window.addEventListener("online", manejarOnline);
   window.addEventListener("offline", manejarOffline);
+  window.addEventListener("pageshow", manejarVisibilidad);
+  document.addEventListener("visibilitychange", manejarVisibilidad);
 
   function manejarPublicacionActualizada() {
     if (destruido) return;
@@ -1980,6 +2020,7 @@ export function initCommunity({
     if (!destruido) cargarPublicacionesRemotas();
   });
   cargarDirectorioComunidad();
+  activarActualizacionesEnVivo();
 
   return {
     cargarPublicaciones: cargarPublicacionesRemotas,
@@ -2070,6 +2111,14 @@ export function initCommunity({
 
       window.removeEventListener("online", manejarOnline);
       window.removeEventListener("offline", manejarOffline);
+      window.removeEventListener("pageshow", manejarVisibilidad);
+      document.removeEventListener("visibilitychange", manejarVisibilidad);
+      clearTimeout(temporizadorActualizacion);
+      clearInterval(intervaloActualizacion);
+      if (suscripcionRealtime) {
+        supabase.removeChannel(suscripcionRealtime);
+        suscripcionRealtime = null;
+      }
       window.removeEventListener("publicacionComunidadActualizada", manejarPublicacionActualizada);
       window.removeEventListener("perfilComunidadActualizado", manejarPublicacionActualizada);
 
