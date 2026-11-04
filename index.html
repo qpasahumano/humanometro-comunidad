@@ -230,33 +230,14 @@
 
       </section>
 
-      <!-- PRESENTACIÓN DEL PROYECTO -->
-      <section class="humanometro tarjeta">
-        <div class="humanometro-icono" aria-hidden="true">
-          <svg viewBox="0 0 64 64" focusable="false">
-            <circle cx="32" cy="32" r="28"/>
-            <path d="M18 17v30M46 17v30M18 32h28"/>
-            <path d="M24 17h16M24 47h16"/>
-          </svg>
-        </div>
-
-        <div>
-          <h2>Una red de personas para las personas</h2>
-          <p>
-            La cooperación, la responsabilidad y el respeto son el centro
-            de esta comunidad.
-          </p>
-        </div>
-      </section>
-
       <section id="contenedor-publicaciones-perfil" class="tarjeta" hidden>
         <div id="filtro-vecino-activo" class="filtro-vecino-activo" hidden>
           <span id="texto-filtro-vecino">Publicaciones de un integrante</span>
-          <button id="btn-quitar-filtro-vecino" class="boton-secundario" type="button">VER TODAS</button>
         </div>
         <h3>Publicaciones</h3>
         <div id="lista-publicaciones" class="lista-publicaciones" aria-live="polite"></div>
         <p class="aviso-local">La disponibilidad puede cambiar. Antes de coordinar, confirmá con su autor que la publicación siga activa y que las condiciones continúen vigentes.</p>
+        <button id="btn-quitar-filtro-vecino" class="boton-secundario boton-ancho" type="button">VOLVER A LA COMUNIDAD</button>
       </section>
 
     </div><!-- /#panel-comunidad -->
@@ -358,7 +339,11 @@
 
         <label class="control-check filtro-offline" for="filtro-offline-activo">
           <input id="filtro-offline-activo" type="checkbox">
-          Solo integrantes con comunicación offline activa
+          Comunicación offline activa
+        </label>
+        <label class="control-check filtro-offline" for="filtro-whatsapp-activo">
+          <input id="filtro-whatsapp-activo" type="checkbox">
+          WhatsApp disponible
         </label>
       </section>
 
@@ -456,6 +441,10 @@
         Publicá lo que necesitás o lo que podés ofrecer. Cuando corresponda,
         indicá su condición y qué necesitás a cambio.
       </p>
+      <section id="lista-intercambios-activos" class="tarjeta" aria-live="polite">
+        <h3>Solicitudes e intercambios pendientes</h3>
+        <p class="texto-ayuda">Cargando tus procesos comunitarios…</p>
+      </section>
 
       <!-- AVISO DE SEGURIDAD: SE MUESTRA SOLO ANTE UNA SELECCIÓN O MENCIÓN DE MEDICAMENTOS -->
       <section
@@ -1032,6 +1021,7 @@
         Completá tu perfil para identificarte dentro de la comunidad.
         El estado de guardado se informa desde la aplicación.
       </p>
+      <div id="hm-auth-actions" class="acciones-cuenta"></div>
 
     </section>
 
