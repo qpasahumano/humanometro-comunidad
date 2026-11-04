@@ -325,7 +325,7 @@ function renderizarFichaVisual(contenedor) {
   const conectividadActiva = String(datos.conectividad_disponible).toLowerCase() === "true";
   const inicial = nombreVisible !== "Sin nombre" ? nombreVisible.charAt(0).toUpperCase() : "H";
 
-  const infoHumanidad = datos.indice_humanidad || { porcentaje: 100, total: 0 };
+  const infoHumanidad = datos.indice_humanidad || { porcentaje: 0, total: 0 };
   const pct = infoHumanidad.porcentaje;
 
   let colorPct = "#22c55e";
@@ -433,7 +433,7 @@ function renderizarFichaVisual(contenedor) {
 // NUEVO: VALIDACIÓN DE NIVEL DE ALTA CONFIANZA
 // ==========================================
 export function verificarAccesoAltaConfianza() {
-  const infoHumanidad = perfilActual?.indice_humanidad || { porcentaje: 100, total: 0 };
+  const infoHumanidad = perfilActual?.indice_humanidad || { porcentaje: 0, total: 0 };
   const totalEvals = infoHumanidad.total;
   const porcentaje = infoHumanidad.porcentaje;
 
@@ -796,7 +796,7 @@ async function calcularPorcentajeHumanidad(perfilId) {
         return { porcentaje: promedio, total: puntuaciones.length };
       }
 
-      return { porcentaje: 100, total: 0 };
+      return { porcentaje: 0, total: 0 };
     }
 
     console.warn("No se pudieron consultar las fuentes de evaluaciones:", error || errorMediciones);
