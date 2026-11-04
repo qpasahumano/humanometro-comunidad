@@ -359,33 +359,6 @@ export function initCommunity({
         }
         tarjeta.appendChild(datos);
 
-        if (publicacionesDeEstePerfil.length > 0) {
-          const seccionPublicaciones = document.createElement("section");
-          seccionPublicaciones.className = "vecino-publicaciones";
-          const tituloPublicaciones = document.createElement("h4");
-          tituloPublicaciones.className = "vecino-publicaciones-titulo";
-          tituloPublicaciones.textContent = "PUBLICACIONES ACTIVAS";
-          seccionPublicaciones.appendChild(tituloPublicaciones);
-
-          publicacionesDeEstePerfil.forEach((publicacion) => {
-            const desplegable = document.createElement("details");
-            desplegable.open = true;
-            desplegable.className = "vecino-publicacion-desplegable";
-            const resumen = document.createElement("summary");
-            resumen.textContent = `${publicacion.tipo || "Publicación"} · ${publicacion.titulo || "Ver detalles"}`;
-            desplegable.appendChild(resumen);
-
-            const detallePublicacion = crearTarjeta({
-              ...publicacion,
-              perfil_nombre: perfil.nombre_visible || "Integrante"
-            });
-            detallePublicacion.classList.add("vecino-publicacion-detalle");
-            desplegable.appendChild(detallePublicacion);
-            seccionPublicaciones.appendChild(desplegable);
-          });
-
-          tarjeta.appendChild(seccionPublicaciones);
-        }
 
         const indicadorOffline = crearIndicadorMensajeriaOffline(perfil);
         if (indicadorOffline) tarjeta.appendChild(indicadorOffline);
@@ -402,18 +375,13 @@ export function initCommunity({
           perfilFiltroNombre = perfil.nombre_visible || "Integrante";
           if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
           if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
-          if (textoFiltroVecino) textoFiltroVecino.textContent = `Mostrando publicaciones de ${perfilFiltroNombre}`;
-          
+          if (textoFiltroVecino) textoFiltroVecino.textContent = `Publicaciones de ${perfilFiltroNombre}`;
           if (form) form.style.display = "none";
-
           if (busquedaInput) busquedaInput.value = "";
-          
+          window.dispatchEvent(new CustomEvent("abrirVistaComunidadResultados", {
+            detail: { modo: modoListadoPerfiles }
+          }));
           cargarPublicacionesRemotas();
-          window.dispatchEvent(new CustomEvent("abrirVistaComunidadResultados"));
-
-          setTimeout(() => {
-            contenedorPublicacionesPerfil?.scrollIntoView({ behavior: "smooth" });
-          }, 150);
         });
         acciones.appendChild(verPublicaciones);
 
