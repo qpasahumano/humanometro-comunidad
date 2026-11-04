@@ -186,7 +186,7 @@ export function initCommunity({
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
         .select(
-          "id, nombre_visible, presentacion, pais, provincia, localidad, zona_aproximada, foto_url, whatsapp, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
+          "id, nombre_visible, presentacion, pais, provincia, localidad, zona_aproximada, foto_url, whatsapp_disponible, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
         );
       if (errorPerfiles) throw errorPerfiles;
 
@@ -249,7 +249,7 @@ export function initCommunity({
         vecinos = vecinos.filter((perfil) => {
           if (!coincideZonaRadar(perfil, destinoRadarComunitario)) return false;
           if (soloOffline && !perfil.mensajeria_offline) return false;
-          if (soloWhatsApp && !String(perfil.whatsapp || "").replace(/\D/g, "")) return false;
+          if (soloWhatsApp && !perfil.whatsapp_disponible) return false;
           const pubs = publicacionesPorPerfil.get(String(perfil.id)) || [];
           const coinciden = pubs.filter((pub) => {
             const texto = normalizarZonaRadar([pub.titulo, pub.descripcion, pub.categoria].join(" "));
