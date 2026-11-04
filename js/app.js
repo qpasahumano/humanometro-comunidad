@@ -19,6 +19,7 @@ let evaluacionesConfiguradas = false;
 let conectividadSolidariaConfigurada = false;
 let radarComunitarioConfigurado = false;
 let intercambiosConfigurados = false;
+let accesoComunidadBloqueado = false;
 
 /* =========================
    NOTIFICACIONES
@@ -51,7 +52,7 @@ function actualizarSolapaActiva(solapa) {
 }
 
 function usuarioPuedeEntrar() {
-  return Boolean(obtenerUsuarioActual() && perfilEstaCompleto());
+  return Boolean(!accesoComunidadBloqueado && obtenerUsuarioActual() && perfilEstaCompleto());
 }
 
 function mostrarVista(nombre = null, opciones = {}) {
@@ -71,7 +72,9 @@ function mostrarVista(nombre = null, opciones = {}) {
     nombre = "vista-perfil";
 
     mostrarNotificacion(
-      "Ingresá a tu cuenta y completá tu perfil para acceder a la comunidad."
+      accesoComunidadBloqueado
+        ? "Tu perfil está temporalmente inhabilitado por procesos comunitarios incumplidos. Ingresá a Mi perfil para consultar y regularizar tu situación."
+        : "Ingresá a tu cuenta y completá tu perfil para acceder a la comunidad."
     );
   }
 
@@ -1403,6 +1406,21 @@ async function iniciarAplicacion() {
     mostrarNotificacion(
       "No se pudo inicializar el acceso a la cuenta. Revisá tu conexión."
     );
+  }
+
+  const usuarioVerificado = await obtenerUsuarioActual();
+  if (usuarioVerificado?.id) {
+    const { data: estadoAcceso, error: errorEstadoAcceso } = await supabase
+      .rpc("hmc_verificar_estado_comunidad");
+    if (errorEstadoAcceso) {
+      console.error("No se pudo verificar el estado comunitario:", errorEstadoAcceso);
+    } else {
+      accesoComunidadBloqueado = estadoAcceso?.estado === "restringido";
+      if (accesoComunidadBloqueado) {
+        mostrarNotificacion("Tu perfil está temporalmente inhabilitado por dos o más procesos incumplidos. Podés ingresar a Mi perfil para regularizarlos.");
+        mostrarVista("vista-perfil", { forzar: true });
+      }
+    }
   }
 
   configurarConectividadSolidaria();
