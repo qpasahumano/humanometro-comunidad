@@ -1861,6 +1861,8 @@ export function initCommunity({
 
     destinoRadarComunitario = destino.trim();
     modoListadoPerfiles = "radar";
+    perfilFiltroActivo = null;
+    perfilFiltroNombre = "";
 
     try {
       setItem("hm_radar_destino", destinoRadarComunitario);
