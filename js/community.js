@@ -1056,82 +1056,93 @@ export function initCommunity({
   async function manejarInicioIntercambioDesdeCard(e) {
     const boton = e.target.closest(".btn-iniciar-intercambio-card");
     if (!boton) return;
-
     e.preventDefault();
+
     const publicacionId = boton.getAttribute("data-pub-id");
     const perfilDuenhoId = boton.getAttribute("data-autor-id");
-
     const usuarioActual = await obtenerUsuarioActual();
     if (!usuarioActual) {
-      notificar("Debes iniciar sesión para realizar un intercambio.", "error");
+      notificar("Debés iniciar sesión para proponer un intercambio.", "error");
+      return;
+    }
+    if (String(usuarioActual.id) === String(perfilDuenhoId)) {
+      notificar("No podés iniciar un intercambio con tu propia publicación.", "warning");
       return;
     }
 
-    if (String(usuarioActual.id) === String(perfilDuenhoId)) {
-      notificar("No puedes iniciar un intercambio con tu propia publicación.", "warning");
+    const { data: acceso, error: errorAcceso } = await supabase
+      .from("perfiles").select("estado_acceso_comunidad, procesos_incumplidos")
+      .eq("id", usuarioActual.id).maybeSingle();
+    if (errorAcceso) {
+      notificar("No se pudo verificar tu estado comunitario.", "error");
+      return;
+    }
+    if (acceso?.estado_acceso_comunidad && acceso.estado_acceso_comunidad !== "activo") {
+      notificar("Tu acceso comunitario está restringido. Regularizá tus procesos pendientes para volver a proponer intercambios.", "warning");
       return;
     }
 
     const { data: publicacionVigente, error: errorPublicacion } = await supabase
       .from("publicaciones")
-      .select("id, perfil_id, usuario_id, titulo, estado")
-      .eq("id", publicacionId)
-      .maybeSingle();
-    if (errorPublicacion || !publicacionVigente ||
-        publicacionVigente.estado !== "publicada" ||
+      .select("id, perfil_id, usuario_id, titulo, estado, que_necesita_a_cambio")
+      .eq("id", publicacionId).maybeSingle();
+    if (errorPublicacion || !publicacionVigente || publicacionVigente.estado !== "publicada" ||
         String(publicacionVigente.perfil_id || publicacionVigente.usuario_id) !== String(perfilDuenhoId)) {
-      notificar("Esta publicación ya no está disponible para iniciar un intercambio.", "warning");
+      notificar("Esta publicación ya no está disponible.", "warning");
       return;
     }
 
-    const { data: intercambioExistente, error: errorExistente } = await supabase
-      .from("intercambios")
-      .select("id")
-      .eq("publicacion_id", publicacionId)
-      .eq("usuario_a", perfilDuenhoId)
-      .eq("usuario_b", usuarioActual.id)
-      .eq("estado", "en_proceso")
-      .maybeSingle();
-    if (errorExistente) {
-      notificar("No se pudo comprobar si ya existe una solicitud para esta publicación.", "error");
-      return;
-    }
-    if (intercambioExistente) {
-      notificar("Ya tenés un intercambio en curso para esta publicación.", "warning");
-      return;
-    }
-
-    const horasStr = prompt("Ingresa el plazo estimado en horas para el intercambio (ej: 24, 48 o 72):", "24");
+    const oferta = prompt("¿Qué ofrecés a cambio? Si ya lo conversaste por WhatsApp, resumí aquí lo acordado o tu propuesta inicial.");
+    if (!oferta?.trim()) return;
+    const horasStr = prompt("¿Cuántas horas estimás para cumplir tu parte? (ej.: 24, 48 o 72)", "24");
     if (!horasStr) return;
-
-    const horas = parseInt(horasStr, 10);
-    if (isNaN(horas) || horas <= 0) {
-      notificar("Por favor, ingresa un número válido de horas.", "error");
+    const horas = Number.parseInt(horasStr, 10);
+    if (!Number.isInteger(horas) || horas < 1 || horas > 720) {
+      notificar("Ingresá un plazo entre 1 y 720 horas.", "error");
       return;
     }
 
-    const fechaLimite = new Date();
-    fechaLimite.setHours(fechaLimite.getHours() + horas);
-
+    boton.disabled = true;
     try {
+      const { data: duplicado, error: errorDuplicado } = await supabase
+        .from("intercambios").select("id")
+        .eq("publicacion_id", publicacionId)
+        .eq("usuario_a", perfilDuenhoId)
+        .eq("usuario_b", usuarioActual.id)
+        .in("estado", ["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso"])
+        .limit(1);
+      if (errorDuplicado) throw errorDuplicado;
+      if (duplicado?.length) {
+        notificar("Ya tenés un proceso abierto para esta publicación.", "warning");
+        return;
+      }
+
       const { error } = await supabase.from("intercambios").insert([{
         publicacion_id: publicacionId,
         referencia: String(publicacionVigente.titulo || "Intercambio comunitario"),
         usuario_a: perfilDuenhoId,
         usuario_b: usuarioActual.id,
-        estado: "en_proceso",
-        fecha_limite: fechaLimite.toISOString(),
+        estado: "pendiente_respuesta",
+        fecha_respuesta_limite: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+        propuesta_a: {
+          oferta: oferta.trim(),
+          necesita: String(publicacionVigente.que_necesita_a_cambio || ""),
+          horas_a: horas,
+          enviado_en: new Date().toISOString(),
+          contacto_externo_posible: true
+        },
         confirmado_a: false,
         confirmado_b: false
       }]);
-
       if (error) throw error;
-
-      notificar("¡Intercambio iniciado con éxito!", "success");
+      notificar("Propuesta enviada. La otra persona debe responder desde HUMANÓMETRO COMUNIDAD. Si hablan por WhatsApp, el acuerdo también deberá formalizarse acá.", "success");
       cargarPublicacionesRemotas();
+      window.dispatchEvent(new CustomEvent("intercambioComunidadActualizado"));
     } catch (error) {
-      console.error("Error al iniciar el intercambio:", error);
-      notificar("Error al iniciar el intercambio: " + error.message, "error");
+      console.error("Error al enviar propuesta de intercambio:", error);
+      notificar("No se pudo enviar la propuesta: " + (error.message || "error desconocido"), "error");
+    } finally {
+      boton.disabled = false;
     }
   }
 
