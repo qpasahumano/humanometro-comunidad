@@ -69,6 +69,7 @@ export function initCommunity({
 
   let perfilFiltroActivo = null;
   let perfilFiltroNombre = "";
+  let perfilesRadarEncontrados = new Set();
   let publicaciones = [];
   let cargando = false;
   let destruido = false;
@@ -264,6 +265,7 @@ export function initCommunity({
         contenedorPublicacionesPerfil.hidden = true;
       }
 
+      perfilesRadarEncontrados = new Set(vecinos.map((perfil) => String(perfil.id)));
       vecinos.sort((a, b) => {
         const fechaA = new Date(a.actualizado_en || 0).getTime();
         const fechaB = new Date(b.actualizado_en || 0).getTime();
@@ -878,7 +880,10 @@ export function initCommunity({
               publicacion.usuario_id
             ].filter(Boolean).map((id) => String(id));
             if (perfilFiltroActivo && !propietarios.includes(String(perfilFiltroActivo))) return false;
-            if (!perfilFiltroActivo && zonaActualFiltro) {
+            if (!perfilFiltroActivo && modoListadoPerfiles === "radar") {
+              const propietario = String(publicacion.perfil_id || publicacion.usuario_id || "");
+              if (!perfilesRadarEncontrados.has(propietario)) return false;
+            } else if (!perfilFiltroActivo && zonaActualFiltro) {
               const zonaPub = normalizarZonaRadar(publicacion.zona_aproximada);
               const zonaBuscada = normalizarZonaRadar(zonaActualFiltro);
               if (zonaPub && !zonaPub.includes(zonaBuscada)) return false;
