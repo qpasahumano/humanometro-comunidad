@@ -31,6 +31,8 @@ export function perfilEstaCompleto() {
     String(perfilActual.nombre_visible || "").trim() &&
     String(perfilActual.whatsapp || "").trim() &&
     String(perfilActual.presentacion || "").trim() &&
+    String(perfilActual.pais || "").trim() &&
+    String(perfilActual.provincia || "").trim() &&
     String(perfilActual.localidad || "").trim() &&
     String(perfilActual.foto_url || "").trim() &&
     String(perfilActual.estado_acceso_comunidad || "activo") === "activo"
@@ -205,7 +207,7 @@ function prepararFormularioPerfil() {
     control.id = campo.id;
     control.maxLength = campo.max;
     control.placeholder = campo.placeholder;
-    if (campo.id === "hm-profile-presentation" || campo.id === "hm-profile-locality") {
+    if (["hm-profile-presentation", "hm-profile-country", "hm-profile-province", "hm-profile-locality"].includes(campo.id)) {
       control.required = true;
     }
 
@@ -977,6 +979,16 @@ async function guardarPerfil(evento) {
   if (!presentacion) {
     mostrarEstadoPerfil("Completá tu presentación comunitaria.");
     $("hm-profile-presentation")?.focus();
+    return;
+  }
+  if (!pais) {
+    mostrarEstadoPerfil("Indicá el país de tu perfil para que el Radar pueda encontrarte en búsquedas internacionales.");
+    $("hm-profile-country")?.focus();
+    return;
+  }
+  if (!provincia) {
+    mostrarEstadoPerfil("Indicá tu provincia, estado o región para completar la ubicación comunitaria.");
+    $("hm-profile-province")?.focus();
     return;
   }
   if (!localidad) {
