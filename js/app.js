@@ -216,75 +216,148 @@ function configurarNavegacion() {
 async function cargarPanelIntercambios() {
   const contenedor = $("lista-intercambios-activos") || $("vista-intercambios");
   if (!contenedor) return;
-
   const usuario = await obtenerUsuarioActual();
   if (!usuario) {
-    contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px;'>Iniciá sesión para ver tus intercambios en curso.</p>";
+    contenedor.textContent = "Iniciá sesión para ver tus procesos comunitarios.";
     return;
   }
-
-  contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px; color: #38bdf8;'>Cargando tus intercambios activos...</p>";
-
   const { data: intercambios, error } = await supabase
-    .from("intercambios")
-    .select("*, publicacion:publicacion_id(titulo)")
+    .from("intercambios").select("*, publicacion:publicacion_id(titulo)")
     .or(`usuario_a.eq.${usuario.id},usuario_b.eq.${usuario.id}`)
     .order("created_at", { ascending: false });
-
   if (error) {
-    console.error("Error al cargar intercambios:", error);
-    contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; color: #f87171;'>No se pudieron cargar los intercambios.</p>";
+    console.error("Error al cargar procesos:", error);
+    contenedor.textContent = "No se pudieron cargar tus procesos.";
     return;
   }
-
-  if (!intercambios || intercambios.length === 0) {
-    contenedor.innerHTML = "<p class='texto-ayuda' style='text-align: center; padding: 20px;'>No tenés intercambios activos en este momento. Podés iniciarlos desde las publicaciones en la comunidad.</p>";
-    return;
-  }
-
   contenedor.replaceChildren();
+  if (!intercambios?.length) {
+    contenedor.textContent = "No tenés procesos abiertos. Las propuestas y acuerdos que converses por WhatsApp también deben registrarse acá.";
+    return;
+  }
   const wrapper = document.createElement("div");
-  wrapper.style.cssText = "display: flex; flex-direction: column; gap: 15px; padding: 10px;";
-
+  wrapper.style.cssText = "display:flex;flex-direction:column;gap:14px;padding:10px";
   intercambios.forEach((inter) => {
-    const esA = inter.usuario_a === usuario.id;
-    const miConf = esA ? inter.confirmado_a : inter.confirmado_b;
-    const otraConf = esA ? inter.confirmado_b : inter.confirmado_a;
-    const ambosConf = inter.confirmado_a && inter.confirmado_b;
-
-    const tarjeta = document.createElement("article");
-    tarjeta.className = "tarjeta-publicacion";
-    tarjeta.style.cssText = "background: #17212b; border: 1px solid #2b3b4f; padding: 15px; border-radius: 8px; color: #fff;";
-
-    tarjeta.innerHTML = `
-      <h3 style="margin-bottom: 8px; color: #38bdf8;">Intercambio: ${escapeHTML(inter.publicacion?.titulo || "Acuerdo Comunitario")}</h3>
-      <p style="margin-bottom: 6px;"><strong>Estado:</strong> <span style="text-transform: uppercase; color: #38df8;">${escapeHTML(inter.estado)}</span></p>
-      <p style="margin-bottom: 12px; font-size: 0.85rem; color: #94a3b8;">Límite acordado: ${new Date(inter.fecha_limite).toLocaleString("es-AR")}</p>
-      
-      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
-        <button class="boton-secundario btn-toggle-conf" data-id="${inter.id}" style="background: ${miConf ? '#166534' : '#ca8a04'}; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
-          ${miConf ? "✓ Tu parte confirmada" : "○ Confirmar tu cumplimiento"}
-        </button>
-        <span style="font-size: 0.85rem; color: #cbd5e1;">Contraparte: ${otraConf ? "✓ Confirmado" : "Pendiente"}</span>
-      </div>
-
-      ${ambosConf && inter.estado !== "completado" ? `
-        <button class="boton-accion btn-evaluar-intercambio" data-id="${inter.id}" style="background: #9333ea; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; width: 100%;">
-          Evaluar contraparte y finalizar intercambio
-        </button>
-      ` : ""}
-    `;
-    wrapper.appendChild(tarjeta);
+    const soyAutorB = String(inter.usuario_a) === String(usuario.id);
+    const soyIniciadorA = String(inter.usuario_b) === String(usuario.id);
+    const miConfirmacion = soyAutorB ? inter.confirmado_a : inter.confirmado_b;
+    const otraConfirmacion = soyAutorB ? inter.confirmado_b : inter.confirmado_a;
+    const card = document.createElement("article");
+    card.className = "tarjeta-publicacion";
+    card.style.cssText = "background:#17212b;border:1px solid #2b3b4f;padding:15px;border-radius:8px;color:#fff";
+    const titulo = document.createElement("h3");
+    titulo.textContent = "Proceso: " + (inter.publicacion?.titulo || inter.referencia || "Acuerdo comunitario");
+    card.appendChild(titulo);
+    const estado = document.createElement("p");
+    estado.textContent = "Estado: " + inter.estado.replaceAll("_"," ").toUpperCase();
+    card.appendChild(estado);
+    const ayuda = document.createElement("p");
+    ayuda.className = "texto-ayuda";
+    ayuda.textContent = "La conversación puede continuar por WhatsApp, pero las propuestas y confirmaciones deben quedar registradas en la comunidad.";
+    card.appendChild(ayuda);
+    const acciones = document.createElement("div");
+    acciones.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
+    const agregar = (label, cls, accion) => {
+      const btn=document.createElement("button"); btn.type="button"; btn.className="boton-secundario "+cls; btn.dataset.id=inter.id; btn.textContent=label; acciones.appendChild(btn);
+    };
+    if (inter.estado === "pendiente_respuesta" && soyAutorB) agregar("Responder propuesta","btn-responder-propuesta");
+    if (["respuesta_recibida","conversacion_pendiente"].includes(inter.estado) && soyIniciadorA) agregar("Registrar acuerdo conversado","btn-registrar-acuerdo");
+    if (inter.estado === "acuerdo_pendiente_confirmacion") {
+      const status=document.createElement("p");
+      status.textContent="Confirmación del acuerdo: " + (inter.acuerdo_confirmado_a ? "autor ✓" : "autor pendiente") + " · " + (inter.acuerdo_confirmado_b ? "iniciador ✓" : "iniciador pendiente");
+      card.appendChild(status);
+      const yoConfirmado=soyAutorB ? inter.acuerdo_confirmado_a : inter.acuerdo_confirmado_b;
+      if (!yoConfirmado) agregar("Confirmar acuerdo","btn-confirmar-acuerdo");
+    }
+    if (inter.estado === "en_proceso") {
+      const plazo=document.createElement("p");
+      plazo.textContent="Tu vencimiento: " + new Date((soyAutorB ? inter.fecha_limite_a : inter.fecha_limite_b) || inter.fecha_limite).toLocaleString("es-AR");
+      card.appendChild(plazo);
+      const miConf=soyAutorB ? inter.confirmado_a : inter.confirmado_b;
+      const otraConf=soyAutorB ? inter.confirmado_b : inter.confirmado_a;
+      if (!miConf) agregar("Confirmar mi cumplimiento","btn-confirmar-cumplimiento");
+      const estadoConf=document.createElement("p");
+      estadoConf.textContent="Tu cumplimiento: "+(miConf?"confirmado":"pendiente")+" · Contraparte: "+(otraConf?"confirmado":"pendiente");
+      card.appendChild(estadoConf);
+      if (miConf && otraConf && inter.estado==="en_proceso") agregar("Evaluar contraparte","btn-evaluar-intercambio");
+      agregar("Cancelar proceso","btn-cancelar-intercambio");
+    }
+    if (inter.estado === "pendiente_respuesta" || inter.estado === "respuesta_recibida" || inter.estado === "conversacion_pendiente" || inter.estado === "acuerdo_pendiente_confirmacion") {
+      agregar("Cerrar solicitud sin acuerdo","btn-cancelar-intercambio");
+    }
+    card.appendChild(acciones);
+    wrapper.appendChild(card);
   });
-
   contenedor.appendChild(wrapper);
 }
-
 function configurarIntercambiosGlobales() {
   if (intercambiosConfigurados) return;
   intercambiosConfigurados = true;
 
   document.addEventListener("click", async (e) => {
+    const btnResponder = e.target.closest(".btn-responder-propuesta");
+    if (btnResponder) {
+      const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas\n2 = Propongo una alternativa\n3 = Quiero conversar antes de formalizar", "1");
+      if (opcion === null) return;
+      const mapa = {"1":"aceptar_condiciones","2":"propuesta_alternativa","3":"conversar"};
+      if (!mapa[opcion]) { mostrarNotificacion("Opción inválida.","error"); return; }
+      let oferta = {};
+      if (opcion === "2") {
+        const detalle = prompt("Describí qué ofrecés como alternativa:");
+        if (!detalle?.trim()) return;
+        oferta = {detalle:detalle.trim()};
+      }
+      const {error}=await supabase.rpc("hmc_responder_intercambio",{p_intercambio_id:btnResponder.dataset.id,p_opcion:mapa[opcion],p_oferta:oferta});
+      if(error) mostrarNotificacion("No se pudo registrar la respuesta: "+error.message,"error");
+      else { mostrarNotificacion(opcion==="3"?"Conversación pendiente. Cuando acuerden por WhatsApp, registren el acuerdo acá.":"Respuesta registrada. Falta formalizar el acuerdo.","success"); cargarPanelIntercambios(); }
+      return;
+    }
+
+    const btnAcuerdo = e.target.closest(".btn-registrar-acuerdo");
+    if (btnAcuerdo) {
+      const ofertaA=prompt("¿Qué ofrece quien inició la propuesta?");
+      if(!ofertaA?.trim()) return;
+      const ofertaB=prompt("¿Qué ofrece el autor de la publicación?");
+      if(!ofertaB?.trim()) return;
+      const horasA=Number.parseInt(prompt("Horas para cumplir la parte del iniciador:", "24"),10);
+      const horasB=Number.parseInt(prompt("Horas para cumplir la parte del autor:", "24"),10);
+      if(!Number.isInteger(horasA)||!Number.isInteger(horasB)||horasA<1||horasB<1||horasA>720||horasB>720){mostrarNotificacion("Los dos plazos deben estar entre 1 y 720 horas.","error");return;}
+      const {error}=await supabase.rpc("hmc_registrar_propuesta_final",{p_intercambio_id:btnAcuerdo.dataset.id,p_acuerdo:{oferta_a:ofertaA.trim(),oferta_b:ofertaB.trim(),horas_a:horasA,horas_b:horasB,origen:"acuerdo_registrado_en_comunidad"}});
+      if(error) mostrarNotificacion("No se pudo registrar el acuerdo: "+error.message,"error");
+      else {mostrarNotificacion("Acuerdo registrado. Ambas partes deben confirmarlo.","success");cargarPanelIntercambios();}
+      return;
+    }
+
+    const btnConfirmarAcuerdo = e.target.closest(".btn-confirmar-acuerdo");
+    if(btnConfirmarAcuerdo){
+      const {error}=await supabase.rpc("hmc_confirmar_acuerdo",{p_intercambio_id:btnConfirmarAcuerdo.dataset.id});
+      if(error) mostrarNotificacion("No se pudo confirmar: "+error.message,"error");
+      else {mostrarNotificacion("Tu confirmación quedó registrada.","success");cargarPanelIntercambios();}
+      return;
+    }
+
+    const btnCancelar = e.target.closest(".btn-cancelar-intercambio");
+    if(btnCancelar){
+      if(!confirm("¿Querés cancelar este proceso? La cancelación válida no genera evaluación ni penalización reputacional.")) return;
+      const {error}=await supabase.rpc("hmc_cancelar_intercambio",{p_intercambio_id:btnCancelar.dataset.id});
+      if(error) mostrarNotificacion("No se pudo cancelar: "+error.message,"error");
+      else {mostrarNotificacion("Proceso cancelado y registrado.","success");cargarPanelIntercambios();}
+      return;
+    }
+
+    const btnCumplimiento = e.target.closest(".btn-confirmar-cumplimiento");
+    if(btnCumplimiento){
+      const usuario=await obtenerUsuarioActual();
+      const {data:inter,error:fetchError}=await supabase.from("intercambios").select("*").eq("id",btnCumplimiento.dataset.id).single();
+      if(fetchError||!inter||!usuario) return;
+      const esAutor=String(inter.usuario_a)===String(usuario.id);
+      const campo=esAutor?"confirmado_a":"confirmado_b";
+      const {error}=await supabase.from("intercambios").update({[campo]:true}).eq("id",inter.id).eq(esAutor?"usuario_a":"usuario_b",usuario.id).eq("estado","en_proceso").eq(campo,false);
+      if(error) mostrarNotificacion("No se pudo confirmar el cumplimiento: "+error.message,"error");
+      else {mostrarNotificacion("Cumplimiento confirmado. Esta acción no se puede retirar.","success");cargarPanelIntercambios();}
+      return;
+    }
+
     const btnConf = e.target.closest(".btn-toggle-conf");
     if (btnConf) {
       const id = btnConf.getAttribute("data-id");
