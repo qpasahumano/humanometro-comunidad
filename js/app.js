@@ -149,6 +149,7 @@ function configurarNavegacion() {
 
   $("tab-gondola")?.addEventListener("click", () => {
     mostrarVista("vista-gondola");
+    cargarPanelIntercambios();
   });
 
   $("tab-comunidad")?.addEventListener("click", () => {
@@ -173,6 +174,7 @@ function configurarNavegacion() {
 
   $("btn-gondola")?.addEventListener("click", () => {
     mostrarVista("vista-gondola");
+    cargarPanelIntercambios();
   });
 
   $("btn-ayuda")?.addEventListener("click", () => {
