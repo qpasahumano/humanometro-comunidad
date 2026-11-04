@@ -307,7 +307,7 @@ export function initCommunity({
         const nombre = document.createElement("h3");
         nombre.textContent = perfil.nombre_visible || "Integrante de la comunidad";
         const ubicacion = document.createElement("p");
-        ubicacion.textContent = [perfil.localidad, perfil.zona_aproximada].filter(Boolean).join(" · ") || "Ubicación no especificada";
+        ubicacion.textContent = [perfil.localidad, perfil.provincia, perfil.pais, perfil.zona_aproximada].filter(Boolean).join(" · ") || "Ubicación no especificada";
         identidad.append(nombre, ubicacion);
         encabezado.append(avatar, identidad);
         tarjeta.appendChild(encabezado);
