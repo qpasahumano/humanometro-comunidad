@@ -764,17 +764,10 @@ async function cargarMisPublicaciones() {
 
     // En el perfil solo se muestran publicaciones que siguen disponibles.
     // Los procesos, cancelaciones y acuerdos concluidos no forman parte de la góndola.
-    const publicadasPropias = (data || []).filter((publicacion) =>
-      String(publicacion.perfil_id || publicacion.usuario_id || "") === String(usuarioActual.id) && ["publicada","reservada"].includes(String(publicacion.estado || "").toLowerCase())
+    const propias = (data || []).filter((publicacion) =>
+      String(publicacion.perfil_id || publicacion.usuario_id || "") === String(usuarioActual.id) &&
+      String(publicacion.estado || "").toLowerCase() === "publicada"
     );
-    const idsPropias = publicadasPropias.map((x) => x.id).filter(Boolean);
-    const procesosPorPublicacion = new Map();
-    if (idsPropias.length) {
-      const { data: procesos, error: errorProcesos } = await supabase.from("intercambios").select("id, publicacion_id, estado").in("publicacion_id", idsPropias).in("estado", ["respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"]);
-      if (errorProcesos) console.warn("No se pudieron consultar los intercambios de tus publicaciones:", errorProcesos);
-      else (procesos || []).forEach((x) => procesosPorPublicacion.set(String(x.publicacion_id), x));
-    }
-    const propias = publicadasPropias.filter((x) => x.estado === "publicada" || procesosPorPublicacion.has(String(x.id)));
     const activas = propias.length;
     const contador = document.createElement("p");
     contador.className = "texto-ayuda";
@@ -816,8 +809,7 @@ async function cargarMisPublicaciones() {
       const tipoOriginal = metadatos.tipoUI || publicacion.tipo;
       const tipoVisible = ["oferta", "ofrezco"].includes(tipoOriginal) ? "OFREZCO" : "BUSCO";
       const categoriaVisible = metadatos.categoriaUI || publicacion.categoria || "Sin categoría";
-      const procesoActivo = procesosPorPublicacion.get(String(publicacion.id));
-      estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: ${procesoActivo ? "INTERCAMBIO " + procesoActivo.estado.replaceAll("_", " ").toUpperCase() : publicacion.estado || "sin especificar"}`;
+      estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: PUBLICADA`;
       tarjeta.append(titulo, estado, detalleExpandible);
 
       const acciones = document.createElement("div");
