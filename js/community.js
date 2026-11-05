@@ -222,14 +222,22 @@ export function initCommunity({
         .filter(Boolean);
       const conteosIntercambios = new Map();
       if (idsPerfilesVisibles.length) {
-        const { data: conteos, error: errorConteos } = await supabase.rpc(
-          "hmc_conteo_intercambios_completados",
-          { p_perfil_ids: idsPerfilesVisibles }
-        );
-        if (errorConteos) throw errorConteos;
-        (conteos || []).forEach((registro) => {
-          conteosIntercambios.set(String(registro.perfil_id), Number(registro.total_completados || 0));
-        });
+        const usuarioConteo = await obtenerUsuarioActual();
+        // El RPC exige una sesión autenticada. El directorio público debe seguir
+        // funcionando para visitantes anónimos aunque no puedan consultar conteos.
+        if (usuarioConteo?.id) {
+          const { data: conteos, error: errorConteos } = await supabase.rpc(
+            "hmc_conteo_intercambios_completados",
+            { p_perfil_ids: idsPerfilesVisibles }
+          );
+          if (errorConteos) {
+            console.warn("No se pudieron cargar los conteos públicos de intercambios; continúa el directorio:", errorConteos);
+          } else {
+            (conteos || []).forEach((registro) => {
+              conteosIntercambios.set(String(registro.perfil_id), Number(registro.total_completados || 0));
+            });
+          }
+        }
       }
 
       const publicacionesPorPerfil = new Map();
@@ -789,7 +797,29 @@ export function initCommunity({
     const pendientes = obtenerLocales().filter((p) => String(p.origen || "") === "local" && String(p.usuario_id || p.perfil_id || "") === String(usuario.id) && String(p.id || "").startsWith("local-"));
     const sincronizadas = new Set();
     for (const pendiente of pendientes) {
-      const registro = { perfil_id: usuario.id, usuario_id: usuario.id, tipo: pendiente.tipo, categoria: pendiente.categoria, titulo: pendiente.titulo, descripcion: pendiente.descripcion, modalidad: pendiente.modalidad ?? null, modalidad_intercambio: pendiente.modalidad_intercambio ?? null, que_necesita_a_cambio: pendiente.que_necesita_a_cambio || "", zona_aproximada: pendiente.zona_aproximada || "", offline_activo: Boolean(pendiente.offline_activo), fotos: Array.isArray(pendiente.fotos) ? pendiente.fotos : [], estado: "publicada", creado_en: pendiente.creado_en || new Date().toISOString(), actualizado_en: new Date().toISOString() };
+      // Las publicaciones creadas sin conexión deben pasar por los mismos
+      // mapeos de valores cerrados que las publicaciones creadas online.
+      const metadatosPendiente = obtenerCondicion(pendiente.descripcion || "");
+      const modalidadPendiente = mapearModalidadBD(
+        metadatosPendiente.meta.modalidadUI || pendiente.modalidad_intercambio || ""
+      );
+      const registro = {
+        perfil_id: usuario.id,
+        usuario_id: usuario.id,
+        tipo: mapearTipoBD(pendiente.tipo),
+        categoria: mapearCategoriaBD(pendiente.categoria),
+        titulo: pendiente.titulo,
+        descripcion: pendiente.descripcion,
+        modalidad: modalidadPendiente.modalidad,
+        modalidad_intercambio: modalidadPendiente.modalidad_intercambio,
+        que_necesita_a_cambio: pendiente.que_necesita_a_cambio || "",
+        zona_aproximada: pendiente.zona_aproximada || "",
+        offline_activo: Boolean(pendiente.offline_activo),
+        fotos: Array.isArray(pendiente.fotos) ? pendiente.fotos : [],
+        estado: "publicada",
+        creado_en: pendiente.creado_en || new Date().toISOString(),
+        actualizado_en: new Date().toISOString()
+      };
       const { error } = await supabase.from("publicaciones").insert(registro);
       if (error) { console.warn("Publicación pendiente de sincronización:", error); continue; }
       sincronizadas.add(String(pendiente.id));
