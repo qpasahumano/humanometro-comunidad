@@ -778,19 +778,21 @@ async function cargarMisPublicaciones() {
     const activas = propias.length;
     const contador = document.createElement("p");
     contador.className = "texto-ayuda";
-    contador.textContent = `${activas} publicación${activas === 1 ? "" : "es"} publicada${activas === 1 ? "" : "s"}`;
+    contador.className = "contador-publicaciones-propias";
+    contador.textContent = `PUBLICACIONES ACTIVAS: ${activas}`;
     contenedor.appendChild(contador);
 
     if (!propias.length) {
       const vacio = document.createElement("p");
-      vacio.textContent = "Todavía no publicaste productos ni servicios desde esta cuenta.";
+      vacio.className = "estado-vacio-publicaciones";
+      vacio.textContent = "Todavía no tenés publicaciones activas.";
       contenedor.appendChild(vacio);
       return;
     }
 
     propias.forEach((publicacion) => {
       const tarjeta = document.createElement("article");
-      tarjeta.className = "tarjeta-publicacion";
+      tarjeta.className = "tarjeta-publicacion ficha-publicacion-propia";
       const titulo = document.createElement("h4");
       titulo.textContent = publicacion.titulo || "Publicación sin título";
       const detalle = document.createElement("p");
@@ -818,28 +820,30 @@ async function cargarMisPublicaciones() {
       estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: ${procesoActivo ? "INTERCAMBIO " + procesoActivo.estado.replaceAll("_", " ").toUpperCase() : publicacion.estado || "sin especificar"}`;
       tarjeta.append(titulo, estado, detalleExpandible);
 
-      if (publicacion.estado === "publicada") {
-        const acciones = document.createElement("div");
-        acciones.className = "mis-publicaciones-acciones";
+      const acciones = document.createElement("div");
+      acciones.className = "mis-publicaciones-acciones";
+      if (procesoActivo) {
+        const cancelar = document.createElement("button");
+        cancelar.type = "button";
+        cancelar.className = "boton-secundario btn-cancelar-intercambio-propio";
+        cancelar.dataset.intercambioId = String(procesoActivo.id);
+        cancelar.textContent = "CANCELAR INTERCAMBIO";
+        acciones.appendChild(cancelar);
+      } else if (publicacion.estado === "publicada") {
         const editar = document.createElement("button");
         editar.type = "button";
         editar.className = "boton-secundario btn-editar-mi-publicacion";
         editar.dataset.pubId = String(publicacion.id);
-        editar.textContent = "EDITAR PUBLICACIÓN";
+        editar.textContent = "EDITAR";
         acciones.appendChild(editar);
-        if (procesoActivo) {
-          const cancelar = document.createElement("button"); cancelar.type = "button";
-          cancelar.className = "boton-secundario btn-cancelar-intercambio-propio";
-          cancelar.dataset.intercambioId = String(procesoActivo.id); cancelar.textContent = "CANCELAR INTERCAMBIO";
-          acciones.appendChild(cancelar);
-        } else {
-          const retirar = document.createElement("button"); retirar.type = "button";
-          retirar.className = "boton-secundario btn-retirar-mi-publicacion";
-          retirar.dataset.pubId = String(publicacion.id); retirar.textContent = "CANCELAR PUBLICACIÓN";
-          acciones.appendChild(retirar);
-        }
-        tarjeta.appendChild(acciones);
+        const retirar = document.createElement("button");
+        retirar.type = "button";
+        retirar.className = "boton-secundario btn-retirar-mi-publicacion";
+        retirar.dataset.pubId = String(publicacion.id);
+        retirar.textContent = "CANCELAR PUBLICACIÓN";
+        acciones.appendChild(retirar);
       }
+      if (acciones.childElementCount) tarjeta.appendChild(acciones);
 
       contenedor.appendChild(tarjeta);
     });

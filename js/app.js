@@ -240,9 +240,21 @@ function configurarNavegacion() {
 
 async function cargarPanelIntercambios() {
   const contenedor = $("lista-intercambios-activos");
+  const botonEntrar = $("btn-entrar-seguimiento");
   if (!contenedor) return;
+  if (botonEntrar && !botonEntrar.dataset.configurado) {
+    botonEntrar.dataset.configurado = "true";
+    botonEntrar.addEventListener("click", () => {
+      contenedor.hidden = !contenedor.hidden;
+      botonEntrar.setAttribute("aria-expanded", String(!contenedor.hidden));
+      botonEntrar.textContent = contenedor.hidden ? "ENTRAR" : "OCULTAR SEGUIMIENTO";
+    });
+  }
+  if (botonEntrar) { botonEntrar.hidden = true; botonEntrar.textContent = "ENTRAR"; botonEntrar.setAttribute("aria-expanded", "false"); }
+  contenedor.hidden = false;
   const usuario = await obtenerUsuarioActual();
   if (!usuario) {
+    contenedor.hidden = false;
     contenedor.textContent = "Iniciá sesión para ver tus procesos comunitarios.";
     const tabPerfil = $("tab-perfil");
     tabPerfil?.querySelector(".contador-propuestas")?.remove();
@@ -322,21 +334,24 @@ async function cargarPanelIntercambios() {
   }
 
   if (!intercambios?.length) {
-    contenedor.textContent = "No tenés intercambios activos. Cuando alguien inicie una propuesta sobre una publicación tuya, o vos inicies una, aparecerá acá hasta que el proceso se cierre.";
+    contenedor.hidden = false;
+    contenedor.textContent = "No tenés intercambios activos.";
     return;
   }
+  if (botonEntrar) botonEntrar.hidden = false;
+  contenedor.hidden = true;
   const wrapper = document.createElement("div");
-  wrapper.style.cssText = "display:flex;flex-direction:column;gap:14px;padding:10px";
+  wrapper.className = "lista-fichas-seguimiento";
   intercambios.forEach((inter) => {
     const soyAutorB = String(inter.usuario_a) === String(usuario.id);
     const soyIniciadorA = String(inter.usuario_b) === String(usuario.id);
     const miConfirmacion = soyAutorB ? inter.confirmado_a : inter.confirmado_b;
     const otraConfirmacion = soyAutorB ? inter.confirmado_b : inter.confirmado_a;
     const card = document.createElement("article");
-    card.className = "tarjeta-publicacion";
-    card.style.cssText = "background:#17212b;border:1px solid #2b3b4f;padding:15px;border-radius:8px;color:#fff";
+    card.className = "tarjeta-publicacion ficha-seguimiento-intercambio";
     const titulo = document.createElement("h3");
-    titulo.textContent = "Proceso: " + (inter.publicacion?.titulo || inter.referencia || "Acuerdo comunitario");
+    titulo.className = "seguimiento-titulo";
+    titulo.textContent = inter.publicacion?.titulo || inter.referencia || "Acuerdo comunitario";
     card.appendChild(titulo);
     const contraparteId = soyAutorB ? inter.usuario_b : inter.usuario_a;
     const contraparte = nombresPerfiles.get(String(contraparteId)) || "Integrante de la comunidad";
@@ -350,16 +365,18 @@ async function cargarPanelIntercambios() {
       avisoPendiente.textContent = "Esta persona quiere intercambiar por tu publicación. Revisá qué ofrece y respondé acá para continuar.";
       card.appendChild(avisoPendiente);
     }
-    const estado = document.createElement("p");
-    estado.textContent = "Estado: " + inter.estado.replaceAll("_"," ").toUpperCase();
+    const estado = document.createElement("span");
+    estado.className = "seguimiento-estado";
+    estado.textContent = inter.estado.replaceAll("_"," ").toUpperCase();
     card.appendChild(estado);
     const ayuda = document.createElement("p");
-    ayuda.className = "texto-ayuda";
-    ayuda.textContent = "La conversación puede continuar por WhatsApp, pero las propuestas y confirmaciones deben quedar registradas en la comunidad.";
+    ayuda.className = "texto-ayuda seguimiento-ayuda";
+    ayuda.textContent = "Las propuestas y confirmaciones quedan registradas en la comunidad; pueden conversar por WhatsApp.";
     card.appendChild(ayuda);
     const agregarDetalle = (etiqueta, valor) => {
       if (!valor) return;
       const p=document.createElement("p");
+      p.className = "seguimiento-detalle";
       p.textContent=etiqueta+": "+String(valor);
       card.appendChild(p);
     };
@@ -379,7 +396,7 @@ async function cargarPanelIntercambios() {
       agregarDetalle("Plazo autor", inter.propuesta_final.horas_b+" horas");
     }
     const acciones = document.createElement("div");
-    acciones.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
+    acciones.className = "seguimiento-acciones";
     const agregar = (label, cls, accion) => {
       const btn=document.createElement("button"); btn.type="button"; btn.className="boton-secundario "+cls; btn.dataset.id=inter.id; btn.textContent=label; acciones.appendChild(btn);
     };

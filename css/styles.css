@@ -1891,3 +1891,155 @@ select option {
 .seguridad-comunidad-scroll p { line-height: 1.5; }
 .panel-seguimiento-intercambios { margin-top: 18px; }
 #lista-intercambios-activos { min-width: 0; }
+
+
+/* HUMANÓMETRO COMUNIDAD · fichas compactas de perfil y seguimiento */
+.boton-compacto {
+  width: auto;
+  min-height: 36px;
+  margin: 4px 0 8px;
+  padding: 7px 14px;
+  font-size: .76rem;
+  letter-spacing: .02em;
+}
+.lista-fichas-seguimiento {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0;
+}
+.ficha-seguimiento-intercambio,
+.ficha-publicacion-propia {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(139,217,238,.3);
+  border-radius: 12px;
+  background: rgba(5,20,37,.72);
+  overflow-wrap: anywhere;
+}
+.ficha-seguimiento-intercambio > *,
+.ficha-publicacion-propia > * {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+.ficha-seguimiento-intercambio .seguimiento-titulo,
+.ficha-publicacion-propia h4 {
+  margin: 0 0 5px;
+  color: var(--blanco);
+  font-size: .92rem;
+  line-height: 1.25;
+}
+.ficha-seguimiento-intercambio p,
+.ficha-publicacion-propia p,
+.ficha-publicacion-propia small {
+  font-size: .78rem;
+  line-height: 1.35;
+}
+.ficha-seguimiento-intercambio .seguimiento-estado {
+  display: inline-flex;
+  width: fit-content;
+  margin: 2px 0 5px;
+  padding: 4px 8px;
+  border: 1px solid rgba(56,189,248,.4);
+  border-radius: 999px;
+  background: rgba(2,132,199,.14);
+  color: #dff5ff;
+  font-size: .68rem;
+  font-weight: 800;
+}
+.ficha-seguimiento-intercambio .seguimiento-ayuda {
+  margin: 4px 0;
+  font-size: .72rem;
+}
+.ficha-seguimiento-intercambio .seguimiento-detalle {
+  margin: 4px 0;
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: rgba(255,255,255,.035);
+  font-size: .76rem;
+}
+.seguimiento-acciones,
+.mis-publicaciones-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.seguimiento-acciones button,
+.mis-publicaciones-acciones button {
+  width: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: .68rem;
+  line-height: 1.2;
+}
+.contador-publicaciones-propias {
+  margin: 0 0 8px;
+  color: var(--celeste);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.estado-vacio-publicaciones {
+  margin: 4px 0 0;
+  color: var(--texto-suave);
+  font-size: .78rem;
+}
+.estado-whatsapp-perfil {
+  display: inline-block;
+  margin: 4px 0 2px;
+  padding: 4px 8px;
+  border: 1px solid rgba(139,217,238,.28);
+  border-radius: 999px;
+  color: var(--texto-suave);
+  background: rgba(5,20,37,.5);
+  font-size: .68rem;
+}
+.panel-seguimiento-intercambios {
+  margin-top: 10px;
+  padding: 12px;
+}
+.panel-seguimiento-intercambios h2 {
+  margin: 0 0 5px;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+.panel-seguimiento-intercambios > .texto-ayuda {
+  margin: 3px 0 7px;
+  font-size: .76rem;
+  line-height: 1.35;
+}
+#vista-perfil #lista-mis-publicaciones {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+#vista-perfil > section[aria-labelledby="titulo-mis-publicaciones"] {
+  padding: 12px;
+}
+#vista-perfil #titulo-mis-publicaciones {
+  margin: 0 0 5px;
+  font-size: 1rem;
+}
+#vista-perfil section[aria-labelledby="titulo-mis-publicaciones"] > .texto-ayuda {
+  margin: 3px 0 7px;
+  font-size: .76rem;
+}
+.tarjeta-publicacion .publicacion-acciones-ficha {
+  gap: 6px;
+  margin: 7px 0 9px;
+}
+.tarjeta-publicacion .publicacion-acciones-ficha button {
+  min-height: 38px;
+  padding: 7px 10px;
+  font-size: .75rem;
+}
+@media (max-width: 520px) {
+  .seguimiento-acciones button,
+  .mis-publicaciones-acciones button {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    min-height: 36px;
+  }
+}

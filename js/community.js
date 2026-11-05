@@ -186,7 +186,7 @@ export function initCommunity({
       const { data: perfiles, error: errorPerfiles } = await supabase
         .from("perfiles")
         .select(
-          "id, nombre_visible, presentacion, pais, provincia, localidad, zona_aproximada, foto_url, whatsapp_disponible, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
+          "id, nombre_visible, presentacion, pais, provincia, localidad, zona_aproximada, foto_url, whatsapp_disponible, whatsapp_verificado, conectividad_disponible, conectividad_modalidad, conectividad_emergencias, mensajeria_offline, porcentaje_humanidad, actualizado_en, estado_acceso_comunidad"
         );
       if (errorPerfiles) throw errorPerfiles;
 
@@ -389,12 +389,10 @@ export function initCommunity({
           }
         }
 
-        if (totalPubs > 0) {
-          const publicacionesVecino = document.createElement("span");
-          publicacionesVecino.className = "vecino-publicaciones-conteo";
-          publicacionesVecino.textContent = `📦 ${totalPubs} ${totalPubs === 1 ? "publicación activa" : "publicaciones activas"}`;
-          datos.appendChild(publicacionesVecino);
-        }
+        const publicacionesVecino = document.createElement("span");
+        publicacionesVecino.className = "vecino-publicaciones-conteo";
+        publicacionesVecino.textContent = `📦 Publicaciones activas: ${totalPubs}`;
+        datos.appendChild(publicacionesVecino);
 
         const humanometroVecino = document.createElement("span");
         const porcentajeHumanidad = perfil.porcentaje_humanidad ?? 0;
@@ -421,8 +419,10 @@ export function initCommunity({
         verPublicaciones.type = "button";
         verPublicaciones.className = "boton-secundario";
         verPublicaciones.textContent = "VER PUBLICACIONES";
+        verPublicaciones.hidden = totalPubs === 0;
         
         verPublicaciones.addEventListener("click", () => {
+          if (totalPubs === 0) return;
           perfilFiltroActivo = perfil.id;
           perfilFiltroNombre = perfil.nombre_visible || "Integrante";
           if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
@@ -444,6 +444,14 @@ export function initCommunity({
         contactar.dataset.nombre = perfil.nombre_visible || "Integrante";
         contactar.textContent = "CONTACTAR POR WHATSAPP";
         acciones.appendChild(contactar);
+        if (perfil.whatsapp_disponible) {
+          const estadoWhatsApp = document.createElement("small");
+          estadoWhatsApp.className = "estado-whatsapp-perfil";
+          estadoWhatsApp.textContent = perfil.whatsapp_verificado
+            ? "WhatsApp verificado"
+            : "WhatsApp declarado · No verificado";
+          tarjeta.appendChild(estadoWhatsApp);
+        }
         tarjeta.appendChild(acciones);
         fragmento.appendChild(tarjeta);
       });
@@ -1098,7 +1106,7 @@ export function initCommunity({
           INICIAR INTERCAMBIO
         </button>
         <button class="boton-secundario btn-contactar-trueque" data-id="${autorId}" data-nombre="${nombreAutor}">
-          CONTACTAR POR ESTE TRUEQUE
+          CONTACTAR
         </button>
         ${esPropia && !esLocal ? `<button class="boton-secundario btn-retirar-publicacion" data-pub-id="${idPublicacion}">RETIRAR MI PUBLICACIÓN</button>` : ""}
       </div>
