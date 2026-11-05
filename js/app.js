@@ -472,7 +472,7 @@ async function cargarPanelIntercambios() {
       rechazar.dataset.id = inter.id; rechazar.dataset.opcion = "rechazar_propuesta";
       rechazar.textContent = "RECHAZAR OFERTA"; acciones.appendChild(rechazar);
     }
-    if (inter.estado === "respuesta_recibida" && soyIniciadorA) agregar("Registrar acuerdo","btn-registrar-acuerdo");
+    if (["respuesta_recibida","conversacion_pendiente"].includes(inter.estado) && soyIniciadorA) agregar("Registrar acuerdo","btn-registrar-acuerdo");
     if (inter.estado === "acuerdo_pendiente_confirmacion") {
       const status=document.createElement("p");
       status.textContent="Confirmación del acuerdo: " + (inter.acuerdo_confirmado_a ? "autor ✓" : "autor pendiente") + " · " + (inter.acuerdo_confirmado_b ? "iniciador ✓" : "iniciador pendiente");
