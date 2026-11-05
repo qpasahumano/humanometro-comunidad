@@ -417,8 +417,7 @@ async function cargarPanelIntercambios() {
       agregar("Cerrar solicitud sin acuerdo","btn-cancelar-intercambio");
     }
     if (inter.estado === "rechazado") {
-      agregarDetalle("Resultado", "La propuesta fue rechazada. La publicación original continúa activa.");
-      agregar("Finalizar y cerrar operación","btn-cancelar-intercambio");
+      agregarDetalle("Resultado", "La propuesta fue rechazada. La publicación continúa disponible.");
     }
     if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
       const estadoReg=document.createElement("p");
@@ -488,8 +487,7 @@ function configurarIntercambiosGlobales() {
 
     const btnCancelar = e.target.closest(".btn-cancelar-intercambio");
     if(btnCancelar){
-      const esCierreRechazo = btnCancelar.textContent.trim() === "Finalizar y cerrar operación";
-      if(!confirm(esCierreRechazo ? "¿Querés finalizar y cerrar esta operación? La publicación original seguirá activa." : "¿Querés cancelar este proceso? La cancelación válida no genera evaluación ni penalización reputacional.")) return;
+      if(!confirm("¿Querés cancelar este proceso? La cancelación válida no genera evaluación ni penalización reputacional.")) return;
       const {error}=await supabase.rpc("hmc_cancelar_intercambio",{p_intercambio_id:btnCancelar.dataset.id});
       if(error) mostrarNotificacion("No se pudo cancelar: "+error.message,"error");
       else {mostrarNotificacion("Proceso cancelado y registrado.","success");cargarPanelIntercambios();}
