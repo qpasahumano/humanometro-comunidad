@@ -216,6 +216,22 @@ export function initCommunity({
         .order("creado_en", { ascending: false });
       if (errorPublicaciones) throw errorPublicaciones;
 
+      const idsPerfilesVisibles = (perfiles || [])
+        .filter((perfil) => String(perfil.estado_acceso_comunidad || "activo") === "activo")
+        .map((perfil) => perfil.id)
+        .filter(Boolean);
+      const conteosIntercambios = new Map();
+      if (idsPerfilesVisibles.length) {
+        const { data: conteos, error: errorConteos } = await supabase.rpc(
+          "hmc_conteo_intercambios_completados",
+          { p_perfil_ids: idsPerfilesVisibles }
+        );
+        if (errorConteos) throw errorConteos;
+        (conteos || []).forEach((registro) => {
+          conteosIntercambios.set(String(registro.perfil_id), Number(registro.total_completados || 0));
+        });
+      }
+
       const publicacionesPorPerfil = new Map();
       (publicacionesActivas || []).forEach((registro) => {
         const publicacion = convertirRegistroRemoto(registro);
@@ -336,6 +352,11 @@ export function initCommunity({
             })
           : publicacionesDeEstePerfilBase;
         const totalPubs = publicacionesDeEstePerfil.length;
+        const totalIntercambios = conteosIntercambios.get(String(perfil.id)) || 0;
+        const intercambiosCompletados = document.createElement("span");
+        intercambiosCompletados.className = "vecino-intercambios-completados";
+        intercambiosCompletados.textContent = `🤝 ${totalIntercambios} ${totalIntercambios === 1 ? "intercambio completado" : "intercambios completados"}`;
+        datos.appendChild(intercambiosCompletados);
 
         if (totalPubs > 0) {
           const publicacionesVecino = document.createElement("span");
