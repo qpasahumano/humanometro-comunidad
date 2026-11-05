@@ -133,7 +133,6 @@ function mostrarVista(nombre = null, opciones = {}) {
     cargarPanelIntercambios();
   } else if (nombre === "vista-gondola") {
     actualizarSolapaActiva("gondola");
-    cargarPanelIntercambios();
   } else if (nombre === "vista-radar") {
     actualizarSolapaActiva("radar");
   } else if (nombre === "vista-sos-offline") {
@@ -285,9 +284,9 @@ async function cargarPanelIntercambios() {
   if (!usuario) {
     contenedor.hidden = false;
     contenedor.textContent = "Iniciá sesión para ver tus procesos comunitarios.";
-    const tabGondola = $("tab-gondola");
+    const tabGondola = $("tab-perfil");
     tabGondola?.querySelector(".contador-propuestas")?.remove();
-    tabGondola?.setAttribute("aria-label", "Intercambios y góndola");
+    tabGondola?.setAttribute("aria-label", "Mi Perfil");
     return;
   }
   const { data: intercambiosTodos, error } = await supabase
@@ -316,7 +315,7 @@ async function cargarPanelIntercambios() {
     (item.estado === "pendiente_respuesta" && String(item.usuario_a) === String(usuario.id)) ||
     (item.estado === "rechazado" && String(item.usuario_b) === String(usuario.id))
   ).length;
-  const tabIntercambios = $("tab-gondola");
+  const tabIntercambios = $("tab-perfil");
   if (tabIntercambios) {
     let contador = tabIntercambios.querySelector(".contador-propuestas");
     if (propuestasEntrantes > 0) {
@@ -327,10 +326,10 @@ async function cargarPanelIntercambios() {
         tabIntercambios.appendChild(contador);
       }
       contador.textContent = String(propuestasEntrantes);
-      tabIntercambios.setAttribute("aria-label", "Intercambios y góndola. " + propuestasEntrantes + " propuestas que requieren atención");
+      tabIntercambios.setAttribute("aria-label", "Mi Perfil. " + propuestasEntrantes + " propuestas que requieren atención en el seguimiento");
     } else {
       contador?.remove();
-      tabIntercambios.setAttribute("aria-label", "Intercambios y góndola");
+      tabIntercambios.setAttribute("aria-label", "Mi Perfil");
     }
   }
   const idsPerfiles = [...new Set((intercambios || []).flatMap((item) => [item.usuario_a, item.usuario_b]).filter(Boolean))];
@@ -1662,7 +1661,7 @@ async function iniciarAplicacion() {
   });
   window.addEventListener("hmc:session-changed", (evento) => {
     if (!evento.detail?.userId) {
-      const tab = $("tab-gondola");
+      const tab = $("tab-perfil");
       tab?.querySelector(".contador-propuestas")?.remove();
       tab?.setAttribute("aria-label", "Intercambios y góndola");
       const panel = $("lista-intercambios-activos");
@@ -1686,11 +1685,11 @@ async function iniciarAplicacion() {
         if (uid && (String(registro.usuario_a) === String(uid) || String(registro.usuario_b) === String(uid))) {
           await cargarPanelIntercambios();
           if (payload.eventType === "INSERT" && String(registro.usuario_a) === String(uid)) {
-            mostrarNotificacion("Recibiste una oferta por una de tus publicaciones. Revisá Intercambios / Góndola → Seguimiento de mis intercambios.");
+            mostrarNotificacion("Recibiste una oferta por una de tus publicaciones. Revisá Mi Perfil → Seguimiento de mis intercambios.");
           } else if (payload.old?.estado !== payload.new?.estado && payload.new?.estado === "rechazado" && String(registro.usuario_b) === String(uid)) {
             mostrarNotificacion("No aceptaron tu oferta. Revisá el seguimiento para borrar la propuesta rechazada.");
           } else if (payload.old?.estado !== payload.new?.estado && payload.new?.estado !== "rechazado") {
-            mostrarNotificacion("Tenés una actualización en uno de tus intercambios aceptados. Revisá Intercambios / Góndola → Seguimiento de mis intercambios.");
+            mostrarNotificacion("Tenés una actualización en uno de tus intercambios aceptados. Revisá Mi Perfil → Seguimiento de mis intercambios.");
           }
         }
       })
