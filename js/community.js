@@ -222,14 +222,22 @@ export function initCommunity({
         .filter(Boolean);
       const conteosIntercambios = new Map();
       if (idsPerfilesVisibles.length) {
-        const { data: conteos, error: errorConteos } = await supabase.rpc(
-          "hmc_conteo_intercambios_completados",
-          { p_perfil_ids: idsPerfilesVisibles }
-        );
-        if (errorConteos) throw errorConteos;
-        (conteos || []).forEach((registro) => {
-          conteosIntercambios.set(String(registro.perfil_id), Number(registro.total_completados || 0));
-        });
+        const usuarioConteo = await obtenerUsuarioActual();
+        // El RPC exige una sesión autenticada. El directorio público debe seguir
+        // funcionando para visitantes anónimos aunque no puedan consultar conteos.
+        if (usuarioConteo?.id) {
+          const { data: conteos, error: errorConteos } = await supabase.rpc(
+            "hmc_conteo_intercambios_completados",
+            { p_perfil_ids: idsPerfilesVisibles }
+          );
+          if (errorConteos) {
+            console.warn("No se pudieron cargar los conteos públicos de intercambios; continúa el directorio:", errorConteos);
+          } else {
+            (conteos || []).forEach((registro) => {
+              conteosIntercambios.set(String(registro.perfil_id), Number(registro.total_completados || 0));
+            });
+          }
+        }
       }
 
       const publicacionesPorPerfil = new Map();
