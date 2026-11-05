@@ -42,7 +42,12 @@ function configurarIndicadorScrollPerfil() {
   indicadorScrollPerfil.id = "hmc-indicador-scroll-perfil";
   indicadorScrollPerfil.className = "hmc-indicador-scroll-perfil";
   indicadorScrollPerfil.setAttribute("aria-hidden", "true");
-  indicadorScrollPerfil.textContent = "↓ DESLIZÁ";
+  const flechaScroll = document.createElement("span");
+  flechaScroll.className = "hmc-indicador-scroll-flecha";
+  flechaScroll.textContent = "↑";
+  const textoScroll = document.createElement("span");
+  textoScroll.textContent = "DESLIZÁ";
+  indicadorScrollPerfil.append(flechaScroll, textoScroll);
   document.body.appendChild(indicadorScrollPerfil);
   window.addEventListener("scroll", actualizarIndicadorScrollPerfil, { passive: true });
   window.addEventListener("resize", actualizarIndicadorScrollPerfil);
@@ -1571,7 +1576,6 @@ async function iniciarAplicacion() {
   configurarAyuda();
   configurarEvaluaciones();
   configurarPerfil();
-  configurarIntercambiosGlobales();
 
   try {
     await iniciarAutenticacion();
@@ -1582,6 +1586,10 @@ async function iniciarAplicacion() {
       "No se pudo inicializar el acceso a la cuenta. Revisá tu conexión."
     );
   }
+
+  // La autenticación debe estar resuelta antes de consultar el seguimiento
+  // y abrir el canal Realtime de intercambios.
+  configurarIntercambiosGlobales();
 
   const usuarioVerificado = await obtenerUsuarioActual();
   if (usuarioVerificado?.id) {

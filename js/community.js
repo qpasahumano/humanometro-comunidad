@@ -152,6 +152,7 @@ export function initCommunity({
 
   let modoListadoPerfiles = "directorio";
   let destinoRadarComunitario = "";
+  let secuenciaCargaVecinos = 0;
 
   function obtenerContenedorPerfiles() {
     return (
@@ -164,6 +165,7 @@ export function initCommunity({
   async function cargarVecinos() {
     const contenedor = obtenerContenedorPerfiles();
     if (!contenedor) return;
+    const secuenciaActual = ++secuenciaCargaVecinos;
 
     contenedor.replaceChildren();
     const esRadar = modoListadoPerfiles === "radar";
@@ -314,8 +316,12 @@ export function initCommunity({
         return;
       }
 
+      // Si otra actualización comenzó mientras esta consulta esperaba a Supabase,
+      // solo la solicitud más reciente puede renderizar el directorio.
+      if (secuenciaActual !== secuenciaCargaVecinos) return;
+      const perfilesUnicos = [...new Map(vecinos.map((perfil) => [String(perfil.id), perfil])).values()];
       const fragmento = document.createDocumentFragment();
-      vecinos.forEach((perfil) => {
+      perfilesUnicos.forEach((perfil) => {
         const tarjeta = document.createElement("article");
         tarjeta.className = "tarjeta-vecino";
 
@@ -456,10 +462,11 @@ export function initCommunity({
         fragmento.appendChild(tarjeta);
       });
 
-      contenedor.appendChild(fragmento);
+      if (secuenciaActual !== secuenciaCargaVecinos) return;
+      contenedor.replaceChildren(fragmento);
       if (estado) estado.textContent = esRadar
-        ? `${vecinos.length} perfil${vecinos.length === 1 ? "" : "es"} encontrado${vecinos.length === 1 ? "" : "s"} para “${destinoRadarComunitario}”.`
-        : `${vecinos.length} integrante${vecinos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil.`;
+        ? `${perfilesUnicos.length} perfil${perfilesUnicos.length === 1 ? "" : "es"} encontrado${perfilesUnicos.length === 1 ? "" : "s"} para “${destinoRadarComunitario}”.`
+        : `${perfilesUnicos.length} integrante${perfilesUnicos.length === 1 ? "" : "s"} en el directorio · ordenados por actualización del perfil.`;
     } catch (error) {
       console.error("No se pudieron cargar los perfiles comunitarios:", error);
       if (estado) estado.textContent = "No se pudieron cargar los perfiles. Verificá la conexión y los permisos de lectura de perfiles en Supabase.";
