@@ -2188,6 +2188,65 @@ export function initCommunity({
       notificar("El intercambio sigue en tu seguimiento, pero no se pudo desplegar su publicación. Actualizá e intentá nuevamente.", "warning");
       return;
     }
+
+    // Al abrir desde el seguimiento, mostrar la publicación junto con la propuesta bilateral completa.
+    const intercambioId = String(detalle.intercambioId || "");
+    if (intercambioId) {
+      const { data: intercambio, error: errorIntercambio } = await supabase
+        .from("intercambios")
+        .select("id, usuario_a, usuario_b, estado, propuesta_a, respuesta_b, propuesta_final")
+        .eq("id", intercambioId)
+        .eq("publicacion_id", publicacionId)
+        .maybeSingle();
+
+      if (errorIntercambio || !intercambio) {
+        console.warn("No se pudo recuperar el detalle bilateral del intercambio:", errorIntercambio);
+        notificar("Se abrió la publicación, pero no se pudo cargar el detalle completo del intercambio.", "warning");
+      } else {
+        tarjetaObjetivo.querySelector(".panel-detalle-intercambio-publicacion")?.remove();
+        const panelIntercambio = document.createElement("section");
+        panelIntercambio.className = "ficha-seguimiento-intercambio panel-detalle-intercambio-publicacion";
+        const tituloIntercambio = document.createElement("h4");
+        tituloIntercambio.className = "seguimiento-titulo";
+        tituloIntercambio.textContent = "DETALLE COMPLETO DEL INTERCAMBIO";
+        panelIntercambio.appendChild(tituloIntercambio);
+
+        const agregarDetalleIntercambio = (etiqueta, valor) => {
+          if (valor === null || valor === undefined || String(valor).trim() === "") return;
+          const linea = document.createElement("p");
+          linea.className = "seguimiento-detalle";
+          linea.textContent = etiqueta + ": " + String(valor);
+          panelIntercambio.appendChild(linea);
+        };
+        const propuestaA = intercambio.propuesta_a || {};
+        const respuestaB = intercambio.respuesta_b || {};
+        const propuestaFinal = intercambio.propuesta_final || {};
+
+        agregarDetalleIntercambio("Estado", String(intercambio.estado || "").replaceAll("_", " ").toUpperCase());
+        agregarDetalleIntercambio("Lo que ofrece quien inició (A)", propuestaA.oferta);
+        agregarDetalleIntercambio("Lo que necesita a cambio (publicación de B)", propuestaA.necesita);
+        agregarDetalleIntercambio("Plazo propuesto por A", propuestaA.horas_a ? propuestaA.horas_a + " horas" : "");
+
+        if (respuestaB.opcion) {
+          agregarDetalleIntercambio("Respuesta de quien publicó (B)", String(respuestaB.opcion).replaceAll("_", " "));
+          const ofertaB = respuestaB.oferta;
+          agregarDetalleIntercambio(
+            "Propuesta o alternativa de B",
+            typeof ofertaB === "string" ? ofertaB : (ofertaB?.detalle || ofertaB?.oferta || "")
+          );
+        } else if (intercambio.estado === "pendiente_respuesta") {
+          agregarDetalleIntercambio("Respuesta de B", "Pendiente de respuesta");
+        }
+
+        agregarDetalleIntercambio("Acuerdo final: oferta de A", propuestaFinal.oferta_a);
+        agregarDetalleIntercambio("Acuerdo final: oferta de B", propuestaFinal.oferta_b);
+        agregarDetalleIntercambio("Plazo acordado de A", propuestaFinal.horas_a ? propuestaFinal.horas_a + " horas" : "");
+        agregarDetalleIntercambio("Plazo acordado de B", propuestaFinal.horas_b ? propuestaFinal.horas_b + " horas" : "");
+
+        tarjetaObjetivo.appendChild(panelIntercambio);
+      }
+    }
+
     tarjetaObjetivo.classList.add("publicacion-seguimiento-destacada");
     tarjetaObjetivo.scrollIntoView({ behavior: "smooth", block: "center" });
     window.setTimeout(() => tarjetaObjetivo.classList.remove("publicacion-seguimiento-destacada"), 2600);
