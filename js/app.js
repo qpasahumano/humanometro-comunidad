@@ -249,7 +249,7 @@ async function cargarPanelIntercambios() {
     tabPerfil?.setAttribute("aria-label", "Mi perfil");
     return;
   }
-  const { data: intercambios, error } = await supabase
+  const { data: intercambiosTodos, error } = await supabase
     .from("intercambios").select("*, publicacion:publicacion_id(titulo)")
     .or(`usuario_a.eq.${usuario.id},usuario_b.eq.${usuario.id}`)
     .order("created_at", { ascending: false });
@@ -258,7 +258,9 @@ async function cargarPanelIntercambios() {
     contenedor.textContent = "No se pudieron cargar tus procesos.";
     return;
   }
-  const estadosPendientes = new Set([
+  // El seguimiento muestra solamente procesos que todavía están activos.
+  // Cancelados, rechazados y finalizados dejan de aparecer para ambas partes.
+  const estadosActivos = new Set([
     "pendiente_respuesta",
     "respuesta_recibida",
     "conversacion_pendiente",
@@ -267,6 +269,9 @@ async function cargarPanelIntercambios() {
     "incumplido",
     "regularizacion_pendiente"
   ]);
+  const intercambios = (intercambiosTodos || []).filter((item) =>
+    estadosActivos.has(item.estado)
+  );
   // Cuenta únicamente los procesos propios de esta cuenta (la consulta
   // anterior ya está limitada a usuario_a o usuario_b); cada solicitud
   // independiente genera su propio registro y no se mezclan otras cuentas.
@@ -290,19 +295,6 @@ async function cargarPanelIntercambios() {
       tabIntercambios.setAttribute("aria-label", "Mi perfil");
     }
   }
-  const idsProcesos = (intercambios || []).map((item) => item.id);
-  let eventosPorProceso = new Map();
-  if (idsProcesos.length) {
-    const { data: eventos } = await supabase
-      .from("intercambio_eventos")
-      .select("intercambio_id, evento, estado_anterior, estado_nuevo, creado_en")
-      .in("intercambio_id", idsProcesos)
-      .order("creado_en", { ascending: true });
-    (eventos || []).forEach((evento) => {
-      if (!eventosPorProceso.has(evento.intercambio_id)) eventosPorProceso.set(evento.intercambio_id, []);
-      eventosPorProceso.get(evento.intercambio_id).push(evento);
-    });
-  }
   const idsPerfiles = [...new Set((intercambios || []).flatMap((item) => [item.usuario_a, item.usuario_b]).filter(Boolean))];
   let nombresPerfiles = new Map();
   if (idsPerfiles.length) {
@@ -312,7 +304,7 @@ async function cargarPanelIntercambios() {
   }
   contenedor.replaceChildren();
   if (!intercambios?.length) {
-    contenedor.textContent = "No tenés procesos abiertos. Las propuestas y acuerdos que converses por WhatsApp también deben registrarse acá.";
+    contenedor.textContent = "No tenés intercambios activos. Cuando alguien inicie una propuesta sobre una publicación tuya, o vos inicies una, aparecerá acá hasta que el proceso se cierre.";
     return;
   }
   const wrapper = document.createElement("div");
@@ -368,22 +360,6 @@ async function cargarPanelIntercambios() {
       agregarDetalle("Plazo iniciador", inter.propuesta_final.horas_a+" horas");
       agregarDetalle("Plazo autor", inter.propuesta_final.horas_b+" horas");
     }
-    const historial = eventosPorProceso.get(inter.id) || [];
-    const detallesHistorial = document.createElement("details");
-    detallesHistorial.className = "historial-intercambio";
-    const resumenHistorial = document.createElement("summary");
-    resumenHistorial.textContent = "Historial de pasos (" + historial.length + ")";
-    detallesHistorial.appendChild(resumenHistorial);
-    const listaHistorial = document.createElement("ol");
-    historial.forEach((evento) => {
-      const item = document.createElement("li");
-      const fecha = new Date(evento.creado_en).toLocaleString("es-AR");
-      item.textContent = fecha + " · " + String(evento.evento || "actualización").replaceAll("_"," ") +
-        (evento.estado_nuevo ? " · " + evento.estado_nuevo.replaceAll("_"," ") : "");
-      listaHistorial.appendChild(item);
-    });
-    detallesHistorial.appendChild(listaHistorial);
-    card.appendChild(detallesHistorial);
     const acciones = document.createElement("div");
     acciones.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
     const agregar = (label, cls, accion) => {
@@ -416,9 +392,6 @@ async function cargarPanelIntercambios() {
     }
     if (inter.estado === "respuesta_recibida" || inter.estado === "conversacion_pendiente" || inter.estado === "acuerdo_pendiente_confirmacion") {
       agregar("Cerrar solicitud sin acuerdo","btn-cancelar-intercambio");
-    }
-    if (inter.estado === "rechazado") {
-      agregarDetalle("Resultado", "La propuesta fue rechazada. La publicación continúa disponible.");
     }
     if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
       const estadoReg=document.createElement("p");
