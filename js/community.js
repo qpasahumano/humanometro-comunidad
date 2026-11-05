@@ -214,7 +214,7 @@ export function initCommunity({
             "actualizado_en"
           ].join(",")
         )
-        .in("estado", ["publicada", "reservada"])
+        .eq("estado", "publicada")
         .order("creado_en", { ascending: false });
       if (errorPublicaciones) throw errorPublicaciones;
 
@@ -899,7 +899,7 @@ export function initCommunity({
           const respuesta = await supabase
             .from("publicaciones")
             .select(columnasPublicacion)
-            .in("estado", ["publicada", "reservada"])
+            .eq("estado", "publicada")
             .order("creado_en", { ascending: false })
             .range(desde, desde + tamanoPagina - 1);
           if (respuesta.error) {
@@ -937,18 +937,10 @@ export function initCommunity({
             });
           }
 
-          const idsPublicaciones = data.map((registro) => registro.id).filter(Boolean);
-          const intercambiosPorPublicacion = new Map();
-          if (usuarioSesion?.id && idsPublicaciones.length) {
-            const { data: procesosActivos, error: errorProcesosActivos } = await supabase.from("intercambios").select("id, publicacion_id, estado").in("publicacion_id", idsPublicaciones).in("estado", ["respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"]);
-            if (errorProcesosActivos) console.warn("No se pudieron consultar los procesos activos:", errorProcesosActivos);
-            else (procesosActivos || []).forEach((proceso) => intercambiosPorPublicacion.set(String(proceso.publicacion_id), proceso));
-          }
           const todasRemotas = data.map((registro) => {
             const conv = convertirRegistroRemoto(registro);
             const idPerfil = String(registro.perfil_id || registro.usuario_id || "");
             conv.perfil_nombre = perfilesMapa.get(idPerfil) || "Vecino";
-            conv.intercambioActivo = intercambiosPorPublicacion.get(String(registro.id)) || null;
             return conv;
           });
 
@@ -1166,20 +1158,6 @@ export function initCommunity({
 
     `;
 
-    if (publicacion.intercambioActivo) {
-      const aviso = document.createElement("div");
-      aviso.className = "aviso-intercambio-publicacion";
-      aviso.setAttribute("role", "status");
-      aviso.textContent = "⏳ INTERCAMBIO INICIADO · " + String(publicacion.intercambioActivo.estado || "").replaceAll("_", " ").toUpperCase();
-      const acciones = tarjeta.querySelector(".publicacion-acciones-ficha");
-      if (acciones) acciones.prepend(aviso);
-      tarjeta.querySelector(".btn-iniciar-intercambio-card")?.remove();
-      tarjeta.querySelector(".btn-retirar-publicacion")?.remove();
-      const cancelar = document.createElement("button");
-      cancelar.type = "button"; cancelar.className = "boton-secundario btn-cancelar-intercambio-card";
-      cancelar.dataset.intercambioId = String(publicacion.intercambioActivo.id); cancelar.textContent = "CANCELAR SOLICITUD";
-      acciones?.appendChild(cancelar);
-    }
     return tarjeta;
   }
   async function manejarCancelarIntercambioDesdeCard(e) {
