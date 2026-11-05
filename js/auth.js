@@ -399,7 +399,7 @@ function renderizarFichaVisual(contenedor) {
 
         <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
           <span style="font-size: 0.8rem;">📱 WhatsApp:</span>
-          ${wppLink ? `<a href="${wppLink}" target="_blank" style="color: #4ade80; text-decoration: none; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">💬 Chatear</a>` : `<span style="color: #64748b; font-size: 0.8rem;">No vinculado</span>`}
+          ${wppLink ? `<span style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;"><a href="${wppLink}" target="_blank" rel="noopener noreferrer" style="color: #4ade80; text-decoration: none; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">💬 Chatear</a><small style="color:#94a3b8;font-size:0.65rem;">Número declarado · sin verificación independiente</small></span>` : `<span style="color: #64748b; font-size: 0.8rem;">No vinculado</span>`}
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
@@ -554,11 +554,12 @@ async function crearCuenta() {
 
     if (!data.session) {
       mostrarEstado(
-        "Cuenta creada. Revisá tu correo y confirmá el registro antes de iniciar sesión."
+        "La cuenta fue creada, pero no se inició la sesión automáticamente. Iniciá sesión con tu correo y contraseña para continuar."
       );
-    } else {
-      mostrarEstado("Cuenta creada. Preparando tu perfil…");
+      return;
     }
+
+    mostrarEstado("Cuenta creada. Preparando tu perfil…");
 
   } catch (error) {
     console.error("Error al crear la cuenta:", error);
