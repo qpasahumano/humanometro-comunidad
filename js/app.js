@@ -417,7 +417,8 @@ async function cargarPanelIntercambios() {
       agregar("Cerrar solicitud sin acuerdo","btn-cancelar-intercambio");
     }
     if (inter.estado === "rechazado") {
-      agregarDetalle("Resultado", "La propuesta fue rechazada. La publicación continúa disponible.");
+      agregarDetalle("Resultado", "La propuesta fue rechazada. La publicación original continúa activa.");
+      agregar("Finalizar y cerrar operación","btn-cancelar-intercambio");
     }
     if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
       const estadoReg=document.createElement("p");
@@ -439,19 +440,13 @@ function configurarIntercambiosGlobales() {
   document.addEventListener("click", async (e) => {
     const btnResponder = e.target.closest(".btn-responder-propuesta");
     if (btnResponder) {
-      const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas\n2 = Propongo una alternativa\n3 = Quiero conversar antes de formalizar\n4 = No acepto esta propuesta", "1");
+      const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas y recibidas\n2 = Quiero conversar antes de formalizar (por WhatsApp o redes)\n3 = No acepto esta propuesta", "1");
       if (opcion === null) return;
-      const mapa = {"1":"aceptar_condiciones","2":"propuesta_alternativa","3":"conversar","4":"rechazar_propuesta"};
+      const mapa = {"1":"aceptar_condiciones","2":"conversar","3":"rechazar_propuesta"};
       if (!mapa[opcion]) { mostrarNotificacion("Opción inválida.","error"); return; }
-      let oferta = {};
-      if (opcion === "2") {
-        const detalle = prompt("Describí qué ofrecés como alternativa:");
-        if (!detalle?.trim()) return;
-        oferta = {detalle:detalle.trim()};
-      }
-      const {error}=await supabase.rpc("hmc_responder_intercambio",{p_intercambio_id:btnResponder.dataset.id,p_opcion:mapa[opcion],p_oferta:oferta});
+      const {error}=await supabase.rpc("hmc_responder_intercambio",{p_intercambio_id:btnResponder.dataset.id,p_opcion:mapa[opcion],p_oferta:{}});
       if(error) mostrarNotificacion("No se pudo registrar la respuesta: "+error.message,"error");
-      else { mostrarNotificacion(opcion==="3"?"Conversación pendiente. Cuando acuerden por WhatsApp, registren el acuerdo acá.":opcion==="4"?"Propuesta rechazada. La publicación continúa disponible.":"Respuesta registrada. Falta formalizar el acuerdo.","success"); cargarPanelIntercambios(); }
+      else { mostrarNotificacion(opcion==="2"?"Conversación pendiente. Pueden negociar por WhatsApp o redes y luego registrar el acuerdo acá.":opcion==="3"?"Propuesta rechazada. La publicación original continúa activa.":"Respuesta registrada. Falta formalizar el acuerdo.","success"); cargarPanelIntercambios(); }
       return;
     }
 
@@ -493,7 +488,8 @@ function configurarIntercambiosGlobales() {
 
     const btnCancelar = e.target.closest(".btn-cancelar-intercambio");
     if(btnCancelar){
-      if(!confirm("¿Querés cancelar este proceso? La cancelación válida no genera evaluación ni penalización reputacional.")) return;
+      const esCierreRechazo = btnCancelar.textContent.trim() === "Finalizar y cerrar operación";
+      if(!confirm(esCierreRechazo ? "¿Querés finalizar y cerrar esta operación? La publicación original seguirá activa." : "¿Querés cancelar este proceso? La cancelación válida no genera evaluación ni penalización reputacional.")) return;
       const {error}=await supabase.rpc("hmc_cancelar_intercambio",{p_intercambio_id:btnCancelar.dataset.id});
       if(error) mostrarNotificacion("No se pudo cancelar: "+error.message,"error");
       else {mostrarNotificacion("Proceso cancelado y registrado.","success");cargarPanelIntercambios();}
