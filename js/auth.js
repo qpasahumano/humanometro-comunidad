@@ -770,7 +770,7 @@ async function cargarMisPublicaciones() {
     const idsPropias = publicadasPropias.map((x) => x.id).filter(Boolean);
     const procesosPorPublicacion = new Map();
     if (idsPropias.length) {
-      const { data: procesos, error: errorProcesos } = await supabase.from("intercambios").select("id, publicacion_id, estado").in("publicacion_id", idsPropias).in("estado", ["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"]);
+      const { data: procesos, error: errorProcesos } = await supabase.from("intercambios").select("id, publicacion_id, estado").in("publicacion_id", idsPropias).in("estado", ["respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"]);
       if (errorProcesos) console.warn("No se pudieron consultar los intercambios de tus publicaciones:", errorProcesos);
       else (procesos || []).forEach((x) => procesosPorPublicacion.set(String(x.publicacion_id), x));
     }
@@ -822,14 +822,9 @@ async function cargarMisPublicaciones() {
 
       const acciones = document.createElement("div");
       acciones.className = "mis-publicaciones-acciones";
-      if (procesoActivo) {
-        const cancelar = document.createElement("button");
-        cancelar.type = "button";
-        cancelar.className = "boton-secundario btn-cancelar-intercambio-propio";
-        cancelar.dataset.intercambioId = String(procesoActivo.id);
-        cancelar.textContent = "CANCELAR INTERCAMBIO";
-        acciones.appendChild(cancelar);
-      } else if (publicacion.estado === "publicada") {
+      // Las ofertas pendientes/rechazadas no cambian la ficha de publicación.
+      // Este panel administra publicaciones y no cancela intercambios.
+      if (publicacion.estado === "publicada") {
         const editar = document.createElement("button");
         editar.type = "button";
         editar.className = "boton-secundario btn-editar-mi-publicacion";

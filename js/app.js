@@ -309,25 +309,21 @@ async function cargarPanelIntercambios() {
     contenedor.textContent = "No se pudieron cargar tus procesos.";
     return;
   }
-  // El seguimiento muestra solamente procesos que todavía están activos.
-  // Cancelados, rechazados y finalizados dejan de aparecer para ambas partes.
+  // Las ofertas pendientes se muestran al dueño. Los rechazos quedan
+  // visibles solo para quien las envió hasta que archive cada propuesta.
   const estadosActivos = new Set([
-    "pendiente_respuesta",
-    "respuesta_recibida",
-    "conversacion_pendiente",
-    "acuerdo_pendiente_confirmacion",
-    "en_proceso",
-    "incumplido",
-    "regularizacion_pendiente"
+    "pendiente_respuesta","respuesta_recibida","conversacion_pendiente",
+    "acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"
   ]);
-  const intercambios = (intercambiosTodos || []).filter((item) =>
-    estadosActivos.has(item.estado)
-  );
-  // Cuenta únicamente los procesos propios de esta cuenta (la consulta
-  // anterior ya está limitada a usuario_a o usuario_b); cada solicitud
-  // independiente genera su propio registro y no se mezclan otras cuentas.
+  const intercambios = (intercambiosTodos || []).filter((item) => {
+    if (estadosActivos.has(item.estado)) return true;
+    return item.estado === "rechazado" &&
+      String(item.usuario_b) === String(usuario.id) &&
+      !Boolean(item.respuesta_b?.archivada_por_iniciador);
+  });
   const propuestasEntrantes = (intercambios || []).filter((item) =>
-    estadosPendientes.has(item.estado)
+    (item.estado === "pendiente_respuesta" && String(item.usuario_a) === String(usuario.id)) ||
+    (item.estado === "rechazado" && String(item.usuario_b) === String(usuario.id))
   ).length;
   const tabIntercambios = $("tab-perfil");
   if (tabIntercambios) {
@@ -402,13 +398,32 @@ async function cargarPanelIntercambios() {
     if (inter.estado === "pendiente_respuesta" && soyAutorB) {
       const avisoPendiente = document.createElement("p");
       avisoPendiente.className = "aviso-propuesta-entrante";
-      avisoPendiente.textContent = "Esta persona quiere intercambiar por tu publicación. Revisá qué ofrece y respondé acá para continuar.";
+      avisoPendiente.textContent = "Recibiste una oferta por tu publicación. Revisá qué te ofrecen y decidí si querés aceptarla.";
       card.appendChild(avisoPendiente);
+    }
+    if (inter.estado === "pendiente_respuesta" && soyIniciadorA) {
+      const avisoEnviada = document.createElement("p");
+      avisoEnviada.className = "aviso-propuesta-entrante";
+      avisoEnviada.textContent = "Tu oferta está pendiente de respuesta.";
+      card.appendChild(avisoEnviada);
     }
     const estado = document.createElement("span");
     estado.className = "seguimiento-estado";
-    estado.textContent = inter.estado.replaceAll("_"," ").toUpperCase();
+    estado.textContent = inter.estado === "rechazado" ? "✓ SOLICITUD RECHAZADA" : inter.estado.replaceAll("_"," ").toUpperCase();
     card.appendChild(estado);
+    if (inter.estado === "rechazado" && soyIniciadorA) {
+      const accionesRechazo = document.createElement("div");
+      accionesRechazo.className = "seguimiento-acciones";
+      const borrar = document.createElement("button");
+      borrar.type = "button";
+      borrar.className = "boton-secundario btn-borrar-propuesta-rechazada";
+      borrar.dataset.id = inter.id;
+      borrar.textContent = "BORRAR PROPUESTA";
+      accionesRechazo.appendChild(borrar);
+      card.appendChild(accionesRechazo);
+      wrapper.appendChild(card);
+      return;
+    }
     const ayuda = document.createElement("p");
     ayuda.className = "texto-ayuda seguimiento-ayuda";
     ayuda.textContent = "Las propuestas y confirmaciones quedan registradas en la comunidad; pueden conversar por WhatsApp.";
@@ -457,7 +472,20 @@ async function cargarPanelIntercambios() {
     const agregar = (label, cls, accion) => {
       const btn=document.createElement("button"); btn.type="button"; btn.className="boton-secundario "+cls; btn.dataset.id=inter.id; btn.textContent=label; acciones.appendChild(btn);
     };
-    if (inter.estado === "pendiente_respuesta" && soyAutorB) agregar("Responder propuesta","btn-responder-propuesta");
+    if (inter.estado === "pendiente_respuesta" && soyAutorB) {
+      const aceptar = document.createElement("button");
+      aceptar.type = "button"; aceptar.className = "boton-secundario btn-responder-propuesta";
+      aceptar.dataset.id = inter.id; aceptar.dataset.opcion = "aceptar_condiciones";
+      aceptar.textContent = "ACEPTAR OFERTA"; acciones.appendChild(aceptar);
+      const conversar = document.createElement("button");
+      conversar.type = "button"; conversar.className = "boton-secundario btn-responder-propuesta";
+      conversar.dataset.id = inter.id; conversar.dataset.opcion = "conversar";
+      conversar.textContent = "CONVERSAR"; acciones.appendChild(conversar);
+      const rechazar = document.createElement("button");
+      rechazar.type = "button"; rechazar.className = "boton-secundario btn-responder-propuesta";
+      rechazar.dataset.id = inter.id; rechazar.dataset.opcion = "rechazar_propuesta";
+      rechazar.textContent = "RECHAZAR OFERTA"; acciones.appendChild(rechazar);
+    }
     if (["respuesta_recibida","conversacion_pendiente"].includes(inter.estado) && soyIniciadorA) agregar("Registrar acuerdo conversado","btn-registrar-acuerdo");
     if (inter.estado === "acuerdo_pendiente_confirmacion") {
       const status=document.createElement("p");
@@ -473,7 +501,8 @@ async function cargarPanelIntercambios() {
       const estadoConf=document.createElement("p"); estadoConf.textContent="Tu cumplimiento: "+(miConf?"confirmado":"pendiente")+" · Contraparte: "+(otraConf?"confirmado":"pendiente"); card.appendChild(estadoConf);
       if (miConf && otraConf) agregar("Evaluar contraparte","btn-evaluar-intercambio");
     }
-    if (["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso"].includes(inter.estado)) agregar("Cancelar solicitud","btn-cancelar-intercambio");
+    if (inter.estado === "pendiente_respuesta" && soyIniciadorA) agregar("Retirar oferta","btn-cancelar-intercambio");
+    if (["respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso"].includes(inter.estado)) agregar("Cancelar intercambio","btn-cancelar-intercambio");
     if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
       const estadoReg=document.createElement("p"); estadoReg.textContent=inter.regularizacion_solicitada_por ? "Regularización solicitada. La otra parte debe confirmarla." : "Proceso incumplido. Podés solicitar una regularización bilateral."; card.appendChild(estadoReg);
       agregar("Solicitar / confirmar regularización","btn-regularizar-proceso");
@@ -490,13 +519,39 @@ function configurarIntercambiosGlobales() {
   document.addEventListener("click", async (e) => {
     const btnResponder = e.target.closest(".btn-responder-propuesta");
     if (btnResponder) {
-      const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas y recibidas\n2 = Quiero conversar antes de formalizar (por WhatsApp o redes). Si no querés continuar, usá Cancelar solicitud.", "1");
-      if (opcion === null) return;
-      const mapa = {"1":"aceptar_condiciones","2":"conversar"};
-      if (!mapa[opcion]) { mostrarNotificacion("Opción inválida.","error"); return; }
-      const {error}=await supabase.rpc("hmc_responder_intercambio",{p_intercambio_id:btnResponder.dataset.id,p_opcion:mapa[opcion],p_oferta:{}});
-      if(error) mostrarNotificacion("No se pudo registrar la respuesta: "+error.message,"error");
-      else { mostrarNotificacion(opcion==="2"?"Conversación pendiente. Pueden negociar por WhatsApp o redes y luego registrar el acuerdo acá.":"Respuesta registrada. Falta formalizar el acuerdo.","success"); cargarPanelIntercambios(); }
+      let opcion = btnResponder.dataset.opcion || "";
+      if (!opcion) {
+        const respuesta = prompt("Respondé con una opción:\n1 = Acepto la oferta\n2 = Quiero conversar antes de formalizar\n3 = Rechazo la oferta", "1");
+        if (respuesta === null) return;
+        opcion = {"1":"aceptar_condiciones","2":"conversar","3":"rechazar_propuesta"}[respuesta] || "";
+      }
+      if (!["aceptar_condiciones","conversar","rechazar_propuesta"].includes(opcion)) {
+        mostrarNotificacion("Opción inválida.","error"); return;
+      }
+      btnResponder.disabled = true;
+      const {error}=await supabase.rpc("hmc_responder_intercambio",{p_intercambio_id:btnResponder.dataset.id,p_opcion:opcion,p_oferta:{}});
+      if(error) {
+        btnResponder.disabled = false;
+        mostrarNotificacion("No se pudo registrar la respuesta: "+error.message,"error");
+      } else {
+        mostrarNotificacion(opcion === "rechazar_propuesta" ? "Oferta rechazada. La publicación sigue activa." : opcion === "conversar" ? "Conversación pendiente. Pueden negociar por WhatsApp o redes y luego registrar el acuerdo acá." : "Oferta aceptada. Ahora pueden formalizar el acuerdo en el seguimiento.","success");
+        cargarPanelIntercambios();
+        window.dispatchEvent(new CustomEvent("intercambioComunidadActualizado"));
+      }
+      return;
+    }
+
+    const btnBorrarRechazo = e.target.closest(".btn-borrar-propuesta-rechazada");
+    if (btnBorrarRechazo) {
+      btnBorrarRechazo.disabled = true;
+      const {error}=await supabase.rpc("hmc_archivar_propuesta_rechazada",{p_intercambio_id:btnBorrarRechazo.dataset.id});
+      if(error) {
+        btnBorrarRechazo.disabled = false;
+        mostrarNotificacion("No se pudo borrar la propuesta rechazada: "+error.message,"error");
+      } else {
+        mostrarNotificacion("Propuesta rechazada borrada de tu seguimiento.","success");
+        cargarPanelIntercambios();
+      }
       return;
     }
 
@@ -1649,8 +1704,12 @@ async function iniciarAplicacion() {
         const registro = payload.new || payload.old || {};
         if (uid && (String(registro.usuario_a) === String(uid) || String(registro.usuario_b) === String(uid))) {
           await cargarPanelIntercambios();
-          if (payload.eventType === "INSERT" || payload.old?.estado !== payload.new?.estado) {
-            mostrarNotificacion("Tenés una actualización en uno de tus procesos comunitarios. Revisá Mi perfil → Seguimiento de mis intercambios.");
+          if (payload.eventType === "INSERT" && String(registro.usuario_a) === String(uid)) {
+            mostrarNotificacion("Recibiste una oferta por una de tus publicaciones. Revisá Mi perfil → Seguimiento de mis intercambios.");
+          } else if (payload.old?.estado !== payload.new?.estado && payload.new?.estado === "rechazado" && String(registro.usuario_b) === String(uid)) {
+            mostrarNotificacion("No aceptaron tu oferta. Revisá el seguimiento para borrar la propuesta rechazada.");
+          } else if (payload.old?.estado !== payload.new?.estado && payload.new?.estado !== "rechazado") {
+            mostrarNotificacion("Tenés una actualización en uno de tus intercambios aceptados. Revisá Mi perfil → Seguimiento de mis intercambios.");
           }
         }
       })

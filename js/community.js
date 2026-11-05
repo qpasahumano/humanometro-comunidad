@@ -940,7 +940,7 @@ export function initCommunity({
           const idsPublicaciones = data.map((registro) => registro.id).filter(Boolean);
           const intercambiosPorPublicacion = new Map();
           if (usuarioSesion?.id && idsPublicaciones.length) {
-            const { data: procesosActivos, error: errorProcesosActivos } = await supabase.from("intercambios").select("id, publicacion_id, estado").in("publicacion_id", idsPublicaciones).in("estado", ["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"]);
+            const { data: procesosActivos, error: errorProcesosActivos } = await supabase.from("intercambios").select("id, publicacion_id, estado").in("publicacion_id", idsPublicaciones).in("estado", ["respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"]);
             if (errorProcesosActivos) console.warn("No se pudieron consultar los procesos activos:", errorProcesosActivos);
             else (procesosActivos || []).forEach((proceso) => intercambiosPorPublicacion.set(String(proceso.publicacion_id), proceso));
           }
