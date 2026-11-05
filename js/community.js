@@ -221,20 +221,27 @@ export function initCommunity({
         .map((perfil) => perfil.id)
         .filter(Boolean);
       const conteosIntercambios = new Map();
+      const conteosCancelaciones = new Map();
       if (idsPerfilesVisibles.length) {
         const usuarioConteo = await obtenerUsuarioActual();
-        // El RPC exige una sesión autenticada. El directorio público debe seguir
-        // funcionando para visitantes anónimos aunque no puedan consultar conteos.
+        // El directorio público sigue disponible para visitantes anónimos.
         if (usuarioConteo?.id) {
-          const { data: conteos, error: errorConteos } = await supabase.rpc(
-            "hmc_conteo_intercambios_completados",
-            { p_perfil_ids: idsPerfilesVisibles }
-          );
+          const [{ data: conteos, error: errorConteos }, { data: cancelaciones, error: errorCancelaciones }] = await Promise.all([
+            supabase.rpc("hmc_conteo_intercambios_completados", { p_perfil_ids: idsPerfilesVisibles }),
+            supabase.rpc("hmc_conteo_cancelaciones_intercambios", { p_perfil_ids: idsPerfilesVisibles })
+          ]);
           if (errorConteos) {
-            console.warn("No se pudieron cargar los conteos públicos de intercambios; continúa el directorio:", errorConteos);
+            console.warn("No se pudieron cargar los intercambios completados:", errorConteos);
           } else {
             (conteos || []).forEach((registro) => {
               conteosIntercambios.set(String(registro.perfil_id), Number(registro.total_completados || 0));
+            });
+          }
+          if (errorCancelaciones) {
+            console.warn("No se pudieron cargar los indicadores de cancelación:", errorCancelaciones);
+          } else {
+            (cancelaciones || []).forEach((registro) => {
+              conteosCancelaciones.set(String(registro.perfil_id), registro);
             });
           }
         }
@@ -365,6 +372,22 @@ export function initCommunity({
         intercambiosCompletados.className = "vecino-intercambios-completados";
         intercambiosCompletados.textContent = `🤝 ${totalIntercambios} ${totalIntercambios === 1 ? "intercambio completado" : "intercambios completados"}`;
         datos.appendChild(intercambiosCompletados);
+
+        const historialCancelaciones = conteosCancelaciones.get(String(perfil.id));
+        if (historialCancelaciones) {
+          const indicadorCancelaciones = document.createElement("span");
+          indicadorCancelaciones.className = "vecino-cancelaciones-conteo";
+          const iniciados = Number(historialCancelaciones.total_iniciados || 0);
+          const cancelados = Number(historialCancelaciones.total_cancelados || 0);
+          indicadorCancelaciones.textContent = `↪ ${iniciados} operaciones iniciadas · ${cancelados} cancelaciones realizadas`;
+          datos.appendChild(indicadorCancelaciones);
+          if (historialCancelaciones.riesgo_membresia) {
+            const avisoRiesgo = document.createElement("span");
+            avisoRiesgo.className = "vecino-cancelaciones-riesgo";
+            avisoRiesgo.textContent = "⚠️ Cancelaciones reiteradas recientes";
+            datos.appendChild(avisoRiesgo);
+          }
+        }
 
         if (totalPubs > 0) {
           const publicacionesVecino = document.createElement("span");
