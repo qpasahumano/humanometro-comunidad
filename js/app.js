@@ -74,7 +74,7 @@ function mostrarNotificacion(mensaje) {
 
   mostrarNotificacion.timer = setTimeout(() => {
     elemento.hidden = true;
-  }, 3500);
+  }, 7000);
 }
 
 /* =========================
