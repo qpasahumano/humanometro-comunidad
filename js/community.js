@@ -797,7 +797,28 @@ export function initCommunity({
     const pendientes = obtenerLocales().filter((p) => String(p.origen || "") === "local" && String(p.usuario_id || p.perfil_id || "") === String(usuario.id) && String(p.id || "").startsWith("local-"));
     const sincronizadas = new Set();
     for (const pendiente of pendientes) {
-      const registro = { perfil_id: usuario.id, usuario_id: usuario.id, tipo: pendiente.tipo, categoria: pendiente.categoria, titulo: pendiente.titulo, descripcion: pendiente.descripcion, modalidad: pendiente.modalidad ?? null, modalidad_intercambio: pendiente.modalidad_intercambio ?? null, que_necesita_a_cambio: pendiente.que_necesita_a_cambio || "", zona_aproximada: pendiente.zona_aproximada || "", offline_activo: Boolean(pendiente.offline_activo), fotos: Array.isArray(pendiente.fotos) ? pendiente.fotos : [], estado: "publicada", creado_en: pendiente.creado_en || new Date().toISOString(), actualizado_en: new Date().toISOString() };
+      // Las publicaciones creadas sin conexión deben pasar por los mismos
+      // mapeos de valores cerrados que las publicaciones creadas online.
+      const modalidadPendiente = mapearModalidadBD(
+        pendiente.modalidad_intercambio || pendiente.modalidad || ""
+      );
+      const registro = {
+        perfil_id: usuario.id,
+        usuario_id: usuario.id,
+        tipo: mapearTipoBD(pendiente.tipo),
+        categoria: mapearCategoriaBD(pendiente.categoria),
+        titulo: pendiente.titulo,
+        descripcion: pendiente.descripcion,
+        modalidad: modalidadPendiente.modalidad,
+        modalidad_intercambio: modalidadPendiente.modalidad_intercambio,
+        que_necesita_a_cambio: pendiente.que_necesita_a_cambio || "",
+        zona_aproximada: pendiente.zona_aproximada || "",
+        offline_activo: Boolean(pendiente.offline_activo),
+        fotos: Array.isArray(pendiente.fotos) ? pendiente.fotos : [],
+        estado: "publicada",
+        creado_en: pendiente.creado_en || new Date().toISOString(),
+        actualizado_en: new Date().toISOString()
+      };
       const { error } = await supabase.from("publicaciones").insert(registro);
       if (error) { console.warn("Publicación pendiente de sincronización:", error); continue; }
       sincronizadas.add(String(pendiente.id));
