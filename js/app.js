@@ -94,6 +94,7 @@ function mostrarVista(nombre = null, opciones = {}) {
 
   if (nombre === "vista-perfil") {
     actualizarSolapaActiva("perfil");
+    cargarPanelIntercambios();
   } else if (nombre === "vista-gondola") {
     actualizarSolapaActiva("gondola");
   } else if (nombre === "vista-radar") {
@@ -150,11 +151,11 @@ function configurarNavegacion() {
 
   $("tab-perfil")?.addEventListener("click", () => {
     mostrarVista("vista-perfil", { forzar: true });
+    cargarPanelIntercambios();
   });
 
   $("tab-gondola")?.addEventListener("click", () => {
     mostrarVista("vista-gondola");
-    cargarPanelIntercambios();
   });
 
   $("tab-comunidad")?.addEventListener("click", () => {
@@ -179,7 +180,6 @@ function configurarNavegacion() {
 
   $("btn-gondola")?.addEventListener("click", () => {
     mostrarVista("vista-gondola");
-    cargarPanelIntercambios();
   });
 
   $("btn-ayuda")?.addEventListener("click", () => {
@@ -192,6 +192,7 @@ function configurarNavegacion() {
 
   $("btn-perfil")?.addEventListener("click", () => {
     mostrarVista("vista-perfil", { forzar: true });
+    cargarPanelIntercambios();
   });
 
   document.querySelectorAll("[data-volver]").forEach((boton) => {
@@ -238,14 +239,14 @@ function configurarNavegacion() {
 ========================= */
 
 async function cargarPanelIntercambios() {
-  const contenedor = $("lista-intercambios-activos") || $("vista-intercambios");
+  const contenedor = $("lista-intercambios-activos");
   if (!contenedor) return;
   const usuario = await obtenerUsuarioActual();
   if (!usuario) {
     contenedor.textContent = "Iniciá sesión para ver tus procesos comunitarios.";
-    const tabIntercambios = $("tab-intercambios") || $("tab-gondola");
-    tabIntercambios?.querySelector(".contador-propuestas")?.remove();
-    tabIntercambios?.setAttribute("aria-label", "Intercambios y góndola");
+    const tabPerfil = $("tab-perfil");
+    tabPerfil?.querySelector(".contador-propuestas")?.remove();
+    tabPerfil?.setAttribute("aria-label", "Mi perfil");
     return;
   }
   const { data: intercambios, error } = await supabase
@@ -272,7 +273,7 @@ async function cargarPanelIntercambios() {
   const propuestasEntrantes = (intercambios || []).filter((item) =>
     estadosPendientes.has(item.estado)
   ).length;
-  const tabIntercambios = $("tab-intercambios") || $("tab-gondola");
+  const tabIntercambios = $("tab-perfil");
   if (tabIntercambios) {
     let contador = tabIntercambios.querySelector(".contador-propuestas");
     if (propuestasEntrantes > 0) {
@@ -283,10 +284,10 @@ async function cargarPanelIntercambios() {
         tabIntercambios.appendChild(contador);
       }
       contador.textContent = String(propuestasEntrantes);
-      tabIntercambios.setAttribute("aria-label", "Intercambios y góndola. " + propuestasEntrantes + " procesos pendientes");
+      tabIntercambios.setAttribute("aria-label", "Mi perfil. " + propuestasEntrantes + " procesos pendientes");
     } else {
       contador?.remove();
-      tabIntercambios.setAttribute("aria-label", "Intercambios y góndola");
+      tabIntercambios.setAttribute("aria-label", "Mi perfil");
     }
   }
   const idsProcesos = (intercambios || []).map((item) => item.id);
@@ -1641,7 +1642,7 @@ async function iniciarAplicacion() {
         if (uid && (String(registro.usuario_a) === String(uid) || String(registro.usuario_b) === String(uid))) {
           await cargarPanelIntercambios();
           if (payload.eventType === "INSERT" || payload.old?.estado !== payload.new?.estado) {
-            mostrarNotificacion("Tenés una actualización en uno de tus procesos comunitarios. Revisá Intercambios / Góndola.");
+            mostrarNotificacion("Tenés una actualización en uno de tus procesos comunitarios. Revisá Mi perfil → Seguimiento de mis intercambios.");
           }
         }
       })
