@@ -212,7 +212,7 @@ export function initCommunity({
             "actualizado_en"
           ].join(",")
         )
-        .eq("estado", "publicada")
+        .in("estado", ["publicada", "reservada"])
         .order("creado_en", { ascending: false });
       if (errorPublicaciones) throw errorPublicaciones;
 
@@ -884,7 +884,7 @@ export function initCommunity({
           const respuesta = await supabase
             .from("publicaciones")
             .select(columnasPublicacion)
-            .eq("estado", "publicada")
+            .in("estado", ["publicada", "reservada"])
             .order("creado_en", { ascending: false })
             .range(desde, desde + tamanoPagina - 1);
           if (respuesta.error) {
