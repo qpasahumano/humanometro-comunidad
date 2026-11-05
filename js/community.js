@@ -1158,6 +1158,7 @@ export function initCommunity({
       const acciones = tarjeta.querySelector(".publicacion-acciones-ficha");
       if (acciones) acciones.prepend(aviso);
       tarjeta.querySelector(".btn-iniciar-intercambio-card")?.remove();
+      tarjeta.querySelector(".btn-retirar-publicacion")?.remove();
       const cancelar = document.createElement("button");
       cancelar.type = "button"; cancelar.className = "boton-secundario btn-cancelar-intercambio-card";
       cancelar.dataset.intercambioId = String(publicacion.intercambioActivo.id); cancelar.textContent = "CANCELAR SOLICITUD";
