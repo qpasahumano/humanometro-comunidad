@@ -1876,3 +1876,18 @@ select option {
   font-weight: 800;
   text-align: left;
 }
+
+
+/* Seguridad de la comunidad: ubicada al final de Comunicación SOS Offline. */
+.seguridad-comunidad-panel { margin-top: 16px; }
+.seguridad-comunidad-panel h3 { margin-top: 0; color: var(--celeste); }
+.seguridad-comunidad-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 10px 4px 0;
+  scrollbar-width: thin;
+}
+.seguridad-comunidad-scroll p { line-height: 1.5; }
+.panel-seguimiento-intercambios { margin-top: 18px; }
+#lista-intercambios-activos { min-width: 0; }
