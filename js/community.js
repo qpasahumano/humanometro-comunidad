@@ -922,10 +922,18 @@ export function initCommunity({
             });
           }
 
+          const idsPublicaciones = data.map((registro) => registro.id).filter(Boolean);
+          const intercambiosPorPublicacion = new Map();
+          if (usuarioSesion?.id && idsPublicaciones.length) {
+            const { data: procesosActivos, error: errorProcesosActivos } = await supabase.from("intercambios").select("id, publicacion_id, estado").in("publicacion_id", idsPublicaciones).in("estado", ["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"]);
+            if (errorProcesosActivos) console.warn("No se pudieron consultar los procesos activos:", errorProcesosActivos);
+            else (procesosActivos || []).forEach((proceso) => intercambiosPorPublicacion.set(String(proceso.publicacion_id), proceso));
+          }
           const todasRemotas = data.map((registro) => {
             const conv = convertirRegistroRemoto(registro);
             const idPerfil = String(registro.perfil_id || registro.usuario_id || "");
             conv.perfil_nombre = perfilesMapa.get(idPerfil) || "Vecino";
+            conv.intercambioActivo = intercambiosPorPublicacion.get(String(registro.id)) || null;
             return conv;
           });
 
@@ -1142,9 +1150,35 @@ export function initCommunity({
 
     `;
 
+    if (publicacion.intercambioActivo) {
+      const aviso = document.createElement("div");
+      aviso.className = "aviso-intercambio-publicacion";
+      aviso.setAttribute("role", "status");
+      aviso.textContent = "⏳ INTERCAMBIO INICIADO · " + String(publicacion.intercambioActivo.estado || "").replaceAll("_", " ").toUpperCase();
+      const acciones = tarjeta.querySelector(".publicacion-acciones-ficha");
+      if (acciones) acciones.prepend(aviso);
+      tarjeta.querySelector(".btn-iniciar-intercambio-card")?.remove();
+      const cancelar = document.createElement("button");
+      cancelar.type = "button"; cancelar.className = "boton-secundario btn-cancelar-intercambio-card";
+      cancelar.dataset.intercambioId = String(publicacion.intercambioActivo.id); cancelar.textContent = "CANCELAR SOLICITUD";
+      acciones?.appendChild(cancelar);
+    }
     return tarjeta;
   }
-
+  async function manejarCancelarIntercambioDesdeCard(e) {
+    const boton = e.target.closest(".btn-cancelar-intercambio-card"); if (!boton) return;
+    e.preventDefault();
+    const motivo = prompt("Cancelar solicitud (opcional):\n1 = Sin motivo\n2 = Me arrepentí\n3 = Motivos personales\n4 = No estoy conforme\n5 = No estoy seguro", "3");
+    if (motivo === null) return;
+    const motivos = {"1":"sin_motivo","2":"me_arrepenti","3":"motivos_personales","4":"no_estoy_conforme","5":"no_estoy_seguro"};
+    if (!motivos[motivo]) { notificar("Elegí un motivo válido.", "warning"); return; }
+    boton.disabled = true;
+    const { error } = await supabase.rpc("hmc_cancelar_intercambio", { p_intercambio_id: boton.dataset.intercambioId, p_motivo: motivos[motivo] });
+    if (error) { boton.disabled = false; notificar("No se pudo cancelar: " + error.message, "error"); return; }
+    notificar("Intercambio cancelado. La publicación vuelve a estar disponible.", "success");
+    cargarPublicacionesRemotas(); window.dispatchEvent(new CustomEvent("intercambioComunidadActualizado"));
+  }
+  document.addEventListener("click", manejarCancelarIntercambioDesdeCard);
   async function manejarInicioIntercambioDesdeCard(e) {
     const boton = e.target.closest(".btn-iniciar-intercambio-card");
     if (!boton) return;

@@ -393,34 +393,16 @@ async function cargarPanelIntercambios() {
       if (!yoConfirmado) agregar("Confirmar acuerdo","btn-confirmar-acuerdo");
     }
     if (inter.estado === "en_proceso") {
-      const plazo=document.createElement("p");
-      plazo.textContent="Tu vencimiento: " + new Date((soyAutorB ? inter.fecha_limite_b : inter.fecha_limite_a) || inter.fecha_limite).toLocaleString("es-AR");
-      card.appendChild(plazo);
-      const miConf=soyAutorB ? inter.confirmado_a : inter.confirmado_b;
-      const otraConf=soyAutorB ? inter.confirmado_b : inter.confirmado_a;
+      const plazo=document.createElement("p"); plazo.textContent="Tu vencimiento: " + new Date((soyAutorB ? inter.fecha_limite_b : inter.fecha_limite_a) || inter.fecha_limite).toLocaleString("es-AR"); card.appendChild(plazo);
+      const miConf=soyAutorB ? inter.confirmado_a : inter.confirmado_b, otraConf=soyAutorB ? inter.confirmado_b : inter.confirmado_a;
       if (!miConf) agregar("Confirmar mi cumplimiento","btn-confirmar-cumplimiento");
-      const estadoConf=document.createElement("p");
-      estadoConf.textContent="Tu cumplimiento: "+(miConf?"confirmado":"pendiente")+" · Contraparte: "+(otraConf?"confirmado":"pendiente");
-      card.appendChild(estadoConf);
-      if (miConf && otraConf && inter.estado==="en_proceso") agregar("Evaluar contraparte","btn-evaluar-intercambio");
-      agregar("Cancelar proceso","btn-cancelar-intercambio");
+      const estadoConf=document.createElement("p"); estadoConf.textContent="Tu cumplimiento: "+(miConf?"confirmado":"pendiente")+" · Contraparte: "+(otraConf?"confirmado":"pendiente"); card.appendChild(estadoConf);
+      if (miConf && otraConf) agregar("Evaluar contraparte","btn-evaluar-intercambio");
     }
-    if (inter.estado === "pendiente_respuesta" && soyIniciadorA) {
-      agregar("Cancelar solicitud","btn-cancelar-intercambio");
-    }
-    if (inter.estado === "respuesta_recibida" || inter.estado === "conversacion_pendiente" || inter.estado === "acuerdo_pendiente_confirmacion") {
-      agregar("Cerrar solicitud sin acuerdo","btn-cancelar-intercambio");
-    }
+    if (["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso"].includes(inter.estado)) agregar("Cancelar solicitud","btn-cancelar-intercambio");
     if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
-      const estadoReg=document.createElement("p");
-      estadoReg.textContent=inter.regularizacion_solicitada_por
-        ? "Regularización solicitada. La otra parte debe confirmarla."
-        : "Proceso incumplido. Podés solicitar una regularización bilateral.";
-      card.appendChild(estadoReg);
+      const estadoReg=document.createElement("p"); estadoReg.textContent=inter.regularizacion_solicitada_por ? "Regularización solicitada. La otra parte debe confirmarla." : "Proceso incumplido. Podés solicitar una regularización bilateral."; card.appendChild(estadoReg);
       agregar("Solicitar / confirmar regularización","btn-regularizar-proceso");
-    }
-    if (!["cancelado", "rechazado"].includes(inter.estado)) {
-      agregar("Informar desacuerdo / problema", "btn-informar-desacuerdo");
     }
     card.appendChild(acciones);
     wrapper.appendChild(card);
@@ -432,65 +414,15 @@ function configurarIntercambiosGlobales() {
   intercambiosConfigurados = true;
 
   document.addEventListener("click", async (e) => {
-    const btnDesacuerdo = e.target.closest(".btn-informar-desacuerdo");
-    if (btnDesacuerdo) {
-      const usuario = await obtenerUsuarioActual();
-      if (!usuario) return;
-      const { data: proceso, error: errorProceso } = await supabase
-        .from("intercambios")
-        .select("id, usuario_a, usuario_b")
-        .eq("id", btnDesacuerdo.dataset.id)
-        .single();
-      if (errorProceso || !proceso) {
-        mostrarNotificacion("No se pudo verificar el intercambio.", "error");
-        return;
-      }
-      const motivo = prompt("Motivo:\n1 = Incumplimiento\n2 = Trato inadecuado\n3 = Información engañosa\n4 = Seguridad\n5 = Otro");
-      if (motivo === null) return;
-      const motivos = {
-        "1": "incumplimiento",
-        "2": "trato_inadecuado",
-        "3": "informacion_engañosa",
-        "4": "seguridad",
-        "5": "otro"
-      };
-      if (!motivos[motivo]) {
-        mostrarNotificacion("Seleccioná un motivo válido.", "error");
-        return;
-      }
-      const descripcion = prompt("Describí lo ocurrido con datos concretos (entre 20 y 2000 caracteres).");
-      if (descripcion === null) return;
-      if (descripcion.trim().length < 20 || descripcion.trim().length > 2000) {
-        mostrarNotificacion("La descripción debe tener entre 20 y 2000 caracteres.", "error");
-        return;
-      }
-      const denunciadoId = String(proceso.usuario_a) === String(usuario.id)
-        ? proceso.usuario_b
-        : proceso.usuario_a;
-      const { error } = await supabase.from("hmc_desacuerdos").insert({
-        intercambio_id: proceso.id,
-        denunciante_id: usuario.id,
-        denunciado_id: denunciadoId,
-        motivo: motivos[motivo],
-        descripcion: descripcion.trim()
-      });
-      if (error) {
-        mostrarNotificacion("No se pudo registrar el informe: " + error.message, "error");
-      } else {
-        mostrarNotificacion("Informe privado registrado. Solo las partes involucradas pueden consultarlo.", "success");
-      }
-      return;
-    }
-
     const btnResponder = e.target.closest(".btn-responder-propuesta");
     if (btnResponder) {
-      const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas y recibidas\n2 = Quiero conversar antes de formalizar (por WhatsApp o redes)\n3 = No acepto esta propuesta", "1");
+      const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas y recibidas\n2 = Quiero conversar antes de formalizar (por WhatsApp o redes). Si no querés continuar, usá Cancelar solicitud.", "1");
       if (opcion === null) return;
-      const mapa = {"1":"aceptar_condiciones","2":"conversar","3":"rechazar_propuesta"};
+      const mapa = {"1":"aceptar_condiciones","2":"conversar"};
       if (!mapa[opcion]) { mostrarNotificacion("Opción inválida.","error"); return; }
       const {error}=await supabase.rpc("hmc_responder_intercambio",{p_intercambio_id:btnResponder.dataset.id,p_opcion:mapa[opcion],p_oferta:{}});
       if(error) mostrarNotificacion("No se pudo registrar la respuesta: "+error.message,"error");
-      else { mostrarNotificacion(opcion==="2"?"Conversación pendiente. Pueden negociar por WhatsApp o redes y luego registrar el acuerdo acá.":opcion==="3"?"Propuesta rechazada. La publicación original continúa activa.":"Respuesta registrada. Falta formalizar el acuerdo.","success"); cargarPanelIntercambios(); }
+      else { mostrarNotificacion(opcion==="2"?"Conversación pendiente. Pueden negociar por WhatsApp o redes y luego registrar el acuerdo acá.":"Respuesta registrada. Falta formalizar el acuerdo.","success"); cargarPanelIntercambios(); }
       return;
     }
 
@@ -532,10 +464,10 @@ function configurarIntercambiosGlobales() {
 
     const btnCancelar = e.target.closest(".btn-cancelar-intercambio");
     if(btnCancelar){
-      if(!confirm("¿Querés cancelar este proceso? La cancelación válida no genera evaluación ni penalización reputacional.")) return;
-      const {error}=await supabase.rpc("hmc_cancelar_intercambio",{p_intercambio_id:btnCancelar.dataset.id});
-      if(error) mostrarNotificacion("No se pudo cancelar: "+error.message,"error");
-      else {mostrarNotificacion("Proceso cancelado y registrado.","success");cargarPanelIntercambios();}
+      const motivo = prompt("Cancelar solicitud (opcional):\n1 = Sin motivo\n2 = Me arrepentí\n3 = Motivos personales\n4 = No estoy conforme\n5 = No estoy seguro", "3"); if (motivo === null) return;
+      const motivos = {"1":"sin_motivo","2":"me_arrepenti","3":"motivos_personales","4":"no_estoy_conforme","5":"no_estoy_seguro"}; if (!motivos[motivo]) { mostrarNotificacion("Elegí un motivo válido.", "warning"); return; }
+      const {error}=await supabase.rpc("hmc_cancelar_intercambio",{p_intercambio_id:btnCancelar.dataset.id,p_motivo:motivos[motivo]});
+      if(error) mostrarNotificacion("No se pudo cancelar: "+error.message,"error"); else {mostrarNotificacion("Solicitud cancelada. No genera penalización reputacional.","success");cargarPanelIntercambios();}
       return;
     }
 

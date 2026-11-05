@@ -714,6 +714,17 @@ async function cargarMisPublicaciones() {
         window.dispatchEvent(new CustomEvent("publicacionComunidadActualizada"));
         return;
       }
+      const cancelarIntercambio = evento.target.closest(".btn-cancelar-intercambio-propio");
+      if (cancelarIntercambio) {
+        const motivo = window.prompt("Cancelar intercambio (opcional):\n1 = Sin motivo\n2 = Me arrepentí\n3 = Motivos personales\n4 = No estoy conforme\n5 = No estoy seguro", "3");
+        if (motivo === null) return;
+        const motivos = {"1":"sin_motivo","2":"me_arrepenti","3":"motivos_personales","4":"no_estoy_conforme","5":"no_estoy_seguro"};
+        if (!motivos[motivo]) { window.alert("Elegí un motivo válido."); return; }
+        cancelarIntercambio.disabled = true;
+        const { error } = await supabase.rpc("hmc_cancelar_intercambio", { p_intercambio_id: cancelarIntercambio.dataset.intercambioId, p_motivo: motivos[motivo] });
+        if (error) { cancelarIntercambio.disabled = false; window.alert("No se pudo cancelar: " + error.message); return; }
+        await cargarMisPublicaciones(); window.dispatchEvent(new CustomEvent("intercambioComunidadActualizado")); return;
+      }
       const boton = evento.target.closest(".btn-retirar-mi-publicacion");
       if (!boton) return;
       const usuario = usuarioActual;
@@ -753,10 +764,17 @@ async function cargarMisPublicaciones() {
 
     // En el perfil solo se muestran publicaciones que siguen disponibles.
     // Los procesos, cancelaciones y acuerdos concluidos no forman parte de la góndola.
-    const propias = (data || []).filter((publicacion) =>
-      String(publicacion.perfil_id || publicacion.usuario_id || "") === String(usuarioActual.id) &&
-      String(publicacion.estado || "").toLowerCase() === "publicada"
+    const publicadasPropias = (data || []).filter((publicacion) =>
+      String(publicacion.perfil_id || publicacion.usuario_id || "") === String(usuarioActual.id) && ["publicada","reservada"].includes(String(publicacion.estado || "").toLowerCase())
     );
+    const idsPropias = publicadasPropias.map((x) => x.id).filter(Boolean);
+    const procesosPorPublicacion = new Map();
+    if (idsPropias.length) {
+      const { data: procesos, error: errorProcesos } = await supabase.from("intercambios").select("id, publicacion_id, estado").in("publicacion_id", idsPropias).in("estado", ["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"]);
+      if (errorProcesos) console.warn("No se pudieron consultar los intercambios de tus publicaciones:", errorProcesos);
+      else (procesos || []).forEach((x) => procesosPorPublicacion.set(String(x.publicacion_id), x));
+    }
+    const propias = publicadasPropias.filter((x) => x.estado === "publicada" || procesosPorPublicacion.has(String(x.id)));
     const activas = propias.length;
     const contador = document.createElement("p");
     contador.className = "texto-ayuda";
@@ -796,7 +814,8 @@ async function cargarMisPublicaciones() {
       const tipoOriginal = metadatos.tipoUI || publicacion.tipo;
       const tipoVisible = ["oferta", "ofrezco"].includes(tipoOriginal) ? "OFREZCO" : "BUSCO";
       const categoriaVisible = metadatos.categoriaUI || publicacion.categoria || "Sin categoría";
-      estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: ${publicacion.estado || "sin especificar"}`;
+      const procesoActivo = procesosPorPublicacion.get(String(publicacion.id));
+      estado.textContent = `${tipoVisible} · ${categoriaVisible} · Estado: ${procesoActivo ? "INTERCAMBIO " + procesoActivo.estado.replaceAll("_", " ").toUpperCase() : publicacion.estado || "sin especificar"}`;
       tarjeta.append(titulo, estado, detalleExpandible);
 
       if (publicacion.estado === "publicada") {
@@ -807,12 +826,18 @@ async function cargarMisPublicaciones() {
         editar.className = "boton-secundario btn-editar-mi-publicacion";
         editar.dataset.pubId = String(publicacion.id);
         editar.textContent = "EDITAR PUBLICACIÓN";
-        const retirar = document.createElement("button");
-        retirar.type = "button";
-        retirar.className = "boton-secundario btn-retirar-mi-publicacion";
-        retirar.dataset.pubId = String(publicacion.id);
-        retirar.textContent = "RETIRAR PUBLICACIÓN";
-        acciones.append(editar, retirar);
+        acciones.appendChild(editar);
+        if (procesoActivo) {
+          const cancelar = document.createElement("button"); cancelar.type = "button";
+          cancelar.className = "boton-secundario btn-cancelar-intercambio-propio";
+          cancelar.dataset.intercambioId = String(procesoActivo.id); cancelar.textContent = "CANCELAR INTERCAMBIO";
+          acciones.appendChild(cancelar);
+        } else {
+          const retirar = document.createElement("button"); retirar.type = "button";
+          retirar.className = "boton-secundario btn-retirar-mi-publicacion";
+          retirar.dataset.pubId = String(publicacion.id); retirar.textContent = "CANCELAR PUBLICACIÓN";
+          acciones.appendChild(retirar);
+        }
         tarjeta.appendChild(acciones);
       }
 
