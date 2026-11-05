@@ -427,6 +427,9 @@ async function cargarPanelIntercambios() {
       card.appendChild(estadoReg);
       agregar("Solicitar / confirmar regularización","btn-regularizar-proceso");
     }
+    if (!["cancelado", "rechazado"].includes(inter.estado)) {
+      agregar("Informar desacuerdo / problema", "btn-informar-desacuerdo");
+    }
     card.appendChild(acciones);
     wrapper.appendChild(card);
   });
@@ -437,6 +440,56 @@ function configurarIntercambiosGlobales() {
   intercambiosConfigurados = true;
 
   document.addEventListener("click", async (e) => {
+    const btnDesacuerdo = e.target.closest(".btn-informar-desacuerdo");
+    if (btnDesacuerdo) {
+      const usuario = await obtenerUsuarioActual();
+      if (!usuario) return;
+      const { data: proceso, error: errorProceso } = await supabase
+        .from("intercambios")
+        .select("id, usuario_a, usuario_b")
+        .eq("id", btnDesacuerdo.dataset.id)
+        .single();
+      if (errorProceso || !proceso) {
+        mostrarNotificacion("No se pudo verificar el intercambio.", "error");
+        return;
+      }
+      const motivo = prompt("Motivo:\n1 = Incumplimiento\n2 = Trato inadecuado\n3 = Información engañosa\n4 = Seguridad\n5 = Otro");
+      if (motivo === null) return;
+      const motivos = {
+        "1": "incumplimiento",
+        "2": "trato_inadecuado",
+        "3": "informacion_engañosa",
+        "4": "seguridad",
+        "5": "otro"
+      };
+      if (!motivos[motivo]) {
+        mostrarNotificacion("Seleccioná un motivo válido.", "error");
+        return;
+      }
+      const descripcion = prompt("Describí lo ocurrido con datos concretos (entre 20 y 2000 caracteres).");
+      if (descripcion === null) return;
+      if (descripcion.trim().length < 20 || descripcion.trim().length > 2000) {
+        mostrarNotificacion("La descripción debe tener entre 20 y 2000 caracteres.", "error");
+        return;
+      }
+      const denunciadoId = String(proceso.usuario_a) === String(usuario.id)
+        ? proceso.usuario_b
+        : proceso.usuario_a;
+      const { error } = await supabase.from("hmc_desacuerdos").insert({
+        intercambio_id: proceso.id,
+        denunciante_id: usuario.id,
+        denunciado_id: denunciadoId,
+        motivo: motivos[motivo],
+        descripcion: descripcion.trim()
+      });
+      if (error) {
+        mostrarNotificacion("No se pudo registrar el informe: " + error.message, "error");
+      } else {
+        mostrarNotificacion("Informe privado registrado. Solo las partes involucradas pueden consultarlo.", "success");
+      }
+      return;
+    }
+
     const btnResponder = e.target.closest(".btn-responder-propuesta");
     if (btnResponder) {
       const opcion = prompt("Respondé con una opción:\n1 = Acepto las condiciones publicadas y recibidas\n2 = Quiero conversar antes de formalizar (por WhatsApp o redes)\n3 = No acepto esta propuesta", "1");
