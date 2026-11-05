@@ -799,8 +799,9 @@ export function initCommunity({
     for (const pendiente of pendientes) {
       // Las publicaciones creadas sin conexión deben pasar por los mismos
       // mapeos de valores cerrados que las publicaciones creadas online.
+      const metadatosPendiente = obtenerCondicion(pendiente.descripcion || "");
       const modalidadPendiente = mapearModalidadBD(
-        pendiente.modalidad_intercambio || pendiente.modalidad || ""
+        metadatosPendiente.meta.modalidadUI || pendiente.modalidad_intercambio || ""
       );
       const registro = {
         perfil_id: usuario.id,
