@@ -13,6 +13,11 @@ import { supabase } from "./supabase.js";
 
 const $ = (id) => document.getElementById(id);
 
+// Solo las solicitudes que esperan respuesta de la persona dueña de la publicación
+// se cuentan como propuestas entrantes pendientes.
+const estadosPendientes = new Set(["pendiente_respuesta"]);
+let secuenciaCargaPanelIntercambios = 0;
+
 let navegacionConfigurada = false;
 let barrioConfigurado = false;
 let ayudaConfigurada = false;
@@ -271,6 +276,7 @@ function configurarNavegacion() {
 ========================= */
 
 async function cargarPanelIntercambios() {
+  const secuenciaCarga = ++secuenciaCargaPanelIntercambios;
   const contenedor = $("lista-intercambios-activos");
   const botonEntrar = $("btn-entrar-seguimiento");
   if (!contenedor) return;
@@ -297,6 +303,7 @@ async function cargarPanelIntercambios() {
     .from("intercambios").select("*, publicacion:publicacion_id(id, perfil_id, usuario_id, titulo)")
     .or(`usuario_a.eq.${usuario.id},usuario_b.eq.${usuario.id}`)
     .order("created_at", { ascending: false });
+  if (secuenciaCarga !== secuenciaCargaPanelIntercambios) return;
   if (error) {
     console.error("Error al cargar procesos:", error);
     contenedor.textContent = "No se pudieron cargar tus procesos.";
@@ -346,6 +353,7 @@ async function cargarPanelIntercambios() {
       .from("perfiles").select("id, nombre_visible").in("id", idsPerfiles);
     if (!errorNombres) (perfilesNombres || []).forEach((perfil) => nombresPerfiles.set(String(perfil.id), perfil.nombre_visible || "Integrante"));
   }
+  if (secuenciaCarga !== secuenciaCargaPanelIntercambios) return;
   contenedor.replaceChildren();
 
   // Las cancelaciones válidas no penalizan la reputación, pero sí quedan
