@@ -303,6 +303,24 @@ async function cargarPanelIntercambios() {
     if (!errorNombres) (perfilesNombres || []).forEach((perfil) => nombresPerfiles.set(String(perfil.id), perfil.nombre_visible || "Integrante"));
   }
   contenedor.replaceChildren();
+
+  // Las cancelaciones válidas no penalizan la reputación, pero sí quedan
+  // contabilizadas para que el integrante pueda corregir una conducta reiterada.
+  const { data: miHistorialCancelaciones, error: errorHistorialCancelaciones } = await supabase
+    .rpc("hmc_conteo_cancelaciones_intercambios", { p_perfil_ids: [usuario.id] });
+  if (errorHistorialCancelaciones) {
+    console.warn("No se pudo consultar el historial de cancelaciones:", errorHistorialCancelaciones);
+  } else {
+    const historial = miHistorialCancelaciones?.[0];
+    if (historial?.riesgo_membresia) {
+      const aviso = document.createElement("aside");
+      aviso.className = "aviso-riesgo-cancelaciones";
+      aviso.setAttribute("role", "status");
+      aviso.textContent = `⚠️ Tu perfil registra ${Number(historial.cancelaciones_90_dias || 0)} cancelaciones en los últimos 90 días. Las cancelaciones no generan penalización reputacional, pero la reiteración puede poner en revisión tu continuidad como miembro de la comunidad. Revisá tus próximas operaciones antes de iniciarlas.`;
+      contenedor.appendChild(aviso);
+    }
+  }
+
   if (!intercambios?.length) {
     contenedor.textContent = "No tenés intercambios activos. Cuando alguien inicie una propuesta sobre una publicación tuya, o vos inicies una, aparecerá acá hasta que el proceso se cierre.";
     return;
