@@ -22,6 +22,32 @@ let radarComunitarioConfigurado = false;
 let intercambiosConfigurados = false;
 let accesoComunidadBloqueado = false;
 let vistaAnteriorResultados = null;
+let indicadorScrollPerfil = null;
+let indicadorScrollConfigurado = false;
+
+function actualizarIndicadorScrollPerfil() {
+  if (!indicadorScrollPerfil) return;
+  const vistaPerfil = $("vista-perfil");
+  const visible = Boolean(vistaPerfil && !vistaPerfil.hidden);
+  const documento = document.documentElement;
+  const hayMasContenido = documento.scrollHeight > window.innerHeight + 80;
+  const llegoAlFinal = window.scrollY + window.innerHeight >= documento.scrollHeight - 60;
+  indicadorScrollPerfil.hidden = !visible || !hayMasContenido || llegoAlFinal;
+}
+
+function configurarIndicadorScrollPerfil() {
+  if (indicadorScrollConfigurado) return;
+  indicadorScrollConfigurado = true;
+  indicadorScrollPerfil = document.createElement("div");
+  indicadorScrollPerfil.id = "hmc-indicador-scroll-perfil";
+  indicadorScrollPerfil.className = "hmc-indicador-scroll-perfil";
+  indicadorScrollPerfil.setAttribute("aria-hidden", "true");
+  indicadorScrollPerfil.textContent = "↓ DESLIZÁ";
+  document.body.appendChild(indicadorScrollPerfil);
+  window.addEventListener("scroll", actualizarIndicadorScrollPerfil, { passive: true });
+  window.addEventListener("resize", actualizarIndicadorScrollPerfil);
+  actualizarIndicadorScrollPerfil();
+}
 
 /* =========================
    NOTIFICACIONES
@@ -114,6 +140,7 @@ function mostrarVista(nombre = null, opciones = {}) {
   }
 
   window.scrollTo({ top: 0, behavior: "auto" });
+  window.setTimeout(actualizarIndicadorScrollPerfil, 80);
 }
 
 function entrarALaComunidad() {
@@ -262,7 +289,7 @@ async function cargarPanelIntercambios() {
     return;
   }
   const { data: intercambiosTodos, error } = await supabase
-    .from("intercambios").select("*, publicacion:publicacion_id(titulo)")
+    .from("intercambios").select("*, publicacion:publicacion_id(id, perfil_id, usuario_id, titulo)")
     .or(`usuario_a.eq.${usuario.id},usuario_b.eq.${usuario.id}`)
     .order("created_at", { ascending: false });
   if (error) {
@@ -397,6 +424,23 @@ async function cargarPanelIntercambios() {
     }
     const acciones = document.createElement("div");
     acciones.className = "seguimiento-acciones";
+    const verPublicacion = document.createElement("button");
+    verPublicacion.type = "button";
+    verPublicacion.className = "boton-secundario btn-ver-publicacion-intercambio";
+    verPublicacion.textContent = "VER";
+    verPublicacion.disabled = !inter.publicacion_id;
+    verPublicacion.addEventListener("click", () => {
+      const propietarioId = inter.publicacion?.perfil_id || inter.publicacion?.usuario_id || inter.usuario_a;
+      window.dispatchEvent(new CustomEvent("abrirPublicacionDeIntercambio", {
+        detail: {
+          publicacionId: inter.publicacion?.id || inter.publicacion_id,
+          perfilId: propietarioId,
+          perfilNombre: nombresPerfiles.get(String(propietarioId)) || contraparte,
+          intercambioId: inter.id
+        }
+      }));
+    });
+    acciones.appendChild(verPublicacion);
     const agregar = (label, cls, accion) => {
       const btn=document.createElement("button"); btn.type="button"; btn.className="boton-secundario "+cls; btn.dataset.id=inter.id; btn.textContent=label; acciones.appendChild(btn);
     };
@@ -1520,6 +1564,7 @@ function crearId() {
 ========================= */
 
 async function iniciarAplicacion() {
+  configurarIndicadorScrollPerfil();
   configurarNavegacion();
   configurarBarrio();
   configurarRadarComunitario();
@@ -1556,6 +1601,13 @@ async function iniciarAplicacion() {
   }
 
   window.addEventListener("intercambioComunidadActualizado", cargarPanelIntercambios);
+  window.addEventListener("hmc:perfil-cargado", (evento) => {
+    if (evento.detail?.event !== "SIGNED_IN") return;
+    mostrarVista("vista-perfil", { forzar: true });
+    window.scrollTo({ top: 0, behavior: "auto" });
+    window.setTimeout(actualizarIndicadorScrollPerfil, 120);
+    cargarPanelIntercambios();
+  });
   window.addEventListener("hmc:session-changed", (evento) => {
     if (!evento.detail?.userId) {
       const tab = $("tab-intercambios") || $("tab-gondola");

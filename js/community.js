@@ -1039,6 +1039,7 @@ export function initCommunity({
     const tarjeta = document.createElement("article");
 
     tarjeta.className = "tarjeta-publicacion";
+    tarjeta.dataset.pubId = String(publicacion.id || "");
 
     const idPublicacion = escaparHTML(publicacion.id);
     const tipo = escaparHTML(publicacion.tipo);
@@ -2173,6 +2174,42 @@ export function initCommunity({
 
   window.addEventListener("restaurarDirectorioComunidad", restaurarDirectorioComunidad);
 
+  async function abrirPublicacionDesdeSeguimiento(evento) {
+    const detalle = evento?.detail || {};
+    const publicacionId = String(detalle.publicacionId || "");
+    const perfilId = String(detalle.perfilId || "");
+    if (!publicacionId || !perfilId) {
+      notificar("No se pudo identificar la publicación de este intercambio.", "warning");
+      return;
+    }
+
+    perfilFiltroActivo = perfilId;
+    perfilFiltroNombre = String(detalle.perfilNombre || "Integrante");
+    modoListadoPerfiles = "directorio";
+    if (filtroVecinoActivo) filtroVecinoActivo.hidden = false;
+    if (contenedorPublicacionesPerfil) contenedorPublicacionesPerfil.hidden = false;
+    if (textoFiltroVecino) textoFiltroVecino.textContent = `Publicaciones de ${perfilFiltroNombre}`;
+    if (form) form.style.display = "none";
+    if (busquedaInput) busquedaInput.value = "";
+
+    window.dispatchEvent(new CustomEvent("abrirVistaComunidadResultados", {
+      detail: { modo: "directorio" }
+    }));
+
+    await cargarPublicacionesRemotas();
+    if (destruido) return;
+    const tarjetaObjetivo = lista?.querySelector(`[data-pub-id="${CSS.escape(publicacionId)}"]`);
+    if (!tarjetaObjetivo) {
+      notificar("El intercambio sigue en tu seguimiento, pero no se pudo desplegar su publicación. Actualizá e intentá nuevamente.", "warning");
+      return;
+    }
+    tarjetaObjetivo.classList.add("publicacion-seguimiento-destacada");
+    tarjetaObjetivo.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => tarjetaObjetivo.classList.remove("publicacion-seguimiento-destacada"), 2600);
+  }
+
+  window.addEventListener("abrirPublicacionDeIntercambio", abrirPublicacionDesdeSeguimiento);
+
   window.addEventListener("online", manejarOnline);
   window.addEventListener("offline", manejarOffline);
   window.addEventListener("pageshow", manejarVisibilidad);
@@ -2320,6 +2357,7 @@ export function initCommunity({
         manejarMostrarDirectorio
       );
       window.removeEventListener("restaurarDirectorioComunidad", restaurarDirectorioComunidad);
+      window.removeEventListener("abrirPublicacionDeIntercambio", abrirPublicacionDesdeSeguimiento);
 
       window.removeEventListener("online", manejarOnline);
       window.removeEventListener("offline", manejarOffline);

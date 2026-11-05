@@ -1149,8 +1149,11 @@ export async function iniciarAutenticacion() {
       actualizarInterfazUsuario();
 
       if (usuarioActual) {
-        window.setTimeout(() => {
-          cargarPerfil();
+        window.setTimeout(async () => {
+          await cargarPerfil();
+          if (_evento === "SIGNED_IN") {
+            window.dispatchEvent(new CustomEvent("hmc:perfil-cargado", { detail: { event: _evento } }));
+          }
         }, 0);
       }
     });
