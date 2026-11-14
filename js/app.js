@@ -299,6 +299,17 @@ async function cargarPanelIntercambios() {
     contenedor.textContent = "No se pudieron cargar tus procesos.";
     return;
   }
+  const { data: archivados, error: errorArchivados } = await supabase
+    .from("hmc_seguimientos_archivados")
+    .select("intercambio_id")
+    .eq("perfil_id", usuario.id);
+  if (secuenciaCarga !== secuenciaCargaPanelIntercambios) return;
+  if (errorArchivados) {
+    console.error("No se pudo consultar el archivo personal:", errorArchivados);
+    contenedor.textContent = "No se pudo cargar el seguimiento completo. Intentá nuevamente.";
+    return;
+  }
+  const idsArchivados = new Set((archivados || []).map((a) => String(a.intercambio_id)));
   // Las ofertas pendientes se muestran al dueño. Los rechazos quedan
   // visibles solo para quien las envió hasta que archive cada propuesta.
   const estadosActivos = new Set([
@@ -306,6 +317,7 @@ async function cargarPanelIntercambios() {
     "acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"
   ]);
   const intercambios = (intercambiosTodos || []).filter((item) => {
+    if (idsArchivados.has(String(item.id))) return false;
     if (estadosActivos.has(item.estado)) return true;
     return item.estado === "rechazado" &&
       String(item.usuario_b) === String(usuario.id) &&
@@ -500,6 +512,7 @@ async function cargarPanelIntercambios() {
     if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
       const estadoReg=document.createElement("p"); estadoReg.textContent=inter.regularizacion_solicitada_por ? "Regularización solicitada. La otra parte debe confirmarla." : "Proceso incumplido. Podés solicitar una regularización bilateral."; card.appendChild(estadoReg);
       agregar("Solicitar / confirmar regularización","btn-regularizar-proceso");
+      agregar("Eliminar de mi seguimiento · intercambio no realizado","btn-archivar-inconcluso");
     }
     card.appendChild(acciones);
     wrapper.appendChild(card);
@@ -564,6 +577,32 @@ function configurarIntercambiosGlobales() {
       const {error}=await supabase.rpc("hmc_confirmar_acuerdo",{p_intercambio_id:btnConfirmarAcuerdo.dataset.id});
       if(error) mostrarNotificacion("No se pudo confirmar: "+error.message,"error");
       else {mostrarNotificacion("Tu confirmación quedó registrada.","success");cargarPanelIntercambios();}
+      return;
+    }
+
+    const btnArchivar = e.target.closest(".btn-archivar-inconcluso");
+    if (btnArchivar) {
+      const acepto = window.confirm(
+        "INTERCAMBIO NO REALIZADO\\n\\n" +
+        "Podés quitar este proceso inconcluso de tu seguimiento personal. " +
+        "El intercambio no se borra de la comunidad: su antecedente permanece registrado.\\n\\n" +
+        "Tené en cuenta que iniciar reiteradamente intercambios sin concluirlos puede repercutir en la confianza que otros integrantes depositan en tu ficha al evaluar futuras propuestas o publicaciones.\\n\\n" +
+        "Esta acción no bloquea tu cuenta ni impide que sigas participando. " +
+        "¿Querés quitarlo de tu seguimiento?"
+      );
+      if (!acepto) return;
+      btnArchivar.disabled = true;
+      const { data, error } = await supabase.rpc("hmc_archivar_intercambio_inconcluso", {
+        p_intercambio_id: btnArchivar.dataset.id
+      });
+      if (error) {
+        btnArchivar.disabled = false;
+        mostrarNotificacion("No se pudo quitar el intercambio: " + error.message, "error");
+      } else {
+        mostrarNotificacion(data?.mensaje || "Intercambio quitado de tu seguimiento.", "success");
+        await cargarPanelIntercambios();
+        window.dispatchEvent(new CustomEvent("intercambioComunidadActualizado"));
+      }
       return;
     }
 
