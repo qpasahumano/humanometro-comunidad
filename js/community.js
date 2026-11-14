@@ -1191,14 +1191,18 @@ export function initCommunity({
   async function manejarCancelarIntercambioDesdeCard(e) {
     const boton = e.target.closest(".btn-cancelar-intercambio-card"); if (!boton) return;
     e.preventDefault();
-    const motivo = prompt("Cancelar solicitud (opcional):\n1 = Sin motivo\n2 = Me arrepentí\n3 = Motivos personales\n4 = No estoy conforme\n5 = No estoy seguro", "3");
-    if (motivo === null) return;
-    const motivos = {"1":"sin_motivo","2":"me_arrepenti","3":"motivos_personales","4":"no_estoy_conforme","5":"no_estoy_seguro"};
-    if (!motivos[motivo]) { notificar("Elegí un motivo válido.", "warning"); return; }
+    const acepto = window.confirm(
+      "CANCELAR INTERCAMBIO\\n\\nPodés cancelar en cualquier momento, sin bloqueos. " +
+      "La contraparte verá un aviso en su seguimiento y el intercambio quedará registrado como no concretado. " +
+      "Muchas cancelaciones pueden afectar la confianza en tu ficha, aunque no generan sanciones automáticas.\\n\\n¿Confirmás?"
+    );
+    if (!acepto) return;
     boton.disabled = true;
-    const { error } = await supabase.rpc("hmc_cancelar_intercambio", { p_intercambio_id: boton.dataset.intercambioId, p_motivo: motivos[motivo] });
+    const { error } = await supabase.rpc("hmc_cancelar_y_archivar_intercambio", {
+      p_intercambio_id: boton.dataset.intercambioId, p_motivo: "sin_motivo"
+    });
     if (error) { boton.disabled = false; notificar("No se pudo cancelar: " + error.message, "error"); return; }
-    notificar("Intercambio cancelado. La publicación vuelve a estar disponible.", "success");
+    notificar("Intercambio cancelado. La otra parte recibirá un aviso en su seguimiento.", "success");
     cargarPublicacionesRemotas(); window.dispatchEvent(new CustomEvent("intercambioComunidadActualizado"));
   }
   document.addEventListener("click", manejarCancelarIntercambioDesdeCard);
