@@ -319,6 +319,7 @@ async function cargarPanelIntercambios() {
   const intercambios = (intercambiosTodos || []).filter((item) => {
     if (idsArchivados.has(String(item.id))) return false;
     if (estadosActivos.has(item.estado)) return true;
+    if (item.estado === "cancelado") return String(item.cancelado_por || "") !== String(usuario.id);
     return item.estado === "rechazado" &&
       String(item.usuario_b) === String(usuario.id) &&
       !Boolean(item.respuesta_b?.archivada_por_iniciador);
@@ -420,6 +421,21 @@ async function cargarPanelIntercambios() {
     const estado = document.createElement("span");
     estado.className = "seguimiento-estado";
     estado.textContent = inter.estado === "rechazado" ? "✓ SOLICITUD RECHAZADA" : inter.estado.replaceAll("_"," ").toUpperCase();
+    if (inter.estado === "cancelado") {
+      const avisoCancelacion = document.createElement("p");
+      avisoCancelacion.className = "aviso-propuesta-entrante";
+      avisoCancelacion.textContent = "La otra parte canceló este intercambio. No se realizará. Podés quitar este aviso de tu seguimiento cuando lo hayas leído.";
+      card.appendChild(avisoCancelacion);
+      const quitarAviso = document.createElement("button");
+      quitarAviso.type = "button";
+      quitarAviso.className = "boton-secundario btn-archivar-cancelado";
+      quitarAviso.dataset.id = inter.id;
+      quitarAviso.textContent = "ENTENDIDO · QUITAR DE MI SEGUIMIENTO";
+      card.appendChild(quitarAviso);
+      wrapper.appendChild(card);
+      return;
+    }
+
     card.appendChild(estado);
     if (inter.estado === "rechazado" && soyIniciadorA) {
       const accionesRechazo = document.createElement("div");
@@ -507,8 +523,10 @@ async function cargarPanelIntercambios() {
       const estadoConf=document.createElement("p"); estadoConf.textContent="Tu cumplimiento: "+(miConf?"confirmado":"pendiente")+" · Contraparte: "+(otraConf?"confirmado":"pendiente"); card.appendChild(estadoConf);
       if (miConf && otraConf) agregar("Evaluar contraparte","btn-evaluar-intercambio");
     }
-    if (inter.estado === "pendiente_respuesta" && soyIniciadorA) agregar("Retirar oferta","btn-cancelar-intercambio");
-    if (["respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso"].includes(inter.estado)) agregar("Cancelar intercambio","btn-cancelar-intercambio");
+    // Cualquier participante puede desistir desde el inicio, sin esperar plazos.
+    if (["pendiente_respuesta","respuesta_recibida","conversacion_pendiente","acuerdo_pendiente_confirmacion","en_proceso","incumplido","regularizacion_pendiente"].includes(inter.estado)) {
+      agregar("CANCELAR Y QUITAR DE MI SEGUIMIENTO","btn-cancelar-intercambio");
+    }
     if (inter.estado === "incumplido" || inter.estado === "regularizacion_pendiente") {
       const estadoReg=document.createElement("p"); estadoReg.textContent=inter.regularizacion_solicitada_por ? "Regularización solicitada. La otra parte debe confirmarla." : "Proceso incumplido. Podés solicitar una regularización bilateral."; card.appendChild(estadoReg);
       agregar("Solicitar / confirmar regularización","btn-regularizar-proceso");
@@ -619,12 +637,42 @@ function configurarIntercambiosGlobales() {
       return;
     }
 
+    const btnArchivarCancelado = e.target.closest(".btn-archivar-cancelado");
+    if (btnArchivarCancelado) {
+      btnArchivarCancelado.disabled = true;
+      // El archivo de cancelaciones se realiza mediante la misma función segura de servidor.
+      const { error: errorArchivo } = await supabase.rpc("hmc_archivar_aviso_cancelacion", { p_intercambio_id: btnArchivarCancelado.dataset.id });
+      if (errorArchivo) {
+        btnArchivarCancelado.disabled = false;
+        mostrarNotificacion("No se pudo quitar el aviso: " + errorArchivo.message,"error");
+      } else {
+        cargarPanelIntercambios();
+      }
+      return;
+    }
+
     const btnCancelar = e.target.closest(".btn-cancelar-intercambio");
     if(btnCancelar){
-      const motivo = prompt("Cancelar solicitud (opcional):\n1 = Sin motivo\n2 = Me arrepentí\n3 = Motivos personales\n4 = No estoy conforme\n5 = No estoy seguro", "3"); if (motivo === null) return;
-      const motivos = {"1":"sin_motivo","2":"me_arrepenti","3":"motivos_personales","4":"no_estoy_conforme","5":"no_estoy_seguro"}; if (!motivos[motivo]) { mostrarNotificacion("Elegí un motivo válido.", "warning"); return; }
-      const {error}=await supabase.rpc("hmc_cancelar_intercambio",{p_intercambio_id:btnCancelar.dataset.id,p_motivo:motivos[motivo]});
-      if(error) mostrarNotificacion("No se pudo cancelar: "+error.message,"error"); else {mostrarNotificacion("Solicitud cancelada. No genera penalización reputacional.","success");cargarPanelIntercambios();}
+      const acepto = window.confirm(
+        "CANCELACIÓN VOLUNTARIA DEL INTERCAMBIO\\n\\n" +
+        "Podés cancelar en cualquier momento, incluso inmediatamente después de iniciar el intercambio. No hay bloqueo ni penalización automática.\\n\\n" +
+        "La otra persona recibirá un aviso en su seguimiento y el proceso quedará registrado como no concluido.\\n\\n" +
+        "Tené presente que muchas operaciones iniciadas y no concretadas pueden afectar la confianza que otros integrantes depositan en tu ficha cuando evalúan nuevas propuestas. Procurá iniciar acuerdos que realmente puedas cumplir.\\n\\n" +
+        "¿Confirmás la cancelación?"
+      );
+      if (!acepto) return;
+      btnCancelar.disabled = true;
+      const { data, error } = await supabase.rpc("hmc_cancelar_y_archivar_intercambio", {
+        p_intercambio_id: btnCancelar.dataset.id, p_motivo: "sin_motivo"
+      });
+      if (error) {
+        btnCancelar.disabled = false;
+        mostrarNotificacion("No se pudo cancelar: " + error.message, "error");
+      } else {
+        mostrarNotificacion(data?.mensaje || "Intercambio cancelado.", "success");
+        cargarPanelIntercambios();
+        window.dispatchEvent(new CustomEvent("intercambioComunidadActualizado"));
+      }
       return;
     }
 
@@ -1361,7 +1409,7 @@ async function configurarEvaluaciones() {
       <div style="background: #7f1d1d; border: 1px solid #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; color: #fca5a5;">
         <strong>⚠️ ATENCIÓN: Perfil en zona de riesgo comunitario</strong>
         <p style="font-size: 0.85rem; margin: 5px 0 0 0;">
-          Tu medidor se encuentra por debajo del 70% requerido tras ${totalIntercambios} evaluaciones. Para mantener la pertenencia y confianza en la red, debés mejorar el cumplimiento en tus próximas experiencias.
+          Tu medidor se encuentra por debajo del 70% de referencia tras ${totalIntercambios} evaluaciones. Es una señal orientativa para mejorar la confianza en próximas experiencias: no implica suspensión ni restricción de acceso.
         </p>
       </div>
     `;
