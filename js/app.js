@@ -311,6 +311,15 @@ async function cargarPanelIntercambios() {
       String(item.usuario_b) === String(usuario.id) &&
       !Boolean(item.respuesta_b?.archivada_por_iniciador);
   });
+  const procesosParaActualizar = (intercambios || []).filter((item) =>
+    ["incumplido", "regularizacion_pendiente", "en_proceso", "acuerdo_pendiente_confirmacion", "pendiente_respuesta", "respuesta_recibida", "conversacion_pendiente"].includes(item.estado)
+  ).length;
+  const resumenSeguimientos = $("resumen-seguimientos-pendientes");
+  if (resumenSeguimientos) {
+    resumenSeguimientos.textContent = procesosParaActualizar
+      ? "Tenés " + procesosParaActualizar + " proceso(s) para revisar o actualizar. El acceso a tus seguimientos permanece disponible."
+      : "No tenés procesos pendientes de actualización. Podés consultar tu historial de seguimiento.";
+  }
   const propuestasEntrantes = (intercambios || []).filter((item) =>
     (item.estado === "pendiente_respuesta" && String(item.usuario_a) === String(usuario.id)) ||
     (item.estado === "rechazado" && String(item.usuario_b) === String(usuario.id))
@@ -1361,6 +1370,15 @@ async function configurarEvaluaciones() {
    GESTIÓN DE PERFIL (SIN AUTOEVALUACIÓN)
 ========================= */
 
+function configurarAccesoSeguimientos() {
+  $("btn-ir-seguimientos")?.addEventListener("click", () => {
+    const destino = $("titulo-seguimiento-intercambios");
+    if (!destino) return;
+    cargarPanelIntercambios();
+    destino.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 function configurarPerfil() {
   const formulario = $("form-perfil");
   const inputNombre = $("nombre-usuario");
@@ -1619,6 +1637,7 @@ async function iniciarAplicacion() {
   configurarAyuda();
   configurarEvaluaciones();
   configurarPerfil();
+  configurarAccesoSeguimientos();
 
   try {
     await iniciarAutenticacion();
@@ -1642,11 +1661,11 @@ async function iniciarAplicacion() {
       console.error("No se pudo verificar el estado comunitario:", errorEstadoAcceso);
     } else {
       accesoComunidadBloqueado = estadoAcceso?.estado === "restringido";
-      if (accesoComunidadBloqueado) {
-        mostrarNotificacion("Tu perfil está temporalmente inhabilitado por dos o más procesos incumplidos. Podés ingresar a Mi perfil para regularizarlos.");
-        mostrarVista("vista-perfil", { forzar: true });
-      } else if (Number(estadoAcceso?.procesos_incumplidos || 0) === 1) {
-        mostrarNotificacion("Tenés un proceso comunitario incumplido. Regularizalo para evitar la restricción de acceso.");
+      const pendientes = Number(estadoAcceso?.procesos_incumplidos || 0);
+      if (pendientes >= 4) {
+        mostrarNotificacion("Aviso comunitario: registrás cuatro o más procesos sin regularizar. Esto afecta tu historial visible en la ficha, pero podés seguir ingresando y actualizar tus seguimientos.", "warning");
+      } else if (pendientes > 0) {
+        mostrarNotificacion("Tenés " + pendientes + " proceso(s) pendiente(s) de regularización. Podés actualizarlos desde Mi perfil; tu acceso sigue habilitado.", "warning");
       }
     }
   }

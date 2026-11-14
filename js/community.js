@@ -224,6 +224,7 @@ export function initCommunity({
         .filter(Boolean);
       const conteosIntercambios = new Map();
       const conteosCancelaciones = new Map();
+      const resumenCumplimiento = new Map();
       if (idsPerfilesVisibles.length) {
         const usuarioConteo = await obtenerUsuarioActual();
         // El directorio público sigue disponible para visitantes anónimos.
@@ -232,6 +233,16 @@ export function initCommunity({
             supabase.rpc("hmc_conteo_intercambios_completados", { p_perfil_ids: idsPerfilesVisibles }),
             supabase.rpc("hmc_conteo_cancelaciones_intercambios", { p_perfil_ids: idsPerfilesVisibles })
           ]);
+          const { data: cumplimiento, error: errorCumplimiento } = await supabase.rpc(
+            "hmc_resumen_cumplimiento_perfiles", { p_perfil_ids: idsPerfilesVisibles }
+          );
+          if (errorCumplimiento) {
+            console.warn("No se pudo cargar el historial de cumplimiento:", errorCumplimiento);
+          } else {
+            (cumplimiento || []).forEach((registro) => {
+              resumenCumplimiento.set(String(registro.perfil_id), registro);
+            });
+          }
           if (errorConteos) {
             console.warn("No se pudieron cargar los intercambios completados:", errorConteos);
           } else {
@@ -392,6 +403,23 @@ export function initCommunity({
             avisoRiesgo.className = "vecino-cancelaciones-riesgo";
             avisoRiesgo.textContent = "⚠️ Cancelaciones reiteradas recientes";
             datos.appendChild(avisoRiesgo);
+          }
+        }
+
+        const cumplimiento = resumenCumplimiento.get(String(perfil.id));
+        if (cumplimiento) {
+          const pendientes = Number(cumplimiento.pendientes || 0);
+          const regularizados = Number(cumplimiento.regularizados || 0);
+          const indicadorCumplimiento = document.createElement("span");
+          indicadorCumplimiento.className = "vecino-cumplimiento-historial";
+          indicadorCumplimiento.textContent = "📋 Seguimiento: " + pendientes +
+            " sin regularizar · " + regularizados + " procesos regularizados";
+          datos.appendChild(indicadorCumplimiento);
+          if (pendientes >= 4) {
+            const avisoCumplimiento = document.createElement("span");
+            avisoCumplimiento.className = "vecino-cumplimiento-aviso";
+            avisoCumplimiento.textContent = "⚠️ Actualizaciones pendientes reiteradas. El acceso comunitario permanece habilitado.";
+            datos.appendChild(avisoCumplimiento);
           }
         }
 
@@ -2271,6 +2299,7 @@ export function initCommunity({
 
   window.addEventListener("publicacionComunidadActualizada", manejarPublicacionActualizada);
   window.addEventListener("perfilComunidadActualizado", manejarPublicacionActualizada);
+  window.addEventListener("intercambioComunidadActualizado", manejarPublicacionActualizada);
 
   try {
     const destinoGuardadoRadar = getItem("hm_radar_destino", "");
