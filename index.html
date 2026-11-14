@@ -568,9 +568,26 @@
               Aplicación gratuita y de código abierto para mensajería segura. Puede sincronizar mensajes mediante Bluetooth o Wi-Fi local cuando no hay Internet. Las personas deben tener Briar instalado y preparado; el alcance depende de la cercanía, los dispositivos y el entorno.
             </p>
 
-            <a href="https://briarproject.org/" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
+            <a id="enlace-briar-oficial" href="https://briarproject.org/" target="_blank" rel="noopener" style="display: inline-block; background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; text-decoration: none; font-weight: bold;">
               Información y descarga oficial de Briar
             </a>
+            <div id="aviso-temporal-briar" role="status" aria-live="polite" hidden style="position:fixed;bottom:18px;left:12px;right:12px;max-width:520px;margin:auto;z-index:9999;padding:16px 18px;border-radius:12px;background:#0f172a;color:#f8fafc;border:2px solid #38bdf8;box-shadow:0 8px 35px #000a;font-size:0.92rem;line-height:1.55;">
+              <strong style="color:#7dd3fc;">📡 Antes de usar Briar</strong>
+              <p style="margin:7px 0 0;">Sin Internet, Briar solo comunica dispositivos cercanos mediante Bluetooth o Wi-Fi local. No permite hablar directamente entre ciudades distantes sin conexión. Con Internet, sí funciona a distancia. Agregá tus contactos y probalo antes de una emergencia.</p>
+            </div>
+            <script>
+              (() => {
+                const enlace = document.getElementById("enlace-briar-oficial");
+                const aviso = document.getElementById("aviso-temporal-briar");
+                if (!enlace || !aviso) return;
+                let temporizador;
+                enlace.addEventListener("click", () => {
+                  clearTimeout(temporizador);
+                  aviso.hidden = false;
+                  temporizador = setTimeout(() => { aviso.hidden = true; }, 12000);
+                });
+              })();
+            </script>
           </div>
 
         </div>
