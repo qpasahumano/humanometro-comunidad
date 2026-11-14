@@ -1642,11 +1642,11 @@ async function iniciarAplicacion() {
       console.error("No se pudo verificar el estado comunitario:", errorEstadoAcceso);
     } else {
       accesoComunidadBloqueado = estadoAcceso?.estado === "restringido";
-      if (accesoComunidadBloqueado) {
-        mostrarNotificacion("Tu perfil está temporalmente inhabilitado por dos o más procesos incumplidos. Podés ingresar a Mi perfil para regularizarlos.");
-        mostrarVista("vista-perfil", { forzar: true });
-      } else if (Number(estadoAcceso?.procesos_incumplidos || 0) === 1) {
-        mostrarNotificacion("Tenés un proceso comunitario incumplido. Regularizalo para evitar la restricción de acceso.");
+      const pendientes = Number(estadoAcceso?.procesos_incumplidos || 0);
+      if (pendientes >= 4) {
+        mostrarNotificacion("Aviso comunitario: registrás cuatro o más procesos sin regularizar. Esto afecta tu historial visible en la ficha, pero podés seguir ingresando y actualizar tus seguimientos.", "warning");
+      } else if (pendientes > 0) {
+        mostrarNotificacion("Tenés " + pendientes + " proceso(s) pendiente(s) de regularización. Podés actualizarlos desde Mi perfil; tu acceso sigue habilitado.", "warning");
       }
     }
   }
