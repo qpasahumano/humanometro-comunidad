@@ -311,6 +311,15 @@ async function cargarPanelIntercambios() {
       String(item.usuario_b) === String(usuario.id) &&
       !Boolean(item.respuesta_b?.archivada_por_iniciador);
   });
+  const procesosParaActualizar = (intercambios || []).filter((item) =>
+    ["incumplido", "regularizacion_pendiente", "en_proceso", "acuerdo_pendiente_confirmacion", "pendiente_respuesta", "respuesta_recibida", "conversacion_pendiente"].includes(item.estado)
+  ).length;
+  const resumenSeguimientos = $("resumen-seguimientos-pendientes");
+  if (resumenSeguimientos) {
+    resumenSeguimientos.textContent = procesosParaActualizar
+      ? "Tenés " + procesosParaActualizar + " proceso(s) para revisar o actualizar. El acceso a tus seguimientos permanece disponible."
+      : "No tenés procesos pendientes de actualización. Podés consultar tu historial de seguimiento.";
+  }
   const propuestasEntrantes = (intercambios || []).filter((item) =>
     (item.estado === "pendiente_respuesta" && String(item.usuario_a) === String(usuario.id)) ||
     (item.estado === "rechazado" && String(item.usuario_b) === String(usuario.id))
@@ -1361,6 +1370,15 @@ async function configurarEvaluaciones() {
    GESTIÓN DE PERFIL (SIN AUTOEVALUACIÓN)
 ========================= */
 
+function configurarAccesoSeguimientos() {
+  $("btn-ir-seguimientos")?.addEventListener("click", () => {
+    const destino = $("titulo-seguimiento-intercambios");
+    if (!destino) return;
+    cargarPanelIntercambios();
+    destino.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 function configurarPerfil() {
   const formulario = $("form-perfil");
   const inputNombre = $("nombre-usuario");
@@ -1619,6 +1637,7 @@ async function iniciarAplicacion() {
   configurarAyuda();
   configurarEvaluaciones();
   configurarPerfil();
+  configurarAccesoSeguimientos();
 
   try {
     await iniciarAutenticacion();
