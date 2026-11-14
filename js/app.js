@@ -1409,7 +1409,7 @@ async function configurarEvaluaciones() {
       <div style="background: #7f1d1d; border: 1px solid #991b1b; padding: 12px; border-radius: 8px; margin: 10px 0; color: #fca5a5;">
         <strong>⚠️ ATENCIÓN: Perfil en zona de riesgo comunitario</strong>
         <p style="font-size: 0.85rem; margin: 5px 0 0 0;">
-          Tu medidor se encuentra por debajo del 70% requerido tras ${totalIntercambios} evaluaciones. Para mantener la pertenencia y confianza en la red, debés mejorar el cumplimiento en tus próximas experiencias.
+          Tu medidor se encuentra por debajo del 70% de referencia tras ${totalIntercambios} evaluaciones. Es una señal orientativa para mejorar la confianza en próximas experiencias: no implica suspensión ni restricción de acceso.
         </p>
       </div>
     `;
